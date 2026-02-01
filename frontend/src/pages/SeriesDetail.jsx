@@ -1,0 +1,338 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { addRecentlyViewed } from '../hooks/useRecentlyViewed';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Helmet } from 'react-helmet-async';
+import { seriesApi, favoriteApi, ratingApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ChapterList from '../components/chapters/ChapterList';
+
+function StarRating({ rating, onRate, interactive = false, size = 'md' }) {
+  const [hovered, setHovered] = useState(0);
+  const sizeClass = size === 'lg' ? 'w-7 h-7' : 'w-5 h-5';
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={!interactive}
+          onClick={() => interactive && onRate(star)}
+          onMouseEnter={() => interactive && setHovered(star)}
+          onMouseLeave={() => interactive && setHovered(0)}
+          className={`${sizeClass} ${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill={(hovered || rating) >= star ? '#B58B47' : 'none'}
+            stroke={(hovered || rating) >= star ? '#B58B47' : '#C6CEC5'}
+            strokeWidth="1.5"
+          >
+            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FavoriteButton({ seriesId }) {
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+
+  const { data: favoriteData } = useQuery({
+    queryKey: ['favorite', seriesId],
+    queryFn: () => favoriteApi.check(seriesId),
+    enabled: isAuthenticated,
+  });
+
+  const isFavorited = favoriteData?.data?.is_favorited || false;
+
+  const addMutation = useMutation({
+    mutationFn: () => favoriteApi.add(seriesId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite', seriesId] });
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: () => favoriteApi.remove(seriesId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite', seriesId] });
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+    },
+  });
+
+  const isLoading = addMutation.isPending || removeMutation.isPending;
+
+  const handleToggle = () => {
+    if (isFavorited) {
+      removeMutation.mutate();
+    } else {
+      addMutation.mutate();
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Link
+        to="/login"
+        className="inline-flex items-center gap-2 px-4 py-2 border border-silver-grass/40 rounded-lg glass-effect text-white hover:bg-silver-grass/20 transition-colors text-sm"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </svg>
+        Favorite
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={isLoading}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm disabled:opacity-50 ${
+        isFavorited
+          ? 'bg-bracken-green text-white hover:bg-bracken-fern'
+          : 'border border-silver-grass/40 text-white hover:bg-silver-grass/20 glass-effect'
+      }`}
+    >
+      <svg className="w-5 h-5" fill={isFavorited ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+      </svg>
+      {isFavorited ? 'Favorited' : 'Favorite'}
+    </button>
+  );
+}
+
+function UserRating({ seriesId }) {
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+
+  const { data: ratingData } = useQuery({
+    queryKey: ['rating', seriesId],
+    queryFn: () => ratingApi.get(seriesId),
+    enabled: isAuthenticated,
+  });
+
+  const userRating = ratingData?.data?.rating || 0;
+
+  const rateMutation = useMutation({
+    mutationFn: (rating) => ratingApi.rate(seriesId, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rating', seriesId] });
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+    },
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center gap-2">
+        <StarRating rating={0} size="md" />
+        <Link to="/login" className="text-sm text-white hover:text-silver-grass hover:underline transition-colors">
+          Log in to rate
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-white">Your Rating:</span>
+      <StarRating
+        rating={userRating}
+        onRate={(star) => rateMutation.mutate(star)}
+        interactive
+        size="md"
+      />
+      {userRating > 0 && (
+        <span className="text-sm text-white">{userRating}/5</span>
+      )}
+    </div>
+  );
+}
+
+function SeriesDetail() {
+  const { slug } = useParams();
+
+  const { data: series, isLoading } = useQuery({
+    queryKey: ['series', slug],
+    queryFn: () => seriesApi.getById(slug),
+  });
+
+  const { data: chapters } = useQuery({
+    queryKey: ['series', slug, 'chapters'],
+    queryFn: () => seriesApi.getChapters(slug),
+    enabled: !!slug,
+  });
+
+  if (isLoading) {
+    return <LoadingSpinner size="lg" />;
+  }
+
+  if (!series?.data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-white">Series not found.</p>
+      </div>
+    );
+  }
+
+  const seriesData = series.data;
+
+  useEffect(() => {
+    addRecentlyViewed(seriesData);
+  }, [seriesData?.slug]);
+
+  return (
+    <>
+      <Helmet>
+        <title>{seriesData.title} - Manga Web</title>
+        <meta name="description" content={seriesData.description} />
+        {seriesData.thumbnail_url && (
+          <meta property="og:image" content={seriesData.thumbnail_url} />
+        )}
+      </Helmet>
+
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <img
+            src={seriesData.cover_url || seriesData.thumbnail_url || '/placeholder.jpg'}
+            alt={seriesData.title}
+            className="w-full sm:w-48 md:w-64 lg:w-72 h-auto rounded-lg mx-auto sm:mx-0"
+          />
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1">
+              {seriesData.title}
+            </h1>
+
+            {/* Alternate Names */}
+            {seriesData.alt_names?.length > 0 && (
+              <p className="text-sm text-silver-grass mb-3">
+                Also known as: {seriesData.alt_names.map((a) => a.name).join(', ')}
+              </p>
+            )}
+
+            {/* Rating Summary & Favorite */}
+            <div className="flex flex-wrap items-center gap-4 mb-3">
+              <div className="flex items-center gap-2">
+                <StarRating rating={Math.round(seriesData.average_rating || 0)} />
+                <span className="text-sm text-white">
+                  {seriesData.average_rating ? seriesData.average_rating.toFixed(1) : 'N/A'}
+                  {seriesData.rating_count > 0 && (
+                    <span className="ml-1">({seriesData.rating_count} ratings)</span>
+                  )}
+                </span>
+              </div>
+              <FavoriteButton seriesId={seriesData.id} />
+              {seriesData.total_favorites > 0 && (
+                <span className="text-sm text-white">
+                  {seriesData.total_favorites.toLocaleString()} favorites
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            <p className="text-sm sm:text-base text-white mb-3 sm:mb-4 line-clamp-4">
+              {seriesData.description}
+            </p>
+
+            {/* Categories */}
+            <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
+              {seriesData.categories?.map((cat) => (
+                <Link
+                  key={cat.id}
+                  to={`/browse?categories=${cat.id}`}
+                  className="px-2 sm:px-3 py-1 bg-bracken-green/30 text-white rounded-full text-xs sm:text-sm hover:bg-bracken-green/40 transition-colors backdrop-blur-sm"
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+
+            {/* Manga Types */}
+            {seriesData.manga_types?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {seriesData.manga_types.map((type) => (
+                  <Link
+                    key={type.id}
+                    to={`/browse?types=${type.id}`}
+                    className="px-2 py-1 bg-paradise-found/30 text-white rounded-full text-xs hover:bg-paradise-found/40 transition-colors backdrop-blur-sm"
+                  >
+                    {type.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-white">
+              {/* Authors */}
+              {seriesData.authors?.length > 0 ? (
+                <p>
+                  <span className="font-semibold">Author(s):</span>{' '}
+                  {seriesData.authors
+                    .filter((a) => a.pivot?.role !== 'artist')
+                    .map((a) => a.name)
+                    .join(', ') || seriesData.author}
+                </p>
+              ) : (
+                seriesData.author && <p><span className="font-semibold">Author:</span> {seriesData.author}</p>
+              )}
+              {seriesData.authors?.length > 0 ? (
+                <p>
+                  <span className="font-semibold">Artist(s):</span>{' '}
+                  {seriesData.authors
+                    .filter((a) => a.pivot?.role === 'artist')
+                    .map((a) => a.name)
+                    .join(', ') || seriesData.artist || '-'}
+                </p>
+              ) : (
+                seriesData.artist && <p><span className="font-semibold">Artist:</span> {seriesData.artist}</p>
+              )}
+              <p><span className="font-semibold">Type:</span> {seriesData.type}</p>
+              <p>
+                <span className="font-semibold">Status:</span>{' '}
+                <span className={`${
+                  seriesData.status === 'ongoing' ? 'text-bracken-green' :
+                  seriesData.status === 'completed' ? 'text-silver-grass' :
+                  seriesData.status === 'dropped' ? 'text-silver-grass' :
+                  'text-white'
+                }`}>
+                  {seriesData.status?.charAt(0).toUpperCase() + seriesData.status?.slice(1)}
+                </span>
+              </p>
+              <p><span className="font-semibold">Chapters:</span> {seriesData.total_chapters}</p>
+              {seriesData.release_date && (
+                <p><span className="font-semibold">Released:</span> {new Date(seriesData.release_date).getFullYear()}</p>
+              )}
+              {seriesData.total_views > 0 && (
+                <p><span className="font-semibold">Views:</span> {seriesData.total_views.toLocaleString()}</p>
+              )}
+            </div>
+
+            {/* User Rating */}
+            <div className="mt-4 pt-3 border-t border-silver-grass/20">
+              <UserRating seriesId={seriesData.id} />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+            Chapters
+          </h2>
+          <ChapterList
+            chapters={chapters?.data || []}
+            seriesSlug={seriesData.slug}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default SeriesDetail;

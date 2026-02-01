@@ -1,0 +1,127 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Remove Content-Type header for FormData - axios will set it automatically with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      if (status === 401) {
+        localStorage.removeItem('admin_token');
+        // Don't redirect here, let the component handle it
+      }
+      
+      return Promise.reject({
+        message: data.message || 'An error occurred',
+        errors: data.errors || {},
+        status,
+      });
+    } else if (error.request) {
+      return Promise.reject({
+        message: 'Network error. Please check your connection.',
+        status: 0,
+      });
+    } else {
+      return Promise.reject({
+        message: error.message || 'An unexpected error occurred',
+        status: 0,
+      });
+    }
+  }
+);
+
+// Auth API
+export const authApi = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  logout: () => api.post('/auth/logout'),
+  me: () => api.get('/auth/me'),
+};
+
+// Admin API
+export const adminApi = {
+  // Series
+  getSeries: (params) => api.get('/series', { params }),
+  getSeriesById: (id) => api.get(`/series/${id}`),
+  createSeries: (data) => api.post('/admin/series', data),
+  updateSeries: (id, data) => api.put(`/admin/series/${id}`, data),
+  deleteSeries: (id) => api.delete(`/admin/series/${id}`),
+  
+  // Chapters
+  getChapters: (seriesId, params) => api.get(`/series/${seriesId}/chapters`, { params }),
+  getChapterById: (id) => api.get(`/chapters/${id}`),
+  createChapter: (data) => api.post('/admin/chapters', data),
+  updateChapter: (id, data) => api.put(`/admin/chapters/${id}`, data),
+  deleteChapter: (id) => api.delete(`/admin/chapters/${id}`),
+  
+  // Categories
+  getCategories: () => api.get('/categories'),
+  getCategoryById: (id) => api.get(`/categories/${id}`),
+  createCategory: (data) => api.post('/admin/categories', data),
+  updateCategory: (id, data) => api.put(`/admin/categories/${id}`, data),
+  deleteCategory: (id) => api.delete(`/admin/categories/${id}`),
+  
+  // Tags
+  getTags: () => api.get('/tags'),
+  getTagById: (id) => api.get(`/tags/${id}`),
+  createTag: (data) => api.post('/admin/tags', data),
+  updateTag: (id, data) => api.put(`/admin/tags/${id}`, data),
+  deleteTag: (id) => api.delete(`/admin/tags/${id}`),
+
+  // Authors
+  getAuthors: (params) => api.get('/authors', { params }),
+  getAuthorById: (id) => api.get(`/authors/${id}`),
+  createAuthor: (data) => api.post('/admin/authors', data),
+  updateAuthor: (id, data) => api.put(`/admin/authors/${id}`, data),
+  deleteAuthor: (id) => api.delete(`/admin/authors/${id}`),
+
+  // Manga Types
+  getMangaTypes: () => api.get('/types'),
+  getMangaTypeById: (id) => api.get(`/types/${id}`),
+  createMangaType: (data) => api.post('/admin/manga-types', data),
+  updateMangaType: (id, data) => api.put(`/admin/manga-types/${id}`, data),
+  deleteMangaType: (id) => api.delete(`/admin/manga-types/${id}`),
+
+  // Upload
+  uploadImage: (formData) => api.post('/admin/upload', formData),
+  bulkUploadImages: (formData) => api.post('/admin/upload/bulk', formData),
+
+  // Themes
+  getThemes: () => api.get('/admin/themes'),
+  getThemeById: (id) => api.get(`/admin/themes/${id}`),
+  createTheme: (data) => api.post('/admin/themes', data),
+  updateTheme: (id, data) => api.put(`/admin/themes/${id}`, data),
+  deleteTheme: (id) => api.delete(`/admin/themes/${id}`),
+  activateTheme: (id) => api.post(`/admin/themes/${id}/activate`),
+};
+
+export default api;
+

@@ -1,0 +1,3 @@
+# Place static assets here that need to be referenced by URL
+# Files here are served from the root path (e.g., /logo.png)
+# Use for: favicon.ico, robots.txt, etc.
