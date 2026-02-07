@@ -2,18 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 100% white base; dark theme text for contrast on white */
+/*
+  Unified Light Theme — Serene Winter Mountain Lake Palette
+  #C9D0D9 Quarzo        – light backgrounds, card surfaces
+  #9EB3BC Dockside Blue  – borders, subtle accents
+  #799099 Sidewalk Grey  – muted / secondary text
+  #516D74 Ruskin Blue    – primary color
+  #2E4B4E Delta Green    – dark accents, navbar, hero, buttons
+  #0D211F Black Feather  – headings, body text
+*/
+
 :root {
-  --theme-page-bg: #ffffff;
-  --theme-body-color: #1a2524;
-  --theme-primary: #627160;
-  --theme-primary-hover: #30463D;
+  --color-quarzo: #C9D0D9;
+  --color-dockside: #9EB3BC;
+  --color-sidewalk: #799099;
+  --color-ruskin: #516D74;
+  --color-delta: #2E4B4E;
+  --color-feather: #0D211F;
+
+  --theme-page-bg: #F4F6F8;
+  --theme-body-color: #0D211F;
+  --theme-primary: #516D74;
+  --theme-primary-hover: #2E4B4E;
   --theme-on-primary: #FFFFFF;
-  --theme-hero-bg: #627160;
-  --theme-card-bg: #ffffff;
-  --theme-card-border: rgba(98, 113, 96, 0.25);
-  --theme-glass-bg: #ffffff;
-  --theme-text-muted: #3d4a48;
+  --theme-card-bg: #FFFFFF;
+  --theme-card-border: #C9D0D9;
+  --theme-text-muted: #799099;
   --theme-font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
@@ -23,150 +37,46 @@
     color: var(--theme-body-color);
     font-family: var(--theme-font-family);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
+
   * {
     @apply box-border;
   }
 }
 
-/* Hero: theme color (primary) on white base; text on hero stays light for contrast */
-.hero-section-bg {
-  background: var(--theme-hero-bg) !important;
-}
-/* When hero has a background image, don't override it; keep same text/button styles */
-.hero-section-bg-image .text-white,
-.hero-section-bg .text-white {
-  color: #ffffff !important;
-}
-.hero-section-bg-image .text-silver-grass,
-.hero-section-bg .text-silver-grass {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-.hero-section-bg-image .bg-bracken-green,
-.hero-section-bg .bg-bracken-green {
-  background-color: var(--theme-primary-hover) !important;
-  color: #ffffff !important;
-}
-.hero-section-bg-image .hover\:bg-bracken-fern:hover,
-.hero-section-bg .hover\:bg-bracken-fern:hover {
-  background-color: rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Series card star rating: filled = theme fill + white border, empty = solid white fill + white border */
-.series-card-stars .star-filled-overlay path,
-.series-card-stars .star-filled-overlay {
-  fill: var(--theme-primary) !important;
-  stroke: #ffffff !important;
-  stroke-width: 0.5px !important;
-  color: var(--theme-primary);
-}
-.series-card-stars .star-empty-overlay path,
-.series-card-stars .star-empty-overlay {
-  fill: #ffffff !important;
-  stroke: #ffffff !important;
-  stroke-width: 0.5px !important;
-  color: #ffffff;
-}
-
 @layer utilities {
-  .glass-effect {
-    background: var(--theme-glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-color: var(--theme-card-border);
-  }
-  
-  .glass-card {
-    background: var(--theme-card-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-color: var(--theme-card-border);
-    position: relative;
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
-  .glass-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    transition: left 0.5s ease;
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  .glass-card:hover::before {
-    left: 100%;
-  }
-  
-  .glass-card > * {
-    position: relative;
-    z-index: 2;
-  }
-}
-
-@layer utilities {
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-}
 
-/* Theme accents on white base: force dark text on white for every theme */
-[data-theme] .text-white {
-  color: var(--theme-body-color, #1a2524) !important;
-}
-[data-theme] .text-silver-grass {
-  color: var(--theme-text-muted, #3d4a48) !important;
-}
-[data-theme] .text-silver-grass\/50,
-[data-theme] .text-silver-grass\/70 {
-  color: var(--theme-text-muted, #3d4a48) !important;
-  opacity: 0.85;
-}
-[data-theme] .placeholder\:text-white\/80::placeholder {
-  color: var(--theme-text-muted, #3d4a48) !important;
-  opacity: 0.9;
-}
-[data-theme] .bg-bracken-green {
-  background-color: var(--theme-primary) !important;
-  color: var(--theme-on-primary, #FFFFFF) !important;
-}
-[data-theme] .hover\:bg-bracken-fern:hover,
-[data-theme] .bg-bracken-fern {
-  background-color: var(--theme-primary-hover) !important;
-}
-[data-theme] .border-silver-grass\/20,
-[data-theme] .border-silver-grass\/30,
-[data-theme] .border-silver-grass\/40,
-[data-theme] .border-silver-grass\/50 {
-  border-color: var(--theme-card-border) !important;
-}
-[data-theme] .text-bracken-green {
-  color: var(--theme-primary) !important;
-}
-[data-theme] input::placeholder {
-  color: var(--theme-text-muted) !important;
-  opacity: 0.8;
-}
-[data-theme] .focus\:ring-bracken-green:focus {
-  --tw-ring-color: var(--theme-primary);
+  /* Manga card designs – Serene Winter; primary 2e4b4e (delta-green) */
+  .cosmic-glow {
+    box-shadow: 0 4px 20px rgba(46, 75, 78, 0.1), 0 0 0 1px rgba(46, 75, 78, 0.08);
+  }
+  .cosmic-glow-strong {
+    box-shadow: 0 8px 30px rgba(46, 75, 78, 0.14), 0 0 0 1px rgba(46, 75, 78, 0.1);
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(158, 179, 188, 0.5);
+  }
 }

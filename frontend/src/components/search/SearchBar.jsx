@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { useDebounce } from '../../hooks/useDebounce';
 import { FaSearch } from 'react-icons/fa';
 
 function SearchBar({ onSearch, placeholder = 'Search series...' }) {
   const [query, setQuery] = useState('');
-  const debouncedQuery = useDebounce(query, 300);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,24 +12,23 @@ function SearchBar({ onSearch, placeholder = 'Search series...' }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto">
+    <form onSubmit={handleSubmit} className="flex items-center gap-1.5 w-full sm:w-auto">
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 sm:flex-none sm:w-48 md:w-64 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base border border-silver-grass/40 rounded-lg glass-effect text-white placeholder:text-white/80 focus:outline-none focus:ring-2 focus:ring-bracken-green transition-all"
+        className="flex-1 sm:flex-none sm:w-48 md:w-64 px-3 py-1.5 sm:py-2 text-sm border border-white/20 rounded-lg bg-white/10 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-ruskin-blue focus:bg-white/15 transition-all"
       />
       <button
         type="submit"
-        className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-bracken-green text-white border border-silver-grass/40 rounded-lg hover:bg-bracken-fern transition-all duration-200 whitespace-nowrap"
+        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 text-sm bg-ruskin-blue text-white rounded-lg hover:bg-ruskin-blue/80 transition-all duration-200 whitespace-nowrap"
       >
-        <FaSearch className="w-4 h-4" />
-        Search
+        <FaSearch className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Search</span>
       </button>
     </form>
   );
 }
 
 export default SearchBar;
-

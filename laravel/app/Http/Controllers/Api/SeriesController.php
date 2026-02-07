@@ -96,12 +96,14 @@ class SeriesController extends Controller
      */
     public function show($series): JsonResponse
     {
-        // Try to find by slug first, then by ID
+        // Find by slug or by ID (only use id when parameter is numeric)
         $seriesModel = Series::with(['categories', 'tags'])
             ->where('is_active', true)
             ->where(function ($query) use ($series) {
-                $query->where('slug', $series)
-                      ->orWhere('id', $series);
+                $query->where('slug', $series);
+                if (is_numeric($series)) {
+                    $query->orWhere('id', (int) $series);
+                }
             })
             ->firstOrFail();
 
@@ -130,10 +132,12 @@ class SeriesController extends Controller
     {
         $perPage = min($request->get('per_page', 50), 100);
         
-        // Try to find by slug first, then by ID
+        // Find by slug or by ID (only use id when parameter is numeric)
         $seriesModel = Series::where(function ($query) use ($series) {
-            $query->where('slug', $series)
-                  ->orWhere('id', $series);
+            $query->where('slug', $series);
+            if (is_numeric($series)) {
+                $query->orWhere('id', (int) $series);
+            }
         })->firstOrFail();
         
         $chapters = $seriesModel->chapters()

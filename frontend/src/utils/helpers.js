@@ -43,13 +43,18 @@ export const truncate = (text, maxLength) => {
 };
 
 /**
- * Format chapter number
+ * Format chapter number as integer for display (1, 2, 3 not 1.00, 2.00).
+ * Use integer when whole number; one decimal only for values like 1.5.
  */
 export const formatChapterNumber = (num) => {
-  if (!num) return '0';
-  const formatted = parseFloat(num).toFixed(2);
-  return formatted.replace(/\.?0+$/, '');
+  if (num === undefined || num === null || num === '') return '0';
+  const n = Number(num);
+  if (Number.isNaN(n)) return String(num);
+  return n % 1 === 0 ? String(Math.round(n)) : String(n);
 };
+
+/** Display label: "Chapter - 1", "Chapter - 2", etc. */
+export const formatChapterLabel = (num) => `Chapter - ${formatChapterNumber(num)}`;
 
 /**
  * Generate slug from text

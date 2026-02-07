@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useRecentlyViewed } from '../../hooks/useRecentlyViewed';
-import { useBranding } from '../../context/BrandingContext';
 import { seriesApi } from '../../services/api';
-import MangaCardByDesign from '../series/cards';
+import { MangaCard } from '../series/cards/index.jsx';
 
 function RecentlyViewedCarousel() {
   const { items: recentItems } = useRecentlyViewed();
-  const { cardLayout } = useBranding();
-  const designId = cardLayout?.recently_viewed || 'card_04';
 
   const { data: latestData } = useQuery({
     queryKey: ['series', 'latest', 'carousel'],
@@ -22,12 +19,12 @@ function RecentlyViewedCarousel() {
 
   if (displayItems.length === 0) {
     return (
-      <section className="glass-card rounded-xl p-4 border border-silver-grass/30">
-        <h3 className="text-lg font-semibold text-white mb-3">{title}</h3>
-        <p className="text-sm text-silver-grass">Nothing here yet. Browse to discover series.</p>
+      <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
+        <h3 className="text-lg font-semibold text-black-feather mb-3">{title}</h3>
+        <p className="text-sm text-sidewalk-grey">Nothing here yet. Browse to discover series.</p>
         <Link
           to="/browse"
-          className="mt-2 inline-block text-sm text-bracken-green hover:text-bracken-fern font-medium"
+          className="mt-2 inline-block text-sm text-ruskin-blue hover:text-delta-green font-medium transition-colors"
         >
           View All
         </Link>
@@ -36,24 +33,20 @@ function RecentlyViewedCarousel() {
   }
 
   return (
-    <section className="glass-card rounded-xl p-4 border border-silver-grass/30">
+    <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-lg font-semibold text-black-feather">{title}</h3>
         <Link
           to={viewAllLink}
-          className="text-sm text-white hover:text-silver-grass font-medium transition-colors"
+          className="text-sm text-ruskin-blue hover:text-delta-green font-medium transition-colors"
         >
           View All
         </Link>
       </div>
       <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin]">
-        {displayItems.map((item, index) => (
+        {displayItems.map((item) => (
           <div key={item.slug ?? item.id} className="flex-shrink-0 w-[140px] sm:w-[160px] snap-start">
-            <MangaCardByDesign
-              series={item}
-              designId={designId}
-              rank={index + 1}
-            />
+            <MangaCard series={item} section="recently_viewed" />
           </div>
         ))}
       </div>

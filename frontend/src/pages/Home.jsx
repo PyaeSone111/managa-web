@@ -4,19 +4,18 @@ import { Helmet } from 'react-helmet-async';
 import { seriesApi, rankingsApi } from '../services/api';
 import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
-import InfoStrip from '../components/home/InfoStrip';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
 
 function SectionHeader({ title, linkTo, linkText = 'View All' }) {
   return (
     <div className="flex items-center justify-between mb-4 sm:mb-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-white">
+      <h2 className="text-xl sm:text-2xl font-bold text-black-feather">
         {title}
       </h2>
       {linkTo && (
         <Link
           to={linkTo}
-          className="text-sm text-silver-grass hover:text-white font-medium transition-colors"
+          className="text-sm text-ruskin-blue hover:text-delta-green font-medium transition-colors"
         >
           {linkText}
         </Link>
@@ -59,69 +58,64 @@ function Home() {
       {/* Full-width hero */}
       <div className="-mx-4 sm:-mx-6 lg:-mx-8">
         <HeroBanner />
-
       </div>
 
-      {/* Two-column: main content + sidebar (main is already container in App) */}
+      {/* Two-column layout */}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 mt-8">
         {/* Main content */}
         <div className="flex-1 min-w-0 space-y-10 md:space-y-12">
-          {/* Latest Release: 6 cards per row (top image, below text) */}
+          {/* Latest Release */}
           <section>
             <SectionHeader title="Latest Release" linkTo="/browse?sort=latest" linkText="View All" />
             <SeriesGrid
               series={latest?.data || []}
               loading={latestLoading}
-              layout="vertical"
-              sectionKey="home_latest"
+              section="home_latest"
             />
           </section>
 
-          {/* Popular: 4 cards per row (image left, text right) */}
+          {/* Popular */}
           <section>
             <SectionHeader title="Popular" linkTo="/rankings" linkText="See Rankings" />
             <SeriesGrid
               series={topRated?.data || []}
               loading={topLoading}
-              layout="horizontal"
-              sectionKey="home_popular"
+              section="home_popular"
             />
           </section>
 
-          {/* Weekly Highlights: 6 cards per row (top image, below text) */}
+          {/* Weekly Highlights */}
           <section>
             <SectionHeader title="Weekly Highlights" linkTo="/rankings" linkText="See Rankings" />
             <SeriesGrid
               series={trending?.data || []}
               loading={trendingLoading}
-              layout="vertical"
-              sectionKey="home_weekly_highlights"
+              section="home_weekly_highlights"
             />
           </section>
 
-          {/* Recently Added: 4 cards per row (image left, text right) */}
+          {/* Recently Added */}
           <section>
             <SectionHeader title="Recently Added" linkTo="/browse?sort=newest" linkText="View All" />
             <SeriesGrid
               series={newSeries?.data || []}
               loading={newLoading}
-              layout="horizontal"
-              sectionKey="home_recently_added"
+              section="home_recently_added"
             />
           </section>
         </div>
 
-        {/* Sidebar: sticky on desktop, below content on mobile */}
+        {/* Sidebar */}
         <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-24 lg:self-start space-y-6">
           <RecentlyViewedCarousel />
-          <section className="glass-card rounded-xl p-4 border border-silver-grass/30">
-            <h3 className="text-lg font-semibold text-white mb-2">Browse</h3>
-            <p className="text-sm text-silver-grass mb-3">
+          <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
+            <h3 className="text-lg font-semibold text-black-feather mb-2">Browse</h3>
+            <p className="text-sm text-sidewalk-grey mb-3 leading-relaxed">
               Explore by category, status, or search. Find your next favorite series.
             </p>
             <Link
               to="/browse"
-              className="inline-block px-4 py-2 text-sm font-medium bg-bracken-green text-silver-grass rounded-lg hover:bg-bracken-fern transition-all duration-200"
+              className="inline-block px-4 py-2 text-sm font-medium bg-delta-green text-white rounded-lg hover:bg-ruskin-blue transition-all duration-200"
             >
               Browse All
             </Link>

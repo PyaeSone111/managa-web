@@ -27,16 +27,16 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bonaire px-4">
-      <div className="max-w-md w-full bg-bonaire rounded-lg shadow-xl p-8 border border-stone-lion/30">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-torrefacto-roast mb-2">Admin Dashboard</h1>
           <p className="text-stone-lion">Sign in to manage your content</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-indiana-clay/20 border border-indiana-clay/30 rounded-lg">
-            <p className="text-sm text-indiana-clay">{error}</p>
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
@@ -51,7 +51,7 @@ function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-stone-lion/40 rounded-lg bg-bonaire text-torrefacto-roast focus:ring-2 focus:ring-indiana-clay focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indiana-clay focus:border-indiana-clay outline-none transition"
               placeholder="admin@example.com"
             />
           </div>
@@ -66,7 +66,7 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-stone-lion/40 rounded-lg bg-bonaire text-torrefacto-roast focus:ring-2 focus:ring-indiana-clay focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indiana-clay focus:border-indiana-clay outline-none transition"
               placeholder="Enter your password"
             />
           </div>
@@ -80,7 +80,7 @@ function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-stone-lion">
+        <div className="mt-6 text-center text-sm text-gray-500">
           <p>Manga Web Admin Panel</p>
         </div>
       </div>

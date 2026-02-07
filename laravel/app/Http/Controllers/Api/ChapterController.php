@@ -34,10 +34,12 @@ class ChapterController extends Controller
      */
     public function showBySeriesAndNumber($series, $chapterNumber): JsonResponse
     {
-        // Find series by slug or ID
+        // Find series by slug or ID (only use id when parameter is numeric)
         $seriesModel = \App\Models\Series::where(function ($query) use ($series) {
-            $query->where('slug', $series)
-                  ->orWhere('id', $series);
+            $query->where('slug', $series);
+            if (is_numeric($series)) {
+                $query->orWhere('id', (int) $series);
+            }
         })->firstOrFail();
 
         // Convert chapter number to float for comparison (handles decimals like 1.5)

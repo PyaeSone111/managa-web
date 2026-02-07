@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { favoriteApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -32,28 +32,28 @@ function Favorites() {
         <title>My Favorites - Manga Web</title>
       </Helmet>
 
-      <div className="space-y-6 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
+      <div className="space-y-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black-feather">
           My Favorites
         </h1>
 
         {!isLoading && series.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-white mb-4">
+            <p className="text-sidewalk-grey mb-4">
               You haven't favorited any manga yet.
             </p>
-            <a
-              href="/browse"
-              className="text-silver-grass hover:text-white hover:underline transition-colors"
+            <Link
+              to="/browse"
+              className="text-ruskin-blue hover:text-delta-green hover:underline transition-colors font-medium"
             >
               Browse manga to find something you like
-            </a>
+            </Link>
           </div>
         ) : (
           <SeriesGrid
+            section="favorites"
             series={series}
             loading={isLoading}
-            layout="horizontal"
           />
         )}
       </div>

@@ -20,11 +20,11 @@ function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-torrefacto-roast text-bonaire min-h-screen fixed left-0 top-0 z-40 hidden lg:block border-r border-stone-lion/30">
+    <aside className="w-64 bg-white min-h-screen fixed left-0 top-0 z-40 hidden lg:block border-r border-gray-200 shadow-sm">
       <div className="p-6 h-full flex flex-col">
         <div>
-          <h1 className="text-2xl font-bold mb-8 text-bonaire">Manga Admin</h1>
-          <nav className="space-y-2">
+          <h1 className="text-2xl font-bold mb-8 text-gray-900">Manga Admin</h1>
+          <nav className="space-y-1">
             {menuItems.map((item) => (
               <Link
                 key={item.path}
@@ -32,7 +32,7 @@ function Sidebar() {
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive(item.path)
                     ? 'bg-indiana-clay text-white'
-                    : 'text-stone-lion hover:bg-stone-lion/30'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 <span className="text-xl">{item.icon}</span>
@@ -44,7 +44,7 @@ function Sidebar() {
         <div className="mt-auto">
           <button
             onClick={logout}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-stone-lion hover:bg-stone-lion/30 transition-colors"
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
           >
             <span>🚪</span>
             <span>Logout</span>

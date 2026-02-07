@@ -14,10 +14,43 @@ use Illuminate\Support\Facades\DB;
 class AdminChapterController extends Controller
 {
     /**
+     * Normalize image URL so it passes 'url' validation (e.g. encode spaces in path).
+     */
+    private function normalizePageImageUrls(array $pages): array
+    {
+        return array_map(function ($page) {
+            if (!empty($page['image_url']) && is_string($page['image_url'])) {
+                $page['image_url'] = $this->encodeUrlPath($page['image_url']);
+            }
+            return $page;
+        }, $pages);
+    }
+
+    private function encodeUrlPath(string $url): string
+    {
+        $parsed = parse_url($url);
+        if (!isset($parsed['path'])) {
+            return $url;
+        }
+        $segments = array_map('rawurlencode', explode('/', trim($parsed['path'], '/')));
+        $path = '/' . implode('/', $segments);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? '';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+        $fragment = isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
+        return $scheme . '://' . $host . $port . $path . $query . $fragment;
+    }
+
+    /**
      * Create a new chapter
      */
     public function store(Request $request): JsonResponse
     {
+        if ($request->has('pages') && is_array($request->pages)) {
+            $request->merge(['pages' => $this->normalizePageImageUrls($request->pages)]);
+        }
+
         $validated = $request->validate([
             'series_id' => 'required|exists:series,id',
             'chapter_number' => 'required|numeric|min:0',
@@ -108,6 +141,10 @@ class AdminChapterController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $chapter = Chapter::findOrFail($id);
+
+        if ($request->has('pages') && is_array($request->pages)) {
+            $request->merge(['pages' => $this->normalizePageImageUrls($request->pages)]);
+        }
 
         $validated = $request->validate([
             'chapter_number' => 'sometimes|numeric|min:0',

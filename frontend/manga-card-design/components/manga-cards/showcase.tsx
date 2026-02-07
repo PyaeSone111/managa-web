@@ -29,10 +29,10 @@ import {
 function SectionTitle({ number, title, subtitle }: { number: string; title: string; subtitle: string }) {
   return (
     <div className="flex items-end gap-3 mb-6">
-      <span className="text-5xl font-black text-cyan-500/20 leading-none">{number}</span>
+      <span className="text-5xl font-black text-ruskin/20 leading-none">{number}</span>
       <div>
-        <h2 className="text-xl font-bold text-slate-100 tracking-tight">{title}</h2>
-        <p className="text-sm text-slate-500">{subtitle}</p>
+        <h2 className="text-xl font-bold text-black-feather tracking-tight">{title}</h2>
+        <p className="text-sm text-sidewalk">{subtitle}</p>
       </div>
     </div>
   )
@@ -40,24 +40,24 @@ function SectionTitle({ number, title, subtitle }: { number: string; title: stri
 
 export function MangaCardShowcase() {
   return (
-    <div className="min-h-screen bg-[#060a14]">
+    <div className="min-h-screen bg-quarzo/30">
       {/* Header */}
-      <header className="border-b border-slate-800/50 bg-[#060a14]/90 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-dockside/60 bg-white/90 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
-              <span className="text-sm font-black text-slate-950">M</span>
+            <div className="w-8 h-8 rounded-lg bg-ruskin flex items-center justify-center">
+              <span className="text-sm font-black text-white">M</span>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-100 tracking-tight">Manga Card Designs</h1>
-              <p className="text-[11px] text-slate-500">20 UI variations -- Portrait & Landscape</p>
+              <h1 className="text-lg font-bold text-black-feather tracking-tight">Manga Card Designs</h1>
+              <p className="text-[11px] text-sidewalk">20 UI variations — Serene Winter theme</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-ruskin/10 text-ruskin border border-ruskin/20">
               10 Portrait
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-delta/10 text-delta border border-delta/20">
               10 Landscape
             </span>
           </div>
@@ -68,7 +68,7 @@ export function MangaCardShowcase() {
         {/* ═══ PORTRAIT SECTION ═══════════════════════════════════════════ */}
         <section>
           <div className="mb-8">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-ruskin/10 text-ruskin border border-ruskin/20">
               Portrait Cards
             </span>
           </div>
@@ -157,7 +157,7 @@ export function MangaCardShowcase() {
         {/* ═══ LANDSCAPE SECTION ═════════════════════════════════════════ */}
         <section>
           <div className="mb-8">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-delta/10 text-delta border border-delta/20">
               Landscape Cards
             </span>
           </div>
@@ -245,8 +245,8 @@ export function MangaCardShowcase() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-6">
-        <p className="text-center text-xs text-slate-600">20 Manga Card UI Designs -- Cosmic Night Theme</p>
+      <footer className="border-t border-dockside/60 py-6 bg-white/50">
+        <p className="text-center text-xs text-sidewalk">20 Manga Card UI Designs — Serene Winter Mountain Lake</p>
       </footer>
     </div>
   )

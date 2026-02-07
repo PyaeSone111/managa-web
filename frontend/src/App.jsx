@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
@@ -33,35 +33,35 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <AuthProvider>
-            <Router>
-              <ErrorBoundary>
-                <ThemeLoader>
+          <Router>
+            <ErrorBoundary>
+              <ThemeLoader>
                 <BrandingProvider>
-                <div className="min-h-screen transition-colors flex flex-col" style={{ background: 'var(--theme-body-bg)' }}>
-                  <Navbar />
-                  <main className="container mx-auto max-w-7xl flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/browse" element={<Browse />} />
-                      <Route path="/rankings" element={<Rankings />} />
-                      <Route path="/favorites" element={<Favorites />} />
-                      <Route path="/series/:slug" element={<SeriesDetail />} />
-                      <Route path="/read/:seriesSlug/:chapterNumber" element={<Reader />} />
-                      <Route path="/search" element={<Browse />} />
-                      <Route path="/category/:slug" element={<Browse />} />
-                      <Route path="/tag/:slug" element={<Browse />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </div>
+                  <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)]">
+                    <Navbar />
+                    <main className="container mx-auto max-w-7xl flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/browse" element={<Browse />} />
+                        <Route path="/rankings" element={<Rankings />} />
+                        <Route path="/favorites" element={<Favorites />} />
+                        <Route path="/series/:slug" element={<SeriesDetail />} />
+                        <Route path="/read/:seriesSlug/:chapterNumber" element={<Reader />} />
+                        <Route path="/search" element={<Browse />} />
+                        <Route path="/category/:slug" element={<Browse />} />
+                        <Route path="/tag/:slug" element={<Browse />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                    <Footer />
+                  </div>
                 </BrandingProvider>
-                </ThemeLoader>
-              </ErrorBoundary>
-            </Router>
-          </AuthProvider>
+              </ThemeLoader>
+            </ErrorBoundary>
+          </Router>
+        </AuthProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );

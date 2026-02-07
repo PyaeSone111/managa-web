@@ -18,8 +18,8 @@ class AdminBrandingController extends Controller
     public function show(): JsonResponse
     {
         $branding = Branding::current();
-        $cardLayout = $branding->card_layout ?? Branding::defaultCardLayout();
-        $gridColumns = $branding->grid_columns ?? Branding::defaultGridColumns();
+        $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
+        $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
         return response()->json([
             'data' => [
                 'logo_url' => $branding->logo_url,
@@ -101,8 +101,8 @@ class AdminBrandingController extends Controller
 
         $branding->save();
 
-        $cardLayout = $branding->card_layout ?? Branding::defaultCardLayout();
-        $gridColumns = $branding->grid_columns ?? Branding::defaultGridColumns();
+        $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
+        $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
         return response()->json([
             'data' => [
                 'logo_url' => $branding->logo_url,

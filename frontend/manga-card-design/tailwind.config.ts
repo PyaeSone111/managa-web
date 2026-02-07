@@ -11,6 +11,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        /* Serene Winter Mountain Lake palette */
+        quarzo: '#C9D0D9',
+        dockside: '#9EB3BC',
+        sidewalk: '#799099',
+        ruskin: '#516D74',
+        delta: '#2E4B4E',
+        'black-feather': '#0D211F',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

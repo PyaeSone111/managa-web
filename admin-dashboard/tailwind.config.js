@@ -8,24 +8,29 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        // Subdued Gradient Backgrounds Palette
-        'silver-grass': '#C6CEC5',      // Very light grayish-green
-        'bamboo-shoot': '#A4B4A4',      // Medium-light grayish-green
-        'paradise-found': '#83958B',    // Medium grayish-green
-        'bracken-green': '#627160',     // Darker, muted green
-        'bracken-fern': '#30463D',      // Deep, rich green
-        'deep-slate-green': '#0D2625',  // Very dark green, almost black
+        // Admin white theme
+        'bonaire': '#ffffff',
+        'torrefacto-roast': '#111827',
+        'stone-lion': '#6b7280',
+        'indiana-clay': '#2563eb',
+        // Legacy palette (kept for any refs)
+        'silver-grass': '#6b7280',
+        'bamboo-shoot': '#9ca3af',
+        'paradise-found': '#6b7280',
+        'bracken-green': '#374151',
+        'bracken-fern': '#1f2937',
+        'deep-slate-green': '#111827',
       },
     },
   },

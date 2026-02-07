@@ -7,12 +7,12 @@ import "./globals.css"
 const _inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Manga Card Designs | Cosmic Night",
-  description: "20 unique manga card UI designs in portrait and landscape layouts with a Cosmic Night dark theme",
+  title: "Manga Card Designs | Serene Winter",
+  description: "20 unique manga card UI designs in portrait and landscape layouts with a Serene Winter Mountain Lake light theme",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#060a14",
+  themeColor: "#516D74",
 }
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased bg-[#060a14] text-slate-100">{children}</body>
+      <body className="font-sans antialiased bg-quarzo/30 text-black-feather">{children}</body>
     </html>
   )
 }

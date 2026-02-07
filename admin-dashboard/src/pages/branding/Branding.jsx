@@ -33,10 +33,12 @@ const SECTION_LABELS = {
   home_popular: 'Home – Popular',
   home_weekly_highlights: 'Home – Weekly Highlights',
   home_recently_added: 'Home – Recently Added',
-  browse_vertical: 'Browse – Vertical grid',
-  browse_horizontal: 'Browse – Horizontal grid',
-  rankings: 'Rankings (Top / Most Read / Trending)',
+  browse: 'Browse (single view)',
+  rankings_top: 'Rankings – Top Manga',
+  rankings_most_read: 'Rankings – Most Read',
+  rankings_trending: 'Rankings – Trending',
   recently_viewed: 'Recently Viewed (sidebar carousel)',
+  favorites: 'Favorites',
 };
 
 const DEFAULT_CARD_LAYOUT = {
@@ -44,16 +46,40 @@ const DEFAULT_CARD_LAYOUT = {
   home_popular: 'card_11',
   home_weekly_highlights: 'card_03',
   home_recently_added: 'card_13',
-  browse_vertical: 'card_01',
-  browse_horizontal: 'card_11',
-  rankings: 'card_15',
+  browse: 'card_11',
+  rankings_top: 'card_15',
+  rankings_most_read: 'card_15',
+  rankings_trending: 'card_20',
   recently_viewed: 'card_04',
+  favorites: 'card_11',
 };
 
-const DEFAULT_GRID_COLUMNS = {
-  vertical: { default: 2, sm: 3, md: 4, lg: 5, xl: 6 },
-  horizontal: { default: 1, sm: 2, md: 3, lg: 4 },
+const GRID_SECTION_KEYS = [
+  'home_latest', 'home_popular', 'home_weekly_highlights', 'home_recently_added',
+  'browse', 'rankings_top', 'rankings_most_read', 'rankings_trending', 'favorites',
+];
+
+const GRID_SECTION_LABELS = {
+  home_latest: 'Home – Latest Release',
+  home_popular: 'Home – Popular',
+  home_weekly_highlights: 'Home – Weekly Highlights',
+  home_recently_added: 'Home – Recently Added',
+  browse: 'Browse',
+  rankings_top: 'Rankings – Top Manga',
+  rankings_most_read: 'Rankings – Most Read',
+  rankings_trending: 'Rankings – Trending',
+  favorites: 'Favorites',
 };
+
+const defaultColsVertical = { default: 2, sm: 3, md: 4, lg: 5, xl: 6 };
+const defaultColsHorizontal = { default: 1, sm: 2, md: 3, lg: 4, xl: 5 };
+
+const DEFAULT_GRID_COLUMNS = Object.fromEntries(
+  GRID_SECTION_KEYS.map((key) => [
+    key,
+    ['home_latest', 'home_weekly_highlights'].includes(key) ? defaultColsVertical : defaultColsHorizontal,
+  ])
+);
 
 const BREAKPOINTS = [
   { key: 'default', label: 'Default (mobile)' },
@@ -81,7 +107,7 @@ function Branding() {
   const [heroBgBlobUrl, setHeroBgBlobUrl] = useState(null);
   const [heroImgBlobUrl, setHeroImgBlobUrl] = useState(null);
   const [cardLayout, setCardLayout] = useState({ ...DEFAULT_CARD_LAYOUT });
-  const [gridColumns, setGridColumns] = useState(JSON.parse(JSON.stringify(DEFAULT_GRID_COLUMNS)));
+  const [gridColumns, setGridColumns] = useState(() => JSON.parse(JSON.stringify(DEFAULT_GRID_COLUMNS)));
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'branding'],
@@ -97,10 +123,11 @@ function Branding() {
         setCardLayout({ ...DEFAULT_CARD_LAYOUT, ...data.data.card_layout });
       }
       if (data.data.grid_columns && typeof data.data.grid_columns === 'object') {
-        setGridColumns({
-          vertical: { ...DEFAULT_GRID_COLUMNS.vertical, ...data.data.grid_columns.vertical },
-          horizontal: { ...DEFAULT_GRID_COLUMNS.horizontal, ...data.data.grid_columns.horizontal },
+        const merged = {};
+        GRID_SECTION_KEYS.forEach((key) => {
+          merged[key] = { ...(DEFAULT_GRID_COLUMNS[key] || defaultColsHorizontal), ...(data.data.grid_columns[key] || {}) };
         });
+        setGridColumns(merged);
       }
     }
   }, [data]);
@@ -162,11 +189,11 @@ function Branding() {
     setCardLayout((prev) => ({ ...prev, [sectionKey]: value }));
   };
 
-  const setGridColumn = (layout, breakpoint, value) => {
+  const setGridColumn = (sectionKey, breakpoint, value) => {
     const n = Math.min(6, Math.max(1, parseInt(value, 10) || 1));
     setGridColumns((prev) => ({
       ...prev,
-      [layout]: { ...prev[layout], [breakpoint]: n },
+      [sectionKey]: { ...(prev[sectionKey] || {}), [breakpoint]: n },
     }));
   };
 
@@ -331,49 +358,35 @@ function Branding() {
             </div>
           </div>
 
-          {/* Grid columns: cards per row per breakpoint */}
+          {/* Grid columns: per-section cards per row */}
           <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">Grid columns (cards per row)</h2>
             <p className="text-sm text-stone-lion mb-4">
-              Set how many cards show in one row for each screen size. Vertical = portrait-style sections (e.g. Latest Release). Horizontal = landscape-style sections (e.g. Popular, Rankings).
+              Set how many cards per row for each view. Browse has one view; Rankings has separate Top, Most Read, and Trending.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
-              <div>
-                <h3 className="text-sm font-medium text-torrefacto-roast mb-3">Vertical layout (portrait cards)</h3>
-                <div className="space-y-2">
-                  {BREAKPOINTS.map(({ key, label }) => (
-                    <div key={key} className="flex items-center justify-between gap-3">
-                      <label className="text-sm text-stone-lion w-32">{label}</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={6}
-                        value={gridColumns.vertical?.[key] ?? DEFAULT_GRID_COLUMNS.vertical[key]}
-                        onChange={(e) => setGridColumn('vertical', key, e.target.value)}
-                        className="w-16 px-2 py-1.5 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast text-sm focus:ring-2 focus:ring-indiana-clay"
-                      />
-                    </div>
-                  ))}
+            <div className="space-y-4 max-w-4xl">
+              {GRID_SECTION_KEYS.map((sectionKey) => (
+                <div key={sectionKey} className="flex flex-wrap items-center gap-4 py-3 border-b border-stone-lion/20 last:border-0">
+                  <label className="text-sm font-medium text-torrefacto-roast w-48 shrink-0">
+                    {GRID_SECTION_LABELS[sectionKey] || sectionKey}
+                  </label>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {BREAKPOINTS.map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <span className="text-xs text-stone-lion w-20">{label}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={6}
+                          value={gridColumns[sectionKey]?.[key] ?? DEFAULT_GRID_COLUMNS[sectionKey]?.[key] ?? 2}
+                          onChange={(e) => setGridColumn(sectionKey, key, e.target.value)}
+                          className="w-14 px-2 py-1.5 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast text-sm focus:ring-2 focus:ring-indiana-clay"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-torrefacto-roast mb-3">Horizontal layout (landscape cards)</h3>
-                <div className="space-y-2">
-                  {BREAKPOINTS.map(({ key, label }) => (
-                    <div key={key} className="flex items-center justify-between gap-3">
-                      <label className="text-sm text-stone-lion w-32">{label}</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={6}
-                        value={gridColumns.horizontal?.[key] ?? DEFAULT_GRID_COLUMNS.horizontal[key]}
-                        onChange={(e) => setGridColumn('horizontal', key, e.target.value)}
-                        className="w-16 px-2 py-1.5 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast text-sm focus:ring-2 focus:ring-indiana-clay"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 

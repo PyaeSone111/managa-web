@@ -7,25 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-        },
-        // Subdued Gradient Backgrounds Palette
-        'silver-grass': '#C6CEC5',      // Very light grayish-green
-        'bamboo-shoot': '#A4B4A4',      // Medium-light grayish-green
-        'paradise-found': '#83958B',    // Medium grayish-green
-        'bracken-green': '#627160',     // Darker, muted green
-        'bracken-fern': '#30463D',      // Deep, rich green
-        'deep-slate-green': '#0D2625',  // Very dark green, almost black
+        /* Serene Winter Mountain Lake Palette */
+        quarzo: '#C9D0D9',
+        'dockside-blue': '#9EB3BC',
+        'sidewalk-grey': '#799099',
+        'ruskin-blue': '#516D74',
+        'delta-green': '#2E4B4E',
+        'black-feather': '#0D211F',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -34,4 +22,3 @@ export default {
   },
   plugins: [],
 }
-

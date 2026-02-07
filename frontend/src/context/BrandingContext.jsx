@@ -15,15 +15,12 @@ const DEFAULT_CARD_LAYOUT = {
   home_popular: 'card_11',
   home_weekly_highlights: 'card_03',
   home_recently_added: 'card_13',
-  browse_vertical: 'card_01',
-  browse_horizontal: 'card_11',
-  rankings: 'card_15',
+  browse: 'card_11',
+  rankings_top: 'card_15',
+  rankings_most_read: 'card_15',
+  rankings_trending: 'card_20',
   recently_viewed: 'card_04',
-};
-
-const DEFAULT_GRID_COLUMNS = {
-  vertical: { default: 2, sm: 3, md: 4, lg: 5, xl: 6 },
-  horizontal: { default: 1, sm: 2, md: 3, lg: 4 },
+  favorites: 'card_11',
 };
 
 const BrandingContext = createContext({
@@ -31,7 +28,7 @@ const BrandingContext = createContext({
   heroBackgroundUrl: null,
   heroImageUrl: null,
   cardLayout: DEFAULT_CARD_LAYOUT,
-  gridColumns: DEFAULT_GRID_COLUMNS,
+  gridColumns: null,
   isLoading: false,
 });
 
@@ -48,8 +45,8 @@ export function BrandingProvider({ children }) {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
-    cardLayout: branding.card_layout ?? DEFAULT_CARD_LAYOUT,
-    gridColumns: branding.grid_columns ?? DEFAULT_GRID_COLUMNS,
+    cardLayout: { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) },
+    gridColumns: branding.grid_columns || null,
     isLoading,
   };
 

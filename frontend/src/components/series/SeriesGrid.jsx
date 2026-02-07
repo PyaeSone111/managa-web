@@ -1,24 +1,20 @@
 import SeriesCard from './SeriesCard';
-import MangaCardByDesign from './cards';
+import { MangaCard } from './cards/index.jsx';
 import { useBranding } from '../../context/BrandingContext';
 
-/** Tailwind safelist: grid-cols-1..6 and sm/md/lg/xl variants so dynamic classes work */
-const COLS_CLASS = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-  5: 'grid-cols-5',
-  6: 'grid-cols-6',
-};
+const DEFAULT_COLS_V = { default: 2, sm: 3, md: 4, lg: 5, xl: 6 };
+const DEFAULT_COLS_H = { default: 1, sm: 1, md: 2, lg: 3, xl: 4 };
+
+/** Tailwind safelist helpers for dynamic grid columns */
+const COLS_CLASS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5', 6: 'grid-cols-6' };
 const SM_COLS = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4', 5: 'sm:grid-cols-5', 6: 'sm:grid-cols-6' };
 const MD_COLS = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4', 5: 'md:grid-cols-5', 6: 'md:grid-cols-6' };
 const LG_COLS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' };
 const XL_COLS = { 1: 'xl:grid-cols-1', 2: 'xl:grid-cols-2', 3: 'xl:grid-cols-3', 4: 'xl:grid-cols-4', 5: 'xl:grid-cols-5', 6: 'xl:grid-cols-6' };
 
-function getGridClass(columns, gap = 'gap-3 sm:gap-4') {
+function getGridClass(columns) {
   if (!columns || typeof columns !== 'object') {
-    return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4';
+    return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4';
   }
   const c = (v) => Math.min(6, Math.max(1, Number(v) || 1));
   const parts = [
@@ -28,50 +24,51 @@ function getGridClass(columns, gap = 'gap-3 sm:gap-4') {
     columns.lg != null && LG_COLS[c(columns.lg)],
     columns.xl != null && XL_COLS[c(columns.xl)],
   ].filter(Boolean);
-  return `grid ${parts.join(' ')} ${gap}`;
+  return `grid ${parts.join(' ')} gap-4`;
 }
 
-function SeriesGrid({ series = [], loading = false, layout = 'horizontal', sectionKey }) {
-  const { cardLayout, gridColumns } = useBranding();
-  const isVertical = layout === 'vertical';
-  const designId = sectionKey ? (cardLayout?.[sectionKey] || (isVertical ? 'card_01' : 'card_11')) : null;
-  const useDesignCards = Boolean(designId);
-  const columnKey = isVertical ? 'vertical' : 'horizontal';
-  const columnsConfig = gridColumns?.[columnKey];
+function SkeletonCard({ isVertical }) {
+  if (isVertical) {
+    return (
+      <div className="animate-pulse bg-white rounded-xl border border-quarzo overflow-hidden">
+        <div className="w-full aspect-[2/3] bg-quarzo/40" />
+        <div className="p-3 space-y-2">
+          <div className="h-3.5 bg-quarzo/40 rounded w-4/5" />
+          <div className="h-2.5 bg-quarzo/40 rounded w-1/2" />
+          <div className="h-2.5 bg-quarzo/40 rounded w-16 mt-1" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="animate-pulse flex bg-white rounded-xl border border-quarzo overflow-hidden min-h-[140px]">
+      <div className="flex-shrink-0 w-24 sm:w-28 bg-quarzo/40" />
+      <div className="flex-1 p-3 space-y-2">
+        <div className="h-3.5 bg-quarzo/40 rounded w-4/5" />
+        <div className="h-2.5 bg-quarzo/40 rounded w-1/2" />
+        <div className="h-2.5 bg-quarzo/40 rounded w-16 mt-1" />
+        <div className="h-3 bg-quarzo/40 rounded w-20 mt-2" />
+      </div>
+    </div>
+  );
+}
+
+function SeriesGrid({ series = [], loading = false, layout = 'vertical', section, onEdit, onDelete }) {
+  const { gridColumns, cardLayout } = useBranding();
+  const useDesignCards = Boolean(section);
+  const isVertical = useDesignCards
+    ? (cardLayout[section] || '').replace('card_', '') <= 10
+    : layout === 'vertical';
+  const columnsConfig = useDesignCards && gridColumns?.[section]
+    ? gridColumns[section]
+    : isVertical ? DEFAULT_COLS_V : DEFAULT_COLS_H;
   const gridClass = getGridClass(columnsConfig);
 
   if (loading) {
     return (
       <div className={gridClass}>
         {[...Array(isVertical ? 12 : 8)].map((_, i) => (
-          <div
-            key={i}
-            className={`animate-pulse glass-card rounded-xl overflow-hidden border border-silver-grass/30 ${
-              isVertical ? '' : 'flex'
-            }`}
-          >
-            {isVertical ? (
-              <>
-                <div className="w-full h-28 sm:h-32 bg-silver-grass/20 rounded-t-xl" />
-                <div className="p-2 sm:p-3 space-y-1.5">
-                  <div className="h-3 sm:h-3.5 bg-silver-grass/20 rounded w-4/5" />
-                  <div className="h-2.5 bg-silver-grass/20 rounded w-1/2" />
-                  <div className="h-2.5 bg-silver-grass/20 rounded w-12 mt-1" />
-                  <div className="h-3 bg-silver-grass/20 rounded w-14 mt-2" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex-shrink-0 w-20 sm:w-24 h-24 sm:h-28 bg-silver-grass/20 rounded-l-xl" />
-                <div className="flex-1 p-2 sm:p-3 space-y-1.5">
-                  <div className="h-3 sm:h-3.5 bg-silver-grass/20 rounded w-4/5" />
-                  <div className="h-2.5 bg-silver-grass/20 rounded w-1/2" />
-                  <div className="h-2.5 bg-silver-grass/20 rounded w-12 mt-1" />
-                  <div className="h-3 bg-silver-grass/20 rounded w-14 mt-2" />
-                </div>
-              </>
-            )}
-          </div>
+          <SkeletonCard key={i} isVertical={isVertical} />
         ))}
       </div>
     );
@@ -80,26 +77,37 @@ function SeriesGrid({ series = [], loading = false, layout = 'horizontal', secti
   if (!series || series.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-white">No series found.</p>
+        <p className="text-sidewalk-grey text-sm">No series found.</p>
       </div>
     );
   }
 
-  const wrapperClass = isVertical ? 'max-w-6xl' : 'max-w-5xl';
-  return (
-    <div className={`${gridClass} ${wrapperClass}`}>
-      {series.map((item, index) =>
-        useDesignCards ? (
-          <MangaCardByDesign
+  if (useDesignCards) {
+    return (
+      <div className={gridClass}>
+        {series.map((item, index) => (
+          <MangaCard
             key={item.id}
             series={item}
-            designId={designId}
-            rank={item.rank ?? index + 1}
+            section={section}
+            rank={index + 1}
           />
-        ) : (
-          <SeriesCard key={item.id} series={item} layout={layout} />
-        )
-      )}
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={gridClass}>
+      {series.map((item) => (
+        <SeriesCard
+          key={item.id}
+          series={item}
+          layout={isVertical ? 'vertical' : 'horizontal'}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
     </div>
   );
 }
