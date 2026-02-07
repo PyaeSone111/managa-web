@@ -1,4 +1,4 @@
-# Manga Website Architecture Documentation
+# Myangarsite Architecture Documentation
 
 ## Overview
 

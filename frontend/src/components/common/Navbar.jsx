@@ -35,7 +35,7 @@ function Navbar() {
           <Link to="/" className="flex items-center gap-2">
             <img
               src={logoUrl || '/logo.png'}
-              alt="Manga Web Logo"
+              alt="Myangar Logo"
               className="h-8 sm:h-9 md:h-10 w-auto"
             />
           </Link>

@@ -1,4 +1,4 @@
-# Manga Web Application
+# Myangar Application
 
 A full-stack web application for reading manga, manhwa, and manhua, built with Laravel (backend API) and React (frontend) using Vite.
 

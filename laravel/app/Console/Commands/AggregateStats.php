@@ -44,12 +44,17 @@ class AggregateStats extends Command
     {
         $this->info('  Aggregating views...');
 
+        $driver = DB::getDriverName();
+        $userIdExpr = $driver === 'pgsql'
+            ? "COALESCE(user_id::TEXT, ip_hash)"
+            : "COALESCE(CAST(user_id AS CHAR), ip_hash)";
+
         $viewStats = ViewEvent::whereDate('viewed_at', $date)
-            ->selectRaw('
+            ->selectRaw("
                 series_id,
                 COUNT(*) as views,
-                COUNT(DISTINCT COALESCE(user_id::TEXT, ip_hash)) as unique_viewers
-            ')
+                COUNT(DISTINCT {$userIdExpr}) as unique_viewers
+            ")
             ->groupBy('series_id')
             ->get();
 

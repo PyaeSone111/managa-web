@@ -29,7 +29,7 @@ function Favorites() {
   return (
     <>
       <Helmet>
-        <title>My Favorites - Manga Web</title>
+        <title>My Favorites - Myangar</title>
       </Helmet>
 
       <div className="space-y-6">

@@ -48,7 +48,7 @@ function Home() {
   return (
     <>
       <Helmet>
-        <title>Manga Web - Read Manga, Manhwa, and Manhua Online</title>
+        <title>Myangar - Read Manga, Manhwa, and Manhua Online</title>
         <meta
           name="description"
           content="Read the latest manga, manhwa, and manhua online. Browse thousands of series and enjoy high-quality reading experience."

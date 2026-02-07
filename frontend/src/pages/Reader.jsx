@@ -33,7 +33,7 @@ function Reader() {
     <>
       <Helmet>
         <title>
-          {chapterData.title || formatChapterLabel(chapterData.chapter_number)} - Manga Web
+          {chapterData.title || formatChapterLabel(chapterData.chapter_number)} - Myangar
         </title>
       </Helmet>
 

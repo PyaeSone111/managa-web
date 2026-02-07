@@ -146,7 +146,21 @@ class RefreshRankings extends Command
 
     private function calculateRanks(): void
     {
-        // Calculate top ranks
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            $this->calculateRanksPostgres();
+            return;
+        }
+
+        $this->calculateRanksEloquent();
+    }
+
+    /**
+     * PostgreSQL: single-statement rank updates using ROW_NUMBER() and UPDATE ... FROM.
+     */
+    private function calculateRanksPostgres(): void
+    {
         DB::statement('
             UPDATE series_rankings
             SET top_rank = ranked.rank
@@ -156,8 +170,6 @@ class RefreshRankings extends Command
             ) as ranked
             WHERE series_rankings.id = ranked.id
         ');
-
-        // Calculate reading ranks
         DB::statement('
             UPDATE series_rankings
             SET reading_rank = ranked.rank
@@ -167,8 +179,6 @@ class RefreshRankings extends Command
             ) as ranked
             WHERE series_rankings.id = ranked.id
         ');
-
-        // Calculate trending ranks
         DB::statement('
             UPDATE series_rankings
             SET trending_rank = ranked.rank
@@ -178,5 +188,25 @@ class RefreshRankings extends Command
             ) as ranked
             WHERE series_rankings.id = ranked.id
         ');
+    }
+
+    /**
+     * MySQL/SQLite: compute ranks with Eloquent and bulk update.
+     */
+    private function calculateRanksEloquent(): void
+    {
+        $idsByTop = SeriesRanking::orderByDesc('top_score')->pluck('id');
+        $idsByReading = SeriesRanking::orderByDesc('reading_score')->pluck('id');
+        $idsByTrending = SeriesRanking::orderByDesc('trending_score')->pluck('id');
+
+        foreach ($idsByTop->values() as $rank => $id) {
+            SeriesRanking::where('id', $id)->update(['top_rank' => $rank + 1]);
+        }
+        foreach ($idsByReading->values() as $rank => $id) {
+            SeriesRanking::where('id', $id)->update(['reading_rank' => $rank + 1]);
+        }
+        foreach ($idsByTrending->values() as $rank => $id) {
+            SeriesRanking::where('id', $id)->update(['trending_rank' => $rank + 1]);
+        }
     }
 }

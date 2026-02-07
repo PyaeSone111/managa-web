@@ -108,12 +108,11 @@ class SeriesController extends Controller
             ->firstOrFail();
 
         // Ensure overall rating is present (from user_ratings if DB columns are null/stale)
-        $agg = UserRating::where('series_id', $seriesModel->id)
-            ->selectRaw('ROUND(AVG(rating), 2) as avg_rating, COUNT(*) as cnt')
-            ->first();
-        if ($agg && ((int) $agg->cnt) > 0) {
-            $seriesModel->setAttribute('rating', (float) $agg->avg_rating);
-            $seriesModel->setAttribute('rating_count', (int) $agg->cnt);
+        $ratingCount = UserRating::where('series_id', $seriesModel->id)->count();
+        if ($ratingCount > 0) {
+            $avgRating = UserRating::where('series_id', $seriesModel->id)->avg('rating');
+            $seriesModel->setAttribute('rating', round((float) $avgRating, 2));
+            $seriesModel->setAttribute('rating_count', $ratingCount);
         }
 
         // Increment views

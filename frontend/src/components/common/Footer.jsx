@@ -4,7 +4,7 @@ function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <p className="text-sm text-sidewalk-grey">
-            &copy; {new Date().getFullYear()} Manga Web. All rights reserved.
+            &copy; {new Date().getFullYear()} Myangar. All rights reserved.
           </p>
         </div>
       </div>

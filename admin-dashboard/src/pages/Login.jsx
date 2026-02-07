@@ -81,7 +81,7 @@ function Login() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Manga Web Admin Panel</p>
+          <p>Myangar Admin Panel</p>
         </div>
       </div>
     </div>

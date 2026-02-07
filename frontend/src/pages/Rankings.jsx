@@ -38,7 +38,7 @@ function Rankings() {
   return (
     <>
       <Helmet>
-        <title>Rankings - Manga Web</title>
+        <title>Rankings - Myangar</title>
         <meta name="description" content="Discover top-ranked manga, most read series, and trending titles." />
       </Helmet>
 

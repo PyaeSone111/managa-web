@@ -17,12 +17,11 @@ class RatingController extends Controller
      */
     private function updateSeriesRating(int $seriesId): void
     {
-        $agg = UserRating::where('series_id', $seriesId)
-            ->selectRaw('ROUND(AVG(rating), 2) as avg_rating, COUNT(*) as cnt')
-            ->first();
+        $avg = UserRating::where('series_id', $seriesId)->avg('rating');
+        $cnt = UserRating::where('series_id', $seriesId)->count();
         Series::where('id', $seriesId)->update([
-            'rating' => $agg ? (float) $agg->avg_rating : null,
-            'rating_count' => $agg ? (int) $agg->cnt : 0,
+            'rating' => $cnt > 0 ? round((float) $avg, 2) : null,
+            'rating_count' => $cnt,
         ]);
     }
 

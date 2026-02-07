@@ -195,7 +195,7 @@ function SeriesDetail() {
   return (
     <>
       <Helmet>
-        <title>{seriesData.title} - Manga Web</title>
+        <title>{seriesData.title} - Myangar</title>
         <meta name="description" content={seriesData.description} />
         {seriesData.thumbnail_url && (
           <meta property="og:image" content={seriesData.thumbnail_url} />

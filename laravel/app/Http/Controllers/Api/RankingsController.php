@@ -370,7 +370,7 @@ class RankingsController extends Controller
                 ->active()
                 ->whereHas('chapters', fn ($q) => $q->where('is_published', true))
                 ->orderByRaw(
-                    '(SELECT MAX(published_at) FROM chapters WHERE chapters.series_id = series.id AND is_published = 1) DESC'
+                    '(SELECT MAX(published_at) FROM chapters WHERE chapters.series_id = series.id AND is_published = true) DESC'
                 )
                 ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
                     $q->where('is_published', true)

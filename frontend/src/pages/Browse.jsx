@@ -118,7 +118,7 @@ function Browse() {
   return (
     <>
       <Helmet>
-        <title>{query ? `Search: ${query}` : 'Browse'} - Manga Web</title>
+        <title>{query ? `Search: ${query}` : 'Browse'} - Myangar</title>
         <meta name="description" content="Browse and discover manga, manhwa, and manhua series." />
       </Helmet>
 
