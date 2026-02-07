@@ -19,16 +19,26 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3003',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-        'http://127.0.0.1:3003',
-    ],
+    'allowed_origins' => array_filter(array_merge(
+        [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3003',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            'http://127.0.0.1:3003',
+            // Production frontend (Firebase)
+            'https://myangar-prod-frontend.web.app',
+            'https://myangar-prod-frontend.firebaseapp.com',
+            'https://myangar.fatelight.org',
+        ],
+        env('CORS_ALLOWED_ORIGINS') ? explode(',', env('CORS_ALLOWED_ORIGINS')) : []
+    )),
 
-    'allowed_origins_patterns' => [],
+    // Allow all fatelight.org subdomains (e.g. manga-apis.fatelight.org, app.fatelight.org)
+    'allowed_origins_patterns' => [
+        '#^https?://([a-z0-9-]+\.)*fatelight\.org$#',
+    ],
 
     'allowed_headers' => ['*'],
 
