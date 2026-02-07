@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 228 30% 6%;
+    --foreground: 210 40% 96%;
+    --card: 228 25% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 228 25% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 192 91% 36%;
+    --primary-foreground: 228 30% 6%;
+    --secondary: 228 20% 16%;
+    --secondary-foreground: 210 40% 90%;
+    --muted: 228 20% 14%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 258 60% 55%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 228 20% 18%;
+    --input: 228 20% 18%;
+    --ring: 192 91% 36%;
+    --chart-1: 192 91% 36%;
+    --chart-2: 258 60% 55%;
+    --chart-3: 45 93% 58%;
+    --chart-4: 340 75% 55%;
+    --chart-5: 160 60% 45%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Cosmic Night custom utilities */
+@layer utilities {
+  .cosmic-glow {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.15), 0 0 60px rgba(6, 182, 212, 0.05);
+  }
+  .cosmic-glow-strong {
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.3), 0 0 80px rgba(6, 182, 212, 0.1);
+  }
+  .neon-border {
+    box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05), 0 0 15px rgba(6, 182, 212, 0.2);
+  }
+  .glass {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-strong {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+}

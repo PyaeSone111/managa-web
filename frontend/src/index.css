@@ -2,23 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Original theme as default so first paint always shows it until set theme loads */
+/* 100% white base; dark theme text for contrast on white */
 :root {
-  --theme-body-bg: linear-gradient(to bottom right, #0D2625, #30463D, #627160);
-  --theme-body-color: #C6CEC5;
+  --theme-page-bg: #ffffff;
+  --theme-body-color: #1a2524;
   --theme-primary: #627160;
   --theme-primary-hover: #30463D;
   --theme-on-primary: #FFFFFF;
-  --theme-card-bg: rgba(164, 180, 164, 0.4);
-  --theme-card-border: rgba(198, 206, 197, 0.3);
-  --theme-glass-bg: rgba(198, 206, 197, 0.3);
-  --theme-text-muted: #C6CEC5;
+  --theme-hero-bg: #627160;
+  --theme-card-bg: #ffffff;
+  --theme-card-border: rgba(98, 113, 96, 0.25);
+  --theme-glass-bg: #ffffff;
+  --theme-text-muted: #3d4a48;
   --theme-font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
   body {
-    background: var(--theme-body-bg);
+    background: var(--theme-page-bg);
     color: var(--theme-body-color);
     font-family: var(--theme-font-family);
     min-height: 100vh;
@@ -29,22 +30,58 @@
   }
 }
 
-/* Hero section uses theme background */
+/* Hero: theme color (primary) on white base; text on hero stays light for contrast */
 .hero-section-bg {
-  background: var(--theme-body-bg) !important;
+  background: var(--theme-hero-bg) !important;
+}
+/* When hero has a background image, don't override it; keep same text/button styles */
+.hero-section-bg-image .text-white,
+.hero-section-bg .text-white {
+  color: #ffffff !important;
+}
+.hero-section-bg-image .text-silver-grass,
+.hero-section-bg .text-silver-grass {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+.hero-section-bg-image .bg-bracken-green,
+.hero-section-bg .bg-bracken-green {
+  background-color: var(--theme-primary-hover) !important;
+  color: #ffffff !important;
+}
+.hero-section-bg-image .hover\:bg-bracken-fern:hover,
+.hero-section-bg .hover\:bg-bracken-fern:hover {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Series card star rating: filled = theme fill + white border, empty = solid white fill + white border */
+.series-card-stars .star-filled-overlay path,
+.series-card-stars .star-filled-overlay {
+  fill: var(--theme-primary) !important;
+  stroke: #ffffff !important;
+  stroke-width: 0.5px !important;
+  color: var(--theme-primary);
+}
+.series-card-stars .star-empty-overlay path,
+.series-card-stars .star-empty-overlay {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  stroke-width: 0.5px !important;
+  color: #ffffff;
 }
 
 @layer utilities {
   .glass-effect {
-    background: var(--theme-glass-bg, rgba(198, 206, 197, 0.3));
+    background: var(--theme-glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    border-color: var(--theme-card-border);
   }
   
   .glass-card {
-    background: var(--theme-card-bg, rgba(164, 180, 164, 0.4));
+    background: var(--theme-card-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    border-color: var(--theme-card-border);
     position: relative;
     overflow: hidden;
   }
@@ -59,7 +96,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.3),
       transparent
     );
     transition: left 0.5s ease;
@@ -93,75 +130,43 @@
   }
 }
 
-/* Light theme overrides: use theme colors so text is readable on light background */
-[data-theme="light-glass"] .text-white,
-[data-theme="digital-health"] .text-white,
-[data-theme="green-tech"] .text-white,
-[data-theme="virtual-classroom"] .text-white,
-[data-theme="app-wireframes"] .text-white {
-  color: var(--theme-body-color) !important;
+/* Theme accents on white base: force dark text on white for every theme */
+[data-theme] .text-white {
+  color: var(--theme-body-color, #1a2524) !important;
 }
-/* Primary buttons: always use contrast text (white on dark primary, dark on light primary) */
+[data-theme] .text-silver-grass {
+  color: var(--theme-text-muted, #3d4a48) !important;
+}
+[data-theme] .text-silver-grass\/50,
+[data-theme] .text-silver-grass\/70 {
+  color: var(--theme-text-muted, #3d4a48) !important;
+  opacity: 0.85;
+}
+[data-theme] .placeholder\:text-white\/80::placeholder {
+  color: var(--theme-text-muted, #3d4a48) !important;
+  opacity: 0.9;
+}
 [data-theme] .bg-bracken-green {
   background-color: var(--theme-primary) !important;
   color: var(--theme-on-primary, #FFFFFF) !important;
 }
-[data-theme="light-glass"] .text-silver-grass,
-[data-theme="digital-health"] .text-silver-grass,
-[data-theme="green-tech"] .text-silver-grass,
-[data-theme="virtual-classroom"] .text-silver-grass,
-[data-theme="app-wireframes"] .text-silver-grass {
-  color: var(--theme-text-muted) !important;
-}
-[data-theme="light-glass"] .hover\:bg-bracken-fern:hover,
-[data-theme="light-glass"] .bg-bracken-fern,
-[data-theme="digital-health"] .hover\:bg-bracken-fern:hover,
-[data-theme="digital-health"] .bg-bracken-fern,
-[data-theme="green-tech"] .hover\:bg-bracken-fern:hover,
-[data-theme="green-tech"] .bg-bracken-fern,
-[data-theme="virtual-classroom"] .hover\:bg-bracken-fern:hover,
-[data-theme="virtual-classroom"] .bg-bracken-fern,
-[data-theme="app-wireframes"] .hover\:bg-bracken-fern:hover,
-[data-theme="app-wireframes"] .bg-bracken-fern {
+[data-theme] .hover\:bg-bracken-fern:hover,
+[data-theme] .bg-bracken-fern {
   background-color: var(--theme-primary-hover) !important;
 }
-[data-theme="light-glass"] .border-silver-grass\/20,
-[data-theme="light-glass"] .border-silver-grass\/30,
-[data-theme="light-glass"] .border-silver-grass\/40,
-[data-theme="light-glass"] .border-silver-grass\/50,
-[data-theme="digital-health"] .border-silver-grass\/20,
-[data-theme="digital-health"] .border-silver-grass\/30,
-[data-theme="digital-health"] .border-silver-grass\/40,
-[data-theme="digital-health"] .border-silver-grass\/50,
-[data-theme="green-tech"] .border-silver-grass\/20,
-[data-theme="green-tech"] .border-silver-grass\/30,
-[data-theme="green-tech"] .border-silver-grass\/40,
-[data-theme="green-tech"] .border-silver-grass\/50,
-[data-theme="virtual-classroom"] .border-silver-grass\/20,
-[data-theme="virtual-classroom"] .border-silver-grass\/30,
-[data-theme="virtual-classroom"] .border-silver-grass\/40,
-[data-theme="virtual-classroom"] .border-silver-grass\/50,
-[data-theme="app-wireframes"] .border-silver-grass\/20,
-[data-theme="app-wireframes"] .border-silver-grass\/30,
-[data-theme="app-wireframes"] .border-silver-grass\/40,
-[data-theme="app-wireframes"] .border-silver-grass\/50 {
+[data-theme] .border-silver-grass\/20,
+[data-theme] .border-silver-grass\/30,
+[data-theme] .border-silver-grass\/40,
+[data-theme] .border-silver-grass\/50 {
   border-color: var(--theme-card-border) !important;
 }
-[data-theme="light-glass"] .text-bracken-green,
-[data-theme="digital-health"] .text-bracken-green,
-[data-theme="green-tech"] .text-bracken-green,
-[data-theme="virtual-classroom"] .text-bracken-green,
-[data-theme="app-wireframes"] .text-bracken-green {
+[data-theme] .text-bracken-green {
   color: var(--theme-primary) !important;
 }
-
-/* Search input and buttons: ensure theme applies (button, link, input) */
-[data-theme="light-glass"] input::placeholder,
-[data-theme="digital-health"] input::placeholder,
-[data-theme="green-tech"] input::placeholder,
-[data-theme="virtual-classroom"] input::placeholder,
-[data-theme="app-wireframes"] input::placeholder {
+[data-theme] input::placeholder {
   color: var(--theme-text-muted) !important;
   opacity: 0.8;
 }
-
+[data-theme] .focus\:ring-bracken-green:focus {
+  --tw-ring-color: var(--theme-primary);
+}

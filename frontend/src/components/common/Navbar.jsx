@@ -2,10 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { FaSignInAlt, FaUserPlus, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useBranding } from '../../context/BrandingContext';
 import SearchBar from '../search/SearchBar';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { logoUrl } = useBranding();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -31,9 +33,9 @@ function Navbar() {
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-            <img 
-              src="/logo.png" 
-              alt="Manga Web Logo" 
+            <img
+              src={logoUrl || '/logo.png'}
+              alt="Manga Web Logo"
               className="h-8 sm:h-9 md:h-10 w-auto"
             />
           </Link>

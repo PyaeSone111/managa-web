@@ -3,15 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { themeApi } from '../../services/api';
 
 const DEFAULT_CONFIG = {
-  bodyBackground: 'linear-gradient(to bottom right, #0D2625, #30463D, #627160)',
-  bodyColor: '#C6CEC5',
+  bodyColor: '#1a2524',
   primary: '#627160',
   primaryHover: '#30463D',
   onPrimary: '#FFFFFF',
-  cardBg: 'rgba(164, 180, 164, 0.4)',
-  cardBorder: 'rgba(198, 206, 197, 0.3)',
-  glassBg: 'rgba(198, 206, 197, 0.3)',
-  textMuted: '#C6CEC5',
+  cardBg: '#ffffff',
+  cardBorder: 'rgba(98, 113, 96, 0.25)',
+  glassBg: '#ffffff',
+  textMuted: '#3d4a48',
   fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
 };
 
@@ -25,6 +24,12 @@ function getLuminance(hex) {
   return 0.2126 * l(r) + 0.7152 * l(g) + 0.0722 * l(b);
 }
 
+/** Ensure text color is dark enough for white background (luminance < 0.35). */
+function ensureDarkForWhite(hex, fallback = '#1a2524') {
+  if (!hex || typeof hex !== 'string') return fallback;
+  return getLuminance(hex) < 0.35 ? hex : fallback;
+}
+
 function resolveOnPrimary(config) {
   if (config?.onPrimary) return config.onPrimary;
   const primary = config?.primary || DEFAULT_CONFIG.primary;
@@ -36,16 +41,17 @@ function applyTheme(config, slug) {
   const c = config || DEFAULT_CONFIG;
   const root = document.documentElement;
   root.setAttribute('data-theme', slug || 'default');
-  root.style.setProperty('--theme-body-bg', c.bodyBackground || DEFAULT_CONFIG.bodyBackground);
-  root.style.setProperty('--theme-body-color', c.bodyColor || DEFAULT_CONFIG.bodyColor);
+  root.style.setProperty('--theme-page-bg', '#ffffff');
+  root.style.setProperty('--theme-body-color', ensureDarkForWhite(c.bodyColor, '#1a2524'));
   root.style.setProperty('--theme-primary', c.primary || DEFAULT_CONFIG.primary);
   root.style.setProperty('--theme-primary-hover', c.primaryHover || DEFAULT_CONFIG.primaryHover);
   root.style.setProperty('--theme-on-primary', resolveOnPrimary(c));
-  root.style.setProperty('--theme-card-bg', c.cardBg || DEFAULT_CONFIG.cardBg);
-  root.style.setProperty('--theme-card-border', c.cardBorder || DEFAULT_CONFIG.cardBorder);
-  root.style.setProperty('--theme-glass-bg', c.glassBg || DEFAULT_CONFIG.glassBg);
-  root.style.setProperty('--theme-text-muted', c.textMuted || DEFAULT_CONFIG.textMuted);
-  root.style.setProperty('--theme-font-family', c.fontFamily || DEFAULT_CONFIG.fontFamily);
+  root.style.setProperty('--theme-hero-bg', c.primary || DEFAULT_CONFIG.primary);
+  root.style.setProperty('--theme-card-bg', '#ffffff');
+  root.style.setProperty('--theme-card-border', c.cardBorder ?? DEFAULT_CONFIG.cardBorder);
+  root.style.setProperty('--theme-glass-bg', '#ffffff');
+  root.style.setProperty('--theme-text-muted', ensureDarkForWhite(c.textMuted, '#3d4a48'));
+  root.style.setProperty('--theme-font-family', c.fontFamily ?? DEFAULT_CONFIG.fontFamily);
 }
 
 export function ThemeLoader({ children }) {

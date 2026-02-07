@@ -12,6 +12,21 @@ use Illuminate\Support\Facades\Cache;
 class RatingController extends Controller
 {
     /**
+     * Recalculate and update series.rating and series.rating_count from user_ratings.
+     * Ensures overall rating is shown on MySQL (PostgreSQL has a trigger).
+     */
+    private function updateSeriesRating(int $seriesId): void
+    {
+        $agg = UserRating::where('series_id', $seriesId)
+            ->selectRaw('ROUND(AVG(rating), 2) as avg_rating, COUNT(*) as cnt')
+            ->first();
+        Series::where('id', $seriesId)->update([
+            'rating' => $agg ? (float) $agg->avg_rating : null,
+            'rating_count' => $agg ? (int) $agg->cnt : 0,
+        ]);
+    }
+
+    /**
      * Rate a manga.
      *
      * POST /api/v1/manga/{id}/rate
@@ -26,16 +41,17 @@ class RatingController extends Controller
         ]);
 
         $rating = $user->rateSeries($id, $request->rating);
+        $this->updateSeriesRating($id);
+        $series->refresh();
 
-        // Clear related caches
         Cache::forget("manga:{$id}");
 
         return response()->json([
             'message' => 'Rating submitted',
             'data' => [
                 'user_rating' => $rating->rating,
-                'series_average_rating' => $series->fresh()->rating,
-                'series_rating_count' => $series->fresh()->rating_count,
+                'series_average_rating' => $series->rating,
+                'series_rating_count' => $series->rating_count,
             ],
         ]);
     }
@@ -76,7 +92,7 @@ class RatingController extends Controller
             ->where('series_id', $id)
             ->delete();
 
-        // Clear related caches
+        $this->updateSeriesRating($id);
         Cache::forget("manga:{$id}");
 
         return response()->json([

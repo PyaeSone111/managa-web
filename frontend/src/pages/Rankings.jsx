@@ -1,79 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { rankingsApi } from '../services/api';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import SeriesGrid from '../components/series/SeriesGrid';
 
 const RANKING_TABS = [
   { id: 'top', label: 'Top Manga', description: 'Best rated series' },
   { id: 'reading', label: 'Most Read', description: 'Most actively read' },
   { id: 'trending', label: 'Trending', description: 'Rising in popularity' },
 ];
-
-function RankingCard({ series, rank, showScore = false }) {
-  const getRankBadge = (rank) => {
-    if (rank === 1) return 'bg-bracken-green text-silver-grass';
-    if (rank === 2) return 'bg-paradise-found text-silver-grass';
-    if (rank === 3) return 'bg-bamboo-shoot text-white';
-    return 'bg-silver-grass/30 text-white';
-  };
-
-  return (
-    <Link
-      to={`/series/${series.slug}`}
-      className="flex items-center gap-4 p-4 glass-card rounded-xl shadow-lg hover:shadow-xl border border-silver-grass/30 hover:border-silver-grass/50 transition-all duration-300"
-    >
-      <div
-        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${getRankBadge(rank)}`}
-      >
-        {rank}
-      </div>
-      <img
-        src={series.thumbnail_url || '/placeholder.jpg'}
-        alt={series.title}
-        className="w-16 h-24 object-cover rounded"
-      />
-      <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-silver-grass truncate">
-          {series.title}
-        </h3>
-        <div className="flex flex-wrap gap-2 mt-1 text-sm text-white">
-          <span>{series.status}</span>
-          {series.total_chapters > 0 && (
-            <span>{series.total_chapters} chapters</span>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1 mt-2">
-          {series.categories?.slice(0, 3).map((cat) => (
-            <span
-              key={cat.id}
-              className="px-2 py-0.5 bg-bracken-green/30 text-white rounded text-xs backdrop-blur-sm"
-            >
-              {cat.name}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="flex-shrink-0 text-right">
-        {series.average_rating > 0 && (
-          <div className="flex items-center gap-1 text-white">
-            <span>★</span>
-            <span className="font-semibold">{series.average_rating.toFixed(1)}</span>
-          </div>
-        )}
-        {showScore && series.ranking?.score && (
-          <div className="text-xs text-white mt-1">
-            Score: {Math.round(series.ranking.score)}
-          </div>
-        )}
-        <div className="text-xs text-white mt-1">
-          {series.total_views?.toLocaleString() || 0} views
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 function Rankings() {
   const [activeTab, setActiveTab] = useState('top');
@@ -151,29 +86,19 @@ function Rankings() {
           {RANKING_TABS.find((t) => t.id === activeTab)?.description}
         </p>
 
-        {isLoading ? (
-          <LoadingSpinner size="lg" />
-        ) : error ? (
+        {error ? (
           <div className="text-center py-12">
             <p className="text-white">
               {error.message || 'Failed to load rankings'}
             </p>
           </div>
-        ) : series.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-silver-grass">No rankings available.</p>
-          </div>
         ) : (
-          <div className="space-y-3">
-            {series.map((item, index) => (
-              <RankingCard
-                key={item.id}
-                series={item}
-                rank={index + 1}
-                showScore={activeTab !== 'top'}
-              />
-            ))}
-          </div>
+          <SeriesGrid
+            series={series}
+            loading={isLoading}
+            layout="horizontal"
+            sectionKey="rankings"
+          />
         )}
       </div>
     </>

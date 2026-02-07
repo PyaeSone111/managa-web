@@ -30,11 +30,11 @@ return new class extends Migration
             ");
 
             // Create trigger to auto-update search vector
+            DB::statement("DROP TRIGGER IF EXISTS trigger_series_search_vector ON series");
             DB::statement("
-                DROP TRIGGER IF EXISTS trigger_series_search_vector ON series;
                 CREATE TRIGGER trigger_series_search_vector
                     BEFORE INSERT OR UPDATE OF title, description ON series
-                    FOR EACH ROW EXECUTE FUNCTION update_series_search_vector();
+                    FOR EACH ROW EXECUTE FUNCTION update_series_search_vector()
             ");
 
             // Create trigger to update series stats on chapter changes
@@ -75,11 +75,11 @@ return new class extends Migration
                 \$\$ LANGUAGE plpgsql;
             ");
 
+            DB::statement("DROP TRIGGER IF EXISTS trigger_update_series_chapter_stats ON chapters");
             DB::statement("
-                DROP TRIGGER IF EXISTS trigger_update_series_chapter_stats ON chapters;
                 CREATE TRIGGER trigger_update_series_chapter_stats
                     AFTER INSERT OR UPDATE OR DELETE ON chapters
-                    FOR EACH ROW EXECUTE FUNCTION update_series_chapter_stats();
+                    FOR EACH ROW EXECUTE FUNCTION update_series_chapter_stats()
             ");
 
             // Create trigger for favorites count
@@ -98,11 +98,11 @@ return new class extends Migration
                 \$\$ LANGUAGE plpgsql;
             ");
 
+            DB::statement("DROP TRIGGER IF EXISTS trigger_update_favorites_count ON user_favorites");
             DB::statement("
-                DROP TRIGGER IF EXISTS trigger_update_favorites_count ON user_favorites;
                 CREATE TRIGGER trigger_update_favorites_count
                     AFTER INSERT OR DELETE ON user_favorites
-                    FOR EACH ROW EXECUTE FUNCTION update_series_favorites_count();
+                    FOR EACH ROW EXECUTE FUNCTION update_series_favorites_count()
             ");
 
             // Create trigger for ratings
@@ -120,11 +120,11 @@ return new class extends Migration
                 \$\$ LANGUAGE plpgsql;
             ");
 
+            DB::statement("DROP TRIGGER IF EXISTS trigger_update_series_rating ON user_ratings");
             DB::statement("
-                DROP TRIGGER IF EXISTS trigger_update_series_rating ON user_ratings;
                 CREATE TRIGGER trigger_update_series_rating
                     AFTER INSERT OR UPDATE OR DELETE ON user_ratings
-                    FOR EACH ROW EXECUTE FUNCTION update_series_rating();
+                    FOR EACH ROW EXECUTE FUNCTION update_series_rating()
             ");
         }
     }

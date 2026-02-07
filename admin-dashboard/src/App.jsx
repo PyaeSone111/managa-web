@@ -33,6 +33,9 @@ import MangaTypeForm from './pages/manga-types/MangaTypeForm';
 // Themes
 import ThemeList from './pages/themes/ThemeList';
 
+// Branding
+import Branding from './pages/branding/Branding';
+
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -226,6 +229,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ThemeList />
+          </ProtectedRoute>
+        }
+      />
+      {/* Branding */}
+      <Route
+        path="/dashboard/branding"
+        element={
+          <ProtectedRoute>
+            <Branding />
           </ProtectedRoute>
         }
       />

@@ -37,9 +37,7 @@ function Favorites() {
           My Favorites
         </h1>
 
-        {isLoading ? (
-          <LoadingSpinner size="lg" />
-        ) : series.length === 0 ? (
+        {!isLoading && series.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-white mb-4">
               You haven't favorited any manga yet.
@@ -52,7 +50,11 @@ function Favorites() {
             </a>
           </div>
         ) : (
-          <SeriesGrid series={series} layout="horizontal" />
+          <SeriesGrid
+            series={series}
+            loading={isLoading}
+            layout="horizontal"
+          />
         )}
       </div>
     </>

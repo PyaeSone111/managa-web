@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { seriesApi, categoryApi, mangaTypeApi, authorApi } from '../services/api';
 import SeriesGrid from '../components/series/SeriesGrid';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -320,9 +319,7 @@ function Browse() {
             </div>
           )}
 
-          {isLoading ? (
-            <LoadingSpinner size="lg" />
-          ) : error ? (
+          {error ? (
             <div className="text-center py-12">
               <p className="text-white">
                 {error.message || 'Failed to load series'}
@@ -330,7 +327,12 @@ function Browse() {
             </div>
           ) : (
             <>
-              <SeriesGrid series={data?.data || []} layout="horizontal" />
+              <SeriesGrid
+                series={data?.data || []}
+                loading={isLoading}
+                layout="horizontal"
+                sectionKey="browse_horizontal"
+              />
 
               {/* Pagination */}
               {pagination.last_page > 1 && (

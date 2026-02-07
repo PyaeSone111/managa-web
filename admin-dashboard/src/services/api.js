@@ -121,6 +121,10 @@ export const adminApi = {
   updateTheme: (id, data) => api.put(`/admin/themes/${id}`, data),
   deleteTheme: (id) => api.delete(`/admin/themes/${id}`),
   activateTheme: (id) => api.post(`/admin/themes/${id}/activate`),
+
+  // Branding (logo, hero background, hero image). Use POST so multipart files are received (PUT does not populate $_FILES in PHP).
+  getBranding: () => api.get('/admin/branding'),
+  updateBranding: (formData) => api.post('/admin/branding', formData),
 };
 
 export default api;

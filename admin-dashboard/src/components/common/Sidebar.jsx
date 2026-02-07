@@ -16,6 +16,7 @@ function Sidebar() {
     { path: '/dashboard/authors', label: 'Authors', icon: '✍️' },
     { path: '/dashboard/manga-types', label: 'Manga Types', icon: '📑' },
     { path: '/dashboard/themes', label: 'Themes', icon: '🎨' },
+    { path: '/dashboard/branding', label: 'Branding', icon: '🖼️' },
   ];
 
   return (

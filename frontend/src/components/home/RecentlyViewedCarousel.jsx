@@ -1,32 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useRecentlyViewed } from '../../hooks/useRecentlyViewed';
+import { useBranding } from '../../context/BrandingContext';
 import { seriesApi } from '../../services/api';
-
-function CarouselCard({ item, isCompact = true }) {
-  const imageUrl = item.thumbnail_url || item.cover_url || '/placeholder.jpg';
-  return (
-    <Link
-      to={`/series/${item.slug}`}
-      className="flex-shrink-0 w-[120px] sm:w-[140px] snap-start rounded-lg overflow-hidden glass-card border border-silver-grass/30 hover:border-silver-grass/50 transition-all duration-200 hover:shadow-lg group"
-    >
-      <div className="relative aspect-[2/3] overflow-hidden bg-silver-grass/10">
-        <img
-          src={imageUrl}
-          alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
-        />
-      </div>
-      <p className="p-2 text-xs font-medium text-white line-clamp-2 group-hover:text-silver-grass transition-colors">
-        {item.title}
-      </p>
-    </Link>
-  );
-}
+import MangaCardByDesign from '../series/cards';
 
 function RecentlyViewedCarousel() {
   const { items: recentItems } = useRecentlyViewed();
+  const { cardLayout } = useBranding();
+  const designId = cardLayout?.recently_viewed || 'card_04';
 
   const { data: latestData } = useQuery({
     queryKey: ['series', 'latest', 'carousel'],
@@ -65,8 +47,14 @@ function RecentlyViewedCarousel() {
         </Link>
       </div>
       <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin]">
-        {displayItems.map((item) => (
-          <CarouselCard key={item.slug} item={item} />
+        {displayItems.map((item, index) => (
+          <div key={item.slug ?? item.id} className="flex-shrink-0 w-[140px] sm:w-[160px] snap-start">
+            <MangaCardByDesign
+              series={item}
+              designId={designId}
+              rank={index + 1}
+            />
+          </div>
         ))}
       </div>
     </section>

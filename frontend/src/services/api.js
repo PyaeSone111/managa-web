@@ -113,16 +113,16 @@ export const rankingsApi = {
 };
 
 export const favoriteApi = {
-  getAll: (params) => api.get('/favorites', { params }),
-  add: (seriesId) => api.post('/favorites', { series_id: seriesId }),
-  remove: (seriesId) => api.delete(`/favorites/${seriesId}`),
-  check: (seriesId) => api.get(`/favorites/${seriesId}/check`),
+  getAll: (params) => api.get('/user/favorites', { params }),
+  add: (seriesId) => api.post(`/manga/${seriesId}/favorite`),
+  remove: (seriesId) => api.delete(`/manga/${seriesId}/favorite`),
+  check: (seriesId) => api.get(`/manga/${seriesId}/favorite/check`),
 };
 
 export const ratingApi = {
-  get: (seriesId) => api.get(`/series/${seriesId}/rating`),
-  rate: (seriesId, rating) => api.post(`/series/${seriesId}/rating`, { rating }),
-  remove: (seriesId) => api.delete(`/series/${seriesId}/rating`),
+  get: (seriesId) => api.get(`/manga/${seriesId}/rate`),
+  rate: (seriesId, rating1to5) => api.post(`/manga/${seriesId}/rate`, { rating: rating1to5 * 2 }),
+  remove: (seriesId) => api.delete(`/manga/${seriesId}/rate`),
 };
 
 export const readingProgressApi = {
@@ -142,6 +142,10 @@ export const authApi = {
 
 export const themeApi = {
   getActive: () => api.get('/theme/active'),
+};
+
+export const brandingApi = {
+  getBranding: () => api.get('/branding'),
 };
 
 export default api;

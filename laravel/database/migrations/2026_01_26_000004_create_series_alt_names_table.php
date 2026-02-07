@@ -22,6 +22,7 @@ return new class extends Migration
 
         // Add trigram index for PostgreSQL
         if (DB::getDriverName() === 'pgsql') {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
             DB::statement('CREATE INDEX IF NOT EXISTS idx_series_alt_names_trgm ON series_alt_names USING GIN(name gin_trgm_ops)');
         }
     }

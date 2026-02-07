@@ -48,21 +48,23 @@ function FavoriteButton({ seriesId }) {
     enabled: isAuthenticated,
   });
 
-  const isFavorited = favoriteData?.data?.is_favorited || false;
+  const isFavorited = favoriteData?.is_favorited ?? false;
 
   const addMutation = useMutation({
     mutationFn: () => favoriteApi.add(seriesId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorite', seriesId] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['favorite', seriesId], { is_favorited: data?.is_favorited ?? true });
       queryClient.invalidateQueries({ queryKey: ['series'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
     },
   });
 
   const removeMutation = useMutation({
     mutationFn: () => favoriteApi.remove(seriesId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorite', seriesId] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['favorite', seriesId], { is_favorited: data?.is_favorited ?? false });
       queryClient.invalidateQueries({ queryKey: ['series'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
     },
   });
 
@@ -118,12 +120,13 @@ function UserRating({ seriesId }) {
     enabled: isAuthenticated,
   });
 
-  const userRating = ratingData?.data?.rating || 0;
+  const userRating = ratingData?.data?.rating != null ? Math.round(ratingData.data.rating / 2) : 0;
 
   const rateMutation = useMutation({
     mutationFn: (rating) => ratingApi.rate(seriesId, rating),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rating', seriesId] });
+    onSuccess: (data, variables) => {
+      const newRating1to10 = data?.data?.user_rating ?? variables * 2;
+      queryClient.setQueryData(['rating', seriesId], { data: { rating: newRating1to10, rated_at: new Date().toISOString() } });
       queryClient.invalidateQueries({ queryKey: ['series'] });
     },
   });
@@ -169,6 +172,12 @@ function SeriesDetail() {
     enabled: !!slug,
   });
 
+  useEffect(() => {
+    if (series?.data?.slug) {
+      addRecentlyViewed(series.data);
+    }
+  }, [series?.data?.slug]);
+
   if (isLoading) {
     return <LoadingSpinner size="lg" />;
   }
@@ -182,10 +191,6 @@ function SeriesDetail() {
   }
 
   const seriesData = series.data;
-
-  useEffect(() => {
-    addRecentlyViewed(seriesData);
-  }, [seriesData?.slug]);
 
   return (
     <>
@@ -216,16 +221,25 @@ function SeriesDetail() {
               </p>
             )}
 
-            {/* Rating Summary & Favorite */}
+            {/* Rating Summary & Favorite (API: rating 1–10, rating_count) */}
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <div className="flex items-center gap-2">
-                <StarRating rating={Math.round(seriesData.average_rating || 0)} />
-                <span className="text-sm text-white">
-                  {seriesData.average_rating ? seriesData.average_rating.toFixed(1) : 'N/A'}
-                  {seriesData.rating_count > 0 && (
-                    <span className="ml-1">({seriesData.rating_count} ratings)</span>
-                  )}
-                </span>
+                {(() => {
+                  const rating1to10 = seriesData.average_rating ?? seriesData.rating;
+                  const rating1to5 = rating1to10 != null && rating1to10 > 0 ? Number(rating1to10) / 2 : null;
+                  const starRating = rating1to5 != null ? Math.round(rating1to5) : 0;
+                  const displayText = rating1to5 != null ? `${rating1to5.toFixed(1)}/5` : 'N/A';
+                  const count = seriesData.rating_count ?? 0;
+                  return (
+                    <>
+                      <StarRating rating={starRating} />
+                      <span className="text-sm text-white">
+                        {displayText}
+                        {count > 0 && <span className="ml-1">({count} ratings)</span>}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
               <FavoriteButton seriesId={seriesData.id} />
               {seriesData.total_favorites > 0 && (

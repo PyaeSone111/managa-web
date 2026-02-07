@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { seriesApi, rankingsApi } from '../services/api';
 import SeriesGrid from '../components/series/SeriesGrid';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import HeroBanner from '../components/home/HeroBanner';
 import InfoStrip from '../components/home/InfoStrip';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
@@ -60,7 +59,7 @@ function Home() {
       {/* Full-width hero */}
       <div className="-mx-4 sm:-mx-6 lg:-mx-8">
         <HeroBanner />
-        <InfoStrip />
+
       </div>
 
       {/* Two-column: main content + sidebar (main is already container in App) */}
@@ -70,41 +69,45 @@ function Home() {
           {/* Latest Release: 6 cards per row (top image, below text) */}
           <section>
             <SectionHeader title="Latest Release" linkTo="/browse?sort=latest" linkText="View All" />
-            {latestLoading ? (
-              <LoadingSpinner size="lg" />
-            ) : (
-              <SeriesGrid series={latest?.data || []} layout="vertical" />
-            )}
+            <SeriesGrid
+              series={latest?.data || []}
+              loading={latestLoading}
+              layout="vertical"
+              sectionKey="home_latest"
+            />
           </section>
 
           {/* Popular: 4 cards per row (image left, text right) */}
           <section>
             <SectionHeader title="Popular" linkTo="/rankings" linkText="See Rankings" />
-            {topLoading ? (
-              <LoadingSpinner size="lg" />
-            ) : (
-              <SeriesGrid series={topRated?.data || []} layout="horizontal" />
-            )}
+            <SeriesGrid
+              series={topRated?.data || []}
+              loading={topLoading}
+              layout="horizontal"
+              sectionKey="home_popular"
+            />
           </section>
 
           {/* Weekly Highlights: 6 cards per row (top image, below text) */}
           <section>
             <SectionHeader title="Weekly Highlights" linkTo="/rankings" linkText="See Rankings" />
-            {trendingLoading ? (
-              <LoadingSpinner size="lg" />
-            ) : (
-              <SeriesGrid series={trending?.data || []} layout="vertical" />
-            )}
+            <SeriesGrid
+              series={trending?.data || []}
+              loading={trendingLoading}
+              layout="vertical"
+              sectionKey="home_weekly_highlights"
+            />
           </section>
 
           {/* Recently Added: 4 cards per row (image left, text right) */}
           <section>
             <SectionHeader title="Recently Added" linkTo="/browse?sort=newest" linkText="View All" />
-            {newLoading ? (
-              <LoadingSpinner size="lg" />
-            ) : (
-              <SeriesGrid series={newSeries?.data || []} layout="horizontal" />
-            )}
+            <SeriesGrid
+              series={newSeries?.data || []}
+              loading={newLoading}
+              layout="horizontal"
+              sectionKey="home_recently_added"
+            />
           </section>
         </div>
 

@@ -6,6 +6,7 @@ import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ThemeLoader from './components/common/ThemeLoader';
+import { BrandingProvider } from './context/BrandingContext';
 import Home from './pages/Home';
 import Browse from './pages/Browse';
 import SeriesDetail from './pages/SeriesDetail';
@@ -35,6 +36,7 @@ function App() {
             <Router>
               <ErrorBoundary>
                 <ThemeLoader>
+                <BrandingProvider>
                 <div className="min-h-screen transition-colors flex flex-col" style={{ background: 'var(--theme-body-bg)' }}>
                   <Navbar />
                   <main className="container mx-auto max-w-7xl flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
@@ -55,6 +57,7 @@ function App() {
                   </main>
                   <Footer />
                 </div>
+                </BrandingProvider>
                 </ThemeLoader>
               </ErrorBoundary>
             </Router>

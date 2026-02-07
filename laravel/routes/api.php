@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\Admin\AdminAuthorController;
 use App\Http\Controllers\Api\Admin\AdminMangaTypeController;
 use App\Http\Controllers\Api\Admin\AdminThemeController;
 use App\Http\Controllers\Api\ThemeController;
+use App\Http\Controllers\Api\BrandingController;
+use App\Http\Controllers\Api\Admin\AdminBrandingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,8 +48,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/series/{series}', [SeriesController::class, 'show']);
     Route::get('/series/{series}/chapters', [SeriesController::class, 'chapters']);
 
-    // Alias: /manga routes point to same controllers
+    // Alias: /manga routes point to same controllers (specific paths before {series})
     Route::get('/manga', [SeriesController::class, 'index']);
+    Route::get('/manga/recent', [RankingsController::class, 'recentlyUpdated']);
+    Route::get('/manga/new', [RankingsController::class, 'recentlyAdded']);
     Route::get('/manga/{series}', [SeriesController::class, 'show']);
     Route::get('/manga/{series}/chapters', [SeriesController::class, 'chapters']);
 
@@ -85,6 +89,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/theme/active', [ThemeController::class, 'active']);
 
     // ======================================================================
+    // Branding (public: logo, hero background, hero image for frontend)
+    // ======================================================================
+    Route::get('/branding', [BrandingController::class, 'show']);
+
+    // ======================================================================
     // Manga Type Routes
     // ======================================================================
     Route::get('/types', [MangaTypeController::class, 'index']);
@@ -108,12 +117,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/reading', [RankingsController::class, 'reading']);
         Route::get('/trending', [RankingsController::class, 'trending']);
     });
-
-    // ======================================================================
-    // Recently Updated/Added Routes
-    // ======================================================================
-    Route::get('/manga/recent', [RankingsController::class, 'recentlyUpdated']);
-    Route::get('/manga/new', [RankingsController::class, 'recentlyAdded']);
 
     // Legacy routes (backward compatibility)
     Route::get('/latest', [SeriesController::class, 'latest']);
@@ -231,6 +234,13 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // Theme Management
     // ======================================================================
     Route::get('/themes', [AdminThemeController::class, 'index']);
+
+    // ======================================================================
+    // Branding Management (logo, hero background, hero image)
+    // ======================================================================
+    Route::get('/branding', [AdminBrandingController::class, 'show']);
+    Route::put('/branding', [AdminBrandingController::class, 'update']);
+    Route::post('/branding', [AdminBrandingController::class, 'update']);
     Route::post('/themes', [AdminThemeController::class, 'store']);
     Route::get('/themes/{id}', [AdminThemeController::class, 'show']);
     Route::put('/themes/{id}', [AdminThemeController::class, 'update']);
