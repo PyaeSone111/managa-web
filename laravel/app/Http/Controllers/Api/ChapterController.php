@@ -4,24 +4,34 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chapter;
-use Illuminate\Http\Request;
+use App\Models\Series;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ChapterController extends Controller
 {
     /**
-     * Get chapter details with pages by ID
+     * Get chapter details with pages by ID (cached)
      */
     public function show($id): JsonResponse
     {
-        $chapter = Chapter::with(['series', 'pages' => function ($query) {
-            $query->orderBy('page_number', 'asc');
-        }])
-        ->where('is_published', true)
-        ->findOrFail($id);
+        $cacheKey = "chapter:{$id}:v2";
 
-        // Increment views
-        $chapter->increment('views');
+        $chapter = Cache::remember($cacheKey, 600, function () use ($id) {
+            return Chapter::query()
+                ->with([
+                    'series:id,title,slug,cover_url,thumbnail_url',
+                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                        ->orderBy('page_number', 'asc')
+                ])
+                ->select(['id', 'series_id', 'chapter_number', 'title', 'published_at', 'views'])
+                ->where('is_published', true)
+                ->findOrFail($id);
+        });
+
+        // Increment views non-blocking
+        DB::table('chapters')->where('id', $id)->increment('views');
 
         return response()->json([
             'success' => true,
@@ -30,35 +40,64 @@ class ChapterController extends Controller
     }
 
     /**
-     * Get chapter by series slug and chapter number
+     * Get chapter pages only (for lazy loading)
+     */
+    public function pages($id): JsonResponse
+    {
+        $cacheKey = "chapter:{$id}:pages";
+
+        $pages = Cache::remember($cacheKey, 3600, function () use ($id) {
+            $chapter = Chapter::select('id')
+                ->where('is_published', true)
+                ->findOrFail($id);
+
+            return $chapter->pages()
+                ->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                ->orderBy('page_number', 'asc')
+                ->get();
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $pages
+        ]);
+    }
+
+    /**
+     * Get chapter by series slug and chapter number (cached)
      */
     public function showBySeriesAndNumber($series, $chapterNumber): JsonResponse
     {
-        // Find series by slug or ID (only use id when parameter is numeric)
-        $seriesModel = \App\Models\Series::where(function ($query) use ($series) {
-            $query->where('slug', $series);
-            if (is_numeric($series)) {
-                $query->orWhere('id', (int) $series);
-            }
-        })->firstOrFail();
-
-        // Convert chapter number to float for comparison (handles decimals like 1.5)
         $chapterNumberFloat = (float) $chapterNumber;
-        
-        // Find chapter by series ID and chapter number
-        $chapter = Chapter::with(['series', 'pages' => function ($query) {
-            $query->orderBy('page_number', 'asc');
-        }])
-        ->where('series_id', $seriesModel->id)
-        ->where('chapter_number', $chapterNumberFloat)
-        ->where('is_published', true)
-        ->firstOrFail();
-        
-        // Ensure pages are sorted by page_number
-        $chapter->pages = $chapter->pages->sortBy('page_number')->values();
+        $cacheKey = "chapter:series:{$series}:num:{$chapterNumberFloat}:v2";
 
-        // Increment views
-        $chapter->increment('views');
+        $chapter = Cache::remember($cacheKey, 600, function () use ($series, $chapterNumberFloat) {
+            // Find series ID first (fast lookup)
+            $seriesModel = Series::query()
+                ->select('id')
+                ->where(function ($query) use ($series) {
+                    $query->where('slug', $series);
+                    if (is_numeric($series)) {
+                        $query->orWhere('id', (int) $series);
+                    }
+                })
+                ->firstOrFail();
+
+            return Chapter::query()
+                ->with([
+                    'series:id,title,slug,cover_url,thumbnail_url',
+                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                        ->orderBy('page_number', 'asc')
+                ])
+                ->select(['id', 'series_id', 'chapter_number', 'title', 'published_at', 'views'])
+                ->where('series_id', $seriesModel->id)
+                ->where('chapter_number', $chapterNumberFloat)
+                ->where('is_published', true)
+                ->firstOrFail();
+        });
+
+        // Increment views non-blocking
+        DB::table('chapters')->where('id', $chapter->id)->increment('views');
 
         return response()->json([
             'success' => true,
@@ -66,4 +105,3 @@ class ChapterController extends Controller
         ]);
     }
 }
-

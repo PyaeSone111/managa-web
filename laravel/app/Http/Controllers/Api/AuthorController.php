@@ -11,57 +11,45 @@ use Illuminate\Support\Facades\Cache;
 class AuthorController extends Controller
 {
     /**
-     * List all authors.
-     *
-     * GET /api/v1/authors
+     * List all authors with caching (1 hour)
      */
     public function index(Request $request): JsonResponse
     {
-        $request->validate([
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:100',
-            'search' => 'nullable|string|max:100',
-        ]);
-
         $perPage = min($request->input('per_page', 50), 100);
+        $page = $request->input('page', 1);
         $search = $request->input('search');
 
-        $cacheKey = "authors:list:{$perPage}:" . md5($search ?? '');
+        $cacheKey = "authors:list:v2:{$page}:{$perPage}:" . md5($search ?? '');
 
-        $authors = Cache::remember($cacheKey, 1800, function () use ($perPage, $search) {
+        $result = Cache::remember($cacheKey, 3600, function () use ($perPage, $search) {
             $query = Author::query()
-                ->withCount('series');
+                ->select(['id', 'name', 'slug']);
 
             if ($search) {
-                $query->search($search);
+                $query->where('name', 'like', "%{$search}%");
             }
 
-            return $query->orderBy('name')
-                ->paginate($perPage);
+            return $query->orderBy('name')->paginate($perPage);
         });
 
         return response()->json([
-            'data' => $authors->items(),
+            'data' => $result->items(),
             'meta' => [
-                'current_page' => $authors->currentPage(),
-                'per_page' => $authors->perPage(),
-                'total' => $authors->total(),
-                'total_pages' => $authors->lastPage(),
+                'current_page' => $result->currentPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+                'total_pages' => $result->lastPage(),
             ],
-        ]);
+        ])->header('Cache-Control', 'public, max-age=3600');
     }
 
     /**
-     * Get author details.
-     *
-     * GET /api/v1/authors/{id}
+     * Get author details with caching
      */
     public function show(int $id): JsonResponse
     {
-        $cacheKey = "author:{$id}";
-
-        $author = Cache::remember($cacheKey, 1800, function () use ($id) {
-            return Author::withCount('series')->findOrFail($id);
+        $author = Cache::remember("author:{$id}:v2", 3600, function () use ($id) {
+            return Author::select(['id', 'name', 'slug'])->findOrFail($id);
         });
 
         return response()->json([
@@ -70,39 +58,44 @@ class AuthorController extends Controller
     }
 
     /**
-     * Get series by author.
-     *
-     * GET /api/v1/authors/{id}/series
+     * Get series by author with caching
      */
     public function series(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:50',
-        ]);
-
-        $author = Author::findOrFail($id);
         $perPage = min($request->input('per_page', 20), 50);
+        $page = $request->input('page', 1);
 
-        $series = $author->series()
-            ->where('is_active', true)
-            ->with(['categories', 'mangaTypes'])
-            ->withPivot('role')
-            ->orderBy('title')
-            ->paginate($perPage);
+        $cacheKey = "author:{$id}:series:{$page}:{$perPage}";
+
+        $result = Cache::remember($cacheKey, 300, function () use ($id, $perPage) {
+            $author = Author::select(['id', 'name', 'slug'])->findOrFail($id);
+
+            $series = $author->series()
+                ->select([
+                    'series.id', 'title', 'slug', 'cover_url', 'thumbnail_url',
+                    'status', 'rating', 'total_views', 'last_chapter_at'
+                ])
+                ->where('is_active', true)
+                ->with(['categories:id,name,slug', 'mangaTypes:id,name,slug'])
+                ->withPivot('role')
+                ->orderBy('title')
+                ->paginate($perPage);
+
+            return ['series' => $series, 'author' => $author];
+        });
 
         return response()->json([
-            'data' => $series->items(),
+            'data' => $result['series']->items(),
             'meta' => [
-                'current_page' => $series->currentPage(),
-                'per_page' => $series->perPage(),
-                'total' => $series->total(),
-                'total_pages' => $series->lastPage(),
+                'current_page' => $result['series']->currentPage(),
+                'per_page' => $result['series']->perPage(),
+                'total' => $result['series']->total(),
+                'total_pages' => $result['series']->lastPage(),
             ],
             'author' => [
-                'id' => $author->id,
-                'name' => $author->name,
-                'slug' => $author->slug,
+                'id' => $result['author']->id,
+                'name' => $result['author']->name,
+                'slug' => $result['author']->slug,
             ],
         ]);
     }

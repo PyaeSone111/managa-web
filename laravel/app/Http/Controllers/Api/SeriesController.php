@@ -4,119 +4,141 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Series;
-use App\Models\UserRating;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class SeriesController extends Controller
 {
     /**
-     * Get paginated list of series
-     * 
-     * Query Parameters:
-     * - page: Page number (default: 1)
-     * - per_page: Items per page (default: 20, max: 100)
-     * - category: Filter by category slug
-     * - tag: Filter by tag slug
-     * - type: Filter by type (manga/manhwa/manhua)
-     * - status: Filter by status (ongoing/completed/hiatus/cancelled)
-     * - sort: Sort by (latest/popular/rating/alphabetical)
-     * - search: Search query
+     * Get paginated list of series with caching
      */
     public function index(Request $request): JsonResponse
     {
         $perPage = min($request->get('per_page', 20), 100);
-        $query = Series::with(['categories', 'tags'])
-            ->where('is_active', true);
-
-        // Apply filters
-        if ($request->has('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
-        }
-
-        if ($request->has('tag')) {
-            $query->whereHas('tags', function ($q) use ($request) {
-                $q->where('slug', $request->tag);
-            });
-        }
-
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereFullText(['title', 'description'], $search)
-                  ->orWhere('title', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%");
-            });
-        }
-
-        // Apply sorting
+        $page = $request->get('page', 1);
+        $category = $request->get('category');
+        $types = $request->get('types');
+        $authors = $request->get('authors');
+        $status = $request->get('status');
+        $search = $request->get('search');
         $sort = $request->get('sort', 'latest');
-        switch ($sort) {
-            case 'popular':
-                $query->orderBy('total_views', 'desc');
-                break;
-            case 'rating':
-                $query->orderBy('rating', 'desc');
-                break;
-            case 'alphabetical':
-                $query->orderBy('title', 'asc');
-                break;
-            case 'latest':
-            default:
-                $query->orderBy('updated_at', 'desc');
-                break;
-        }
 
-        $series = $query->paginate($perPage);
+        // Build cache key from all parameters
+        $cacheKey = 'series:list:' . md5(serialize([
+            'page' => $page,
+            'perPage' => $perPage,
+            'category' => $category,
+            'types' => $types,
+            'authors' => $authors,
+            'status' => $status,
+            'search' => $search,
+            'sort' => $sort,
+        ]));
+
+        $result = Cache::remember($cacheKey, 120, function () use (
+            $perPage, $category, $types, $authors, $status, $search, $sort
+        ) {
+            $query = Series::query()
+                ->select([
+                    'id', 'title', 'slug', 'cover_url', 'thumbnail_url',
+                    'status', 'rating', 'rating_count', 'total_views',
+                    'total_favorites', 'total_chapters', 'last_chapter_at', 'created_at'
+                ])
+                ->with(['categories:id,name,slug', 'mangaTypes:id,name,slug'])
+                ->where('is_active', true);
+
+            if ($category) {
+                $query->whereHas('categories', fn($q) => $q->where('slug', $category));
+            }
+
+            if ($types) {
+                $typeIds = array_filter(explode(',', $types));
+                if (!empty($typeIds)) {
+                    $query->whereHas('mangaTypes', fn($q) => $q->whereIn('manga_types.id', $typeIds));
+                }
+            }
+
+            if ($authors) {
+                $authorIds = array_filter(explode(',', $authors));
+                if (!empty($authorIds)) {
+                    $query->whereHas('authors', fn($q) => $q->whereIn('authors.id', $authorIds));
+                }
+            }
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('author', 'like', "%{$search}%");
+                });
+            }
+
+            switch ($sort) {
+                case 'popular':
+                    $query->orderBy('total_views', 'desc');
+                    break;
+                case 'rating':
+                    $query->orderBy('rating', 'desc');
+                    break;
+                case 'alphabetical':
+                    $query->orderBy('title', 'asc');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'latest':
+                default:
+                    $query->orderBy('last_chapter_at', 'desc')->orderBy('updated_at', 'desc');
+                    break;
+            }
+
+            return $query->paginate($perPage);
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $series->items(),
+            'data' => $result->items(),
             'pagination' => [
-                'current_page' => $series->currentPage(),
-                'last_page' => $series->lastPage(),
-                'per_page' => $series->perPage(),
-                'total' => $series->total(),
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
             ]
         ]);
     }
 
     /**
-     * Get single series details by ID or slug
+     * Get single series details by ID or slug with caching
      */
     public function show($series): JsonResponse
     {
-        // Find by slug or by ID (only use id when parameter is numeric)
-        $seriesModel = Series::with(['categories', 'tags'])
-            ->where('is_active', true)
-            ->where(function ($query) use ($series) {
-                $query->where('slug', $series);
-                if (is_numeric($series)) {
-                    $query->orWhere('id', (int) $series);
-                }
-            })
-            ->firstOrFail();
+        $cacheKey = "series:show:{$series}";
 
-        // Ensure overall rating is present (from user_ratings if DB columns are null/stale)
-        $ratingCount = UserRating::where('series_id', $seriesModel->id)->count();
-        if ($ratingCount > 0) {
-            $avgRating = UserRating::where('series_id', $seriesModel->id)->avg('rating');
-            $seriesModel->setAttribute('rating', round((float) $avgRating, 2));
-            $seriesModel->setAttribute('rating_count', $ratingCount);
-        }
+        $seriesModel = Cache::remember($cacheKey, 300, function () use ($series) {
+            return Series::query()
+                ->with([
+                    'categories:id,name,slug',
+                    'mangaTypes:id,name,slug',
+                    'authors:id,name,slug',
+                    'tags:id,name,slug'
+                ])
+                ->where('is_active', true)
+                ->where(function ($query) use ($series) {
+                    $query->where('slug', $series);
+                    if (is_numeric($series)) {
+                        $query->orWhere('id', (int) $series);
+                    }
+                })
+                ->firstOrFail();
+        });
 
-        // Increment views
-        $seriesModel->increment('total_views');
+        // Increment views asynchronously (non-blocking)
+        DB::table('series')->where('id', $seriesModel->id)->increment('total_views');
 
         return response()->json([
             'success' => true,
@@ -125,49 +147,61 @@ class SeriesController extends Controller
     }
 
     /**
-     * Get chapters for a series by ID or slug
+     * Get chapters for a series with caching
      */
     public function chapters($series, Request $request): JsonResponse
     {
         $perPage = min($request->get('per_page', 50), 100);
-        
-        // Find by slug or by ID (only use id when parameter is numeric)
-        $seriesModel = Series::where(function ($query) use ($series) {
-            $query->where('slug', $series);
-            if (is_numeric($series)) {
-                $query->orWhere('id', (int) $series);
-            }
-        })->firstOrFail();
-        
-        $chapters = $seriesModel->chapters()
-            ->where('is_published', true)
-            ->orderBy('chapter_number', 'desc')
-            ->paginate($perPage);
+        $page = $request->get('page', 1);
+
+        $cacheKey = "series:chapters:{$series}:{$page}:{$perPage}";
+
+        $result = Cache::remember($cacheKey, 180, function () use ($series, $perPage) {
+            $seriesModel = Series::query()
+                ->select('id')
+                ->where(function ($query) use ($series) {
+                    $query->where('slug', $series);
+                    if (is_numeric($series)) {
+                        $query->orWhere('id', (int) $series);
+                    }
+                })
+                ->firstOrFail();
+
+            return $seriesModel->chapters()
+                ->select(['id', 'series_id', 'chapter_number', 'title', 'published_at', 'views'])
+                ->where('is_published', true)
+                ->orderBy('chapter_number', 'desc')
+                ->paginate($perPage);
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $chapters->items(),
+            'data' => $result->items(),
             'pagination' => [
-                'current_page' => $chapters->currentPage(),
-                'last_page' => $chapters->lastPage(),
-                'per_page' => $chapters->perPage(),
-                'total' => $chapters->total(),
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
             ]
         ]);
     }
 
     /**
-     * Get latest updated series
+     * Get latest updated series with caching
      */
     public function latest(Request $request): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
-        
-        $series = Series::with(['categories'])
-            ->where('is_active', true)
-            ->orderBy('updated_at', 'desc')
-            ->limit($limit)
-            ->get();
+
+        $series = Cache::remember("series:latest:{$limit}", 300, function () use ($limit) {
+            return Series::query()
+                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(['categories:id,name,slug'])
+                ->where('is_active', true)
+                ->orderBy('last_chapter_at', 'desc')
+                ->limit($limit)
+                ->get();
+        });
 
         return response()->json([
             'success' => true,
@@ -176,17 +210,21 @@ class SeriesController extends Controller
     }
 
     /**
-     * Get popular series
+     * Get popular series with caching
      */
     public function popular(Request $request): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
-        
-        $series = Series::with(['categories'])
-            ->where('is_active', true)
-            ->orderBy('total_views', 'desc')
-            ->limit($limit)
-            ->get();
+
+        $series = Cache::remember("series:popular:{$limit}", 300, function () use ($limit) {
+            return Series::query()
+                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(['categories:id,name,slug'])
+                ->where('is_active', true)
+                ->orderBy('total_views', 'desc')
+                ->limit($limit)
+                ->get();
+        });
 
         return response()->json([
             'success' => true,
@@ -195,19 +233,22 @@ class SeriesController extends Controller
     }
 
     /**
-     * Get trending series (based on recent views)
+     * Get trending series with caching
      */
     public function trending(Request $request): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
-        
-        // This could be enhanced with a separate trending calculation table
-        $series = Series::with(['categories'])
-            ->where('is_active', true)
-            ->where('updated_at', '>=', now()->subDays(7))
-            ->orderBy('total_views', 'desc')
-            ->limit($limit)
-            ->get();
+
+        $series = Cache::remember("series:trending:{$limit}", 300, function () use ($limit) {
+            return Series::query()
+                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(['categories:id,name,slug'])
+                ->where('is_active', true)
+                ->where('updated_at', '>=', now()->subDays(7))
+                ->orderBy('total_views', 'desc')
+                ->limit($limit)
+                ->get();
+        });
 
         return response()->json([
             'success' => true,

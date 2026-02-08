@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branding;
+use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -165,6 +167,53 @@ class AdminUploadController extends Controller
             'success' => true,
             'data' => $uploaded,
             'message' => count($uploaded) . ' image(s) uploaded successfully'
+        ]);
+    }
+
+    /**
+     * List existing images for reuse: branding (logo, hero) + series covers/thumbnails.
+     * GET /api/v1/admin/existing-images
+     */
+    public function existingImages(Request $request): JsonResponse
+    {
+        $branding = Branding::current();
+        $brandingImages = [];
+        if ($branding->logo_url) {
+            $brandingImages[] = ['url' => $branding->logo_url, 'label' => 'Branding: Logo'];
+        }
+        if ($branding->hero_background_url) {
+            $brandingImages[] = ['url' => $branding->hero_background_url, 'label' => 'Branding: Hero background'];
+        }
+        if ($branding->hero_image_url) {
+            $brandingImages[] = ['url' => $branding->hero_image_url, 'label' => 'Branding: Hero image'];
+        }
+
+        $seriesImages = Series::query()
+            ->select('id', 'title', 'cover_url', 'thumbnail_url')
+            ->where(function ($q) {
+                $q->whereNotNull('cover_url')->where('cover_url', '!=', '')
+                    ->orWhereNotNull('thumbnail_url')->where('thumbnail_url', '!=', '');
+            })
+            ->orderBy('updated_at', 'desc')
+            ->limit(100)
+            ->get()
+            ->flatMap(function ($s) {
+                $items = [];
+                if (!empty($s->cover_url)) {
+                    $items[] = ['url' => $s->cover_url, 'label' => $s->title ? "Cover: {$s->title}" : 'Cover'];
+                }
+                if (!empty($s->thumbnail_url) && $s->thumbnail_url !== $s->cover_url) {
+                    $items[] = ['url' => $s->thumbnail_url, 'label' => $s->title ? "Thumb: {$s->title}" : 'Thumbnail'];
+                }
+                return $items;
+            })
+            ->unique('url')
+            ->values()
+            ->all();
+
+        return response()->json([
+            'branding' => $brandingImages,
+            'series_images' => $seriesImages,
         ]);
     }
 }

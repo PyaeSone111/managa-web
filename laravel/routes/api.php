@@ -254,8 +254,9 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     Route::post('/themes/{id}/activate', [AdminThemeController::class, 'activate']);
 
     // ======================================================================
-    // Image Upload
+    // Image Upload & existing images for reuse
     // ======================================================================
+    Route::get('/existing-images', [AdminUploadController::class, 'existingImages']);
     Route::post('/upload', [AdminUploadController::class, 'upload']);
     Route::post('/upload/bulk', [AdminUploadController::class, 'bulkUpload']);
 });

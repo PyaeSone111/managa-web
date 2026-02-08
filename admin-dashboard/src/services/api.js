@@ -125,6 +125,9 @@ export const adminApi = {
   // Branding (logo, hero background, hero image). Use POST so multipart files are received (PUT does not populate $_FILES in PHP).
   getBranding: () => api.get('/admin/branding'),
   updateBranding: (formData) => api.post('/admin/branding', formData),
+
+  // Existing images for reuse (branding + series covers/thumbnails)
+  getExistingImages: () => api.get('/admin/existing-images'),
 };
 
 export default api;
