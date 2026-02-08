@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { seriesApi, rankingsApi } from '../services/api';
+import { useEffect } from 'react';
+import { dashboardApi } from '../services/api';
+import { useBranding } from '../context/BrandingContext';
 import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
@@ -25,25 +27,26 @@ function SectionHeader({ title, linkTo, linkText = 'View All' }) {
 }
 
 function Home() {
-  const { data: latest, isLoading: latestLoading } = useQuery({
-    queryKey: ['series', 'latest'],
-    queryFn: () => seriesApi.getLatest({ limit: 12 }),
+  const { updateBranding } = useBranding();
+
+  // Single consolidated API call for all homepage data
+  const { data: dashboard, isLoading } = useQuery({
+    queryKey: ['dashboard', 'home'],
+    queryFn: () => dashboardApi.getHomepage({ limit: 12 }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: newSeries, isLoading: newLoading } = useQuery({
-    queryKey: ['series', 'new'],
-    queryFn: () => seriesApi.getNew({ limit: 12 }),
-  });
+  // Update branding cache when dashboard loads
+  useEffect(() => {
+    if (dashboard?.data?.branding) {
+      updateBranding(dashboard.data.branding);
+    }
+  }, [dashboard, updateBranding]);
 
-  const { data: trending, isLoading: trendingLoading } = useQuery({
-    queryKey: ['rankings', 'trending', 'home'],
-    queryFn: () => rankingsApi.getTrending({ per_page: 12, period: 'weekly' }),
-  });
-
-  const { data: topRated, isLoading: topLoading } = useQuery({
-    queryKey: ['rankings', 'top', 'home'],
-    queryFn: () => rankingsApi.getTop({ per_page: 12 }),
-  });
+  const latest = dashboard?.data?.latest || [];
+  const newSeries = dashboard?.data?.new || [];
+  const trending = dashboard?.data?.trending || [];
+  const topRated = dashboard?.data?.top || [];
 
   return (
     <>
@@ -68,8 +71,8 @@ function Home() {
           <section>
             <SectionHeader title="Latest Release" linkTo="/browse?sort=latest" linkText="View All" />
             <SeriesGrid
-              series={latest?.data || []}
-              loading={latestLoading}
+              series={latest}
+              loading={isLoading}
               section="home_latest"
             />
           </section>
@@ -78,8 +81,8 @@ function Home() {
           <section>
             <SectionHeader title="Popular" linkTo="/rankings" linkText="See Rankings" />
             <SeriesGrid
-              series={topRated?.data || []}
-              loading={topLoading}
+              series={topRated}
+              loading={isLoading}
               section="home_popular"
             />
           </section>
@@ -88,8 +91,8 @@ function Home() {
           <section>
             <SectionHeader title="Weekly Highlights" linkTo="/rankings" linkText="See Rankings" />
             <SeriesGrid
-              series={trending?.data || []}
-              loading={trendingLoading}
+              series={trending}
+              loading={isLoading}
               section="home_weekly_highlights"
             />
           </section>
@@ -98,8 +101,8 @@ function Home() {
           <section>
             <SectionHeader title="Recently Added" linkTo="/browse?sort=newest" linkText="View All" />
             <SeriesGrid
-              series={newSeries?.data || []}
-              loading={newLoading}
+              series={newSeries}
+              loading={isLoading}
               section="home_recently_added"
             />
           </section>

@@ -148,5 +148,9 @@ export const brandingApi = {
   getBranding: () => api.get('/branding'),
 };
 
+export const dashboardApi = {
+  getHomepage: (params) => api.get('/dashboard', { params }),
+};
+
 export default api;
 

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Admin\AdminMangaTypeController;
 use App\Http\Controllers\Api\Admin\AdminThemeController;
 use App\Http\Controllers\Api\ThemeController;
 use App\Http\Controllers\Api\BrandingController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Admin\AdminBrandingController;
 
 /*
@@ -92,6 +93,11 @@ Route::prefix('v1')->group(function () {
     // Branding (public: logo, hero background, hero image for frontend)
     // ======================================================================
     Route::get('/branding', [BrandingController::class, 'show']);
+
+    // ======================================================================
+    // Dashboard (consolidated homepage data in a single call)
+    // ======================================================================
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // ======================================================================
     // Manga Type Routes

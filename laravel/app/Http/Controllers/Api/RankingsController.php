@@ -366,12 +366,11 @@ class RankingsController extends Controller
         $cacheKey = "manga:recent:v4:{$page}:{$perPage}";
 
         $results = Cache::remember($cacheKey, 300, function () use ($perPage) {
+            // Use last_chapter_at column instead of subquery for better performance
             return Series::query()
                 ->active()
-                ->whereHas('chapters', fn ($q) => $q->where('is_published', true))
-                ->orderByRaw(
-                    '(SELECT MAX(published_at) FROM chapters WHERE chapters.series_id = series.id AND is_published = true) DESC'
-                )
+                ->whereNotNull('last_chapter_at')
+                ->orderBy('last_chapter_at', 'desc')
                 ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
                     $q->where('is_published', true)
                         ->orderBy('published_at', 'desc')
