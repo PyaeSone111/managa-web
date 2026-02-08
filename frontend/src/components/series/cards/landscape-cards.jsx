@@ -150,7 +150,7 @@ export function Card14Action({ manga }) {
 export function Card15Compact({ manga, rank }) {
   return (
     <div className="group cursor-pointer flex items-center gap-3 rounded-lg border border-dockside-blue bg-quarzo/30 p-2.5 transition-all duration-300 hover:border-delta-green/40 hover:bg-quarzo/50 shadow-sm">
-      <span className="text-lg font-black text-sidewalk-grey group-hover:text-delta-green transition-colors w-6 text-center flex-shrink-0">{rank ?? 0}</span>
+      <span className="inline-flex items-center justify-center min-w-[1.75rem] text-sm font-black flex-shrink-0" style={{ color: '#516D74', WebkitTextStroke: '1.5px white', paintOrder: 'stroke fill' }}>{rank ?? 0}</span>
       <div className="relative flex-shrink-0 w-12 h-16 rounded-md overflow-hidden bg-quarzo/50">
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover" />
       </div>

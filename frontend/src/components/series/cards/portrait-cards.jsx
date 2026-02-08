@@ -275,7 +275,7 @@ export function Card10Rank({ manga, rank }) {
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
         <div className="absolute -bottom-2 -left-1">
-          <span className="text-7xl font-black leading-none" style={{ WebkitTextStroke: '2px rgba(81, 109, 116, 0.5)', color: 'transparent', textShadow: '0 2px 20px rgba(14, 33, 31, 0.15)' }}>
+          <span className="text-7xl font-black leading-none" style={{ color: '#516D74', WebkitTextStroke: '2px white', paintOrder: 'stroke fill' }}>
             {String(rank ?? 0).padStart(2, '0')}
           </span>
         </div>

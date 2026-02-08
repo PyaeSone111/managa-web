@@ -104,29 +104,34 @@ class AdminUploadController extends Controller
     }
 
     /**
-     * Upload multiple images (bulk)
+     * Upload multiple images (bulk).
+     * If you get 503: raise upload_max_filesize and post_max_size in PHP (e.g. public/.user.ini).
      */
     public function bulkUpload(Request $request): JsonResponse
     {
-        // Validate request - Laravel handles files[] automatically
+        $files = $request->file('files');
+        if (empty($files) && $request->header('Content-Length') > 10 * 1024 * 1024) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request too large. Increase post_max_size and upload_max_filesize in PHP (e.g. .user.ini: post_max_size=128M, upload_max_filesize=64M).',
+            ], 413);
+        }
+
         $request->validate([
-            'files' => 'required|array|min:1|max:50',
+            'files' => 'required|array|min:1|max:20',
             'files.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'type' => 'nullable|in:thumbnail,cover,chapter',
         ], [
             'files.required' => 'At least one file is required.',
             'files.array' => 'Files must be an array.',
             'files.min' => 'At least one file is required.',
-            'files.max' => 'Maximum 50 files allowed.',
+            'files.max' => 'Maximum 20 files per request (to avoid 503 on shared hosting).',
             'files.*.required' => 'Each file is required.',
             'files.*.image' => 'Each file must be an image.',
             'files.*.mimes' => 'Each file must be a jpeg, png, jpg, gif, or webp.',
             'files.*.max' => 'Each file must not exceed 10MB.',
         ]);
 
-        // Get files - $request->file('files') works for both 'files' and 'files[]'
-        $files = $request->file('files');
-        
         // Ensure files is an array
         if (!is_array($files)) {
             $files = [$files];

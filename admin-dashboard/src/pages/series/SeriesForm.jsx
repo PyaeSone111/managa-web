@@ -291,15 +291,17 @@ function SeriesForm() {
           {/* Images */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ImageUpload
+              key="thumbnail"
               label="Thumbnail Image"
               value={formData.thumbnail_url}
-              onChange={(url) => setFormData({ ...formData, thumbnail_url: url })}
+              onChange={(url) => setFormData((prev) => ({ ...prev, thumbnail_url: url }))}
               type="thumbnail"
             />
             <ImageUpload
+              key="cover"
               label="Cover Image"
               value={formData.cover_url}
-              onChange={(url) => setFormData({ ...formData, cover_url: url })}
+              onChange={(url) => setFormData((prev) => ({ ...prev, cover_url: url }))}
               type="cover"
             />
           </div>
