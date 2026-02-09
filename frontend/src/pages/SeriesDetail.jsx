@@ -110,7 +110,7 @@ function FavoriteButton({ seriesId }) {
   );
 }
 
-function UserRating({ seriesId }) {
+function UserRating({ seriesId, slug }) {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
 
@@ -127,7 +127,24 @@ function UserRating({ seriesId }) {
     onSuccess: (data, variables) => {
       const newRating1to10 = data?.data?.user_rating ?? variables * 2;
       queryClient.setQueryData(['rating', seriesId], { data: { rating: newRating1to10, rated_at: new Date().toISOString() } });
+      const avgRating = data?.data?.series_average_rating;
+      const ratingCount = data?.data?.series_rating_count;
+      if (slug != null && (avgRating != null || ratingCount != null)) {
+        queryClient.setQueryData(['series', slug], (prev) => {
+          if (!prev?.data) return prev;
+          return {
+            ...prev,
+            data: {
+              ...prev.data,
+              ...(avgRating != null && { rating: avgRating, average_rating: avgRating }),
+              ...(ratingCount != null && { rating_count: ratingCount }),
+            },
+          };
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['series'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['rankings'] });
     },
   });
 
@@ -330,7 +347,7 @@ function SeriesDetail() {
 
               {/* User Rating */}
               <div className="mt-4 pt-3 border-t border-quarzo">
-                <UserRating seriesId={seriesData.id} />
+                <UserRating seriesId={seriesData.id} slug={slug} />
               </div>
             </div>
           </div>

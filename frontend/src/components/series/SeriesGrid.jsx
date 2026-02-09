@@ -1,6 +1,7 @@
 import SeriesCard from './SeriesCard';
 import { MangaCard } from './cards/index.jsx';
 import { useBranding } from '../../context/BrandingContext';
+import GoogleAd from '../common/GoogleAd';
 
 const DEFAULT_COLS_V = { default: 2, sm: 3, md: 4, lg: 5, xl: 6 };
 const DEFAULT_COLS_H = { default: 1, sm: 1, md: 2, lg: 3, xl: 4 };
@@ -53,7 +54,9 @@ function SkeletonCard({ isVertical }) {
   );
 }
 
-function SeriesGrid({ series = [], loading = false, layout = 'vertical', section, onEdit, onDelete }) {
+const DEFAULT_AD_EVERY_N_CARDS = 12; // default: ad every 12 cards (~3 rows of 4)
+
+function SeriesGrid({ series = [], loading = false, layout = 'vertical', section, onEdit, onDelete, adSlot, adEveryNCards = DEFAULT_AD_EVERY_N_CARDS, adFormat, adLayoutKey }) {
   const { gridColumns, cardLayout } = useBranding();
   const useDesignCards = Boolean(section);
   const isVertical = useDesignCards
@@ -82,32 +85,58 @@ function SeriesGrid({ series = [], loading = false, layout = 'vertical', section
     );
   }
 
-  if (useDesignCards) {
+  const renderCard = (item, index) => {
+    if (useDesignCards) {
+      return (
+        <MangaCard
+          key={item.id}
+          series={item}
+          section={section}
+          rank={index + 1}
+        />
+      );
+    }
+    return (
+      <SeriesCard
+        key={item.id}
+        series={item}
+        layout={isVertical ? 'vertical' : 'horizontal'}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+  };
+
+  if (!adSlot) {
+    if (useDesignCards) {
+      return (
+        <div className={gridClass}>
+          {series.map((item, index) => renderCard(item, index))}
+        </div>
+      );
+    }
     return (
       <div className={gridClass}>
-        {series.map((item, index) => (
-          <MangaCard
-            key={item.id}
-            series={item}
-            section={section}
-            rank={index + 1}
-          />
-        ))}
+        {series.map((item) => renderCard(item, 0))}
       </div>
     );
   }
 
+  const items = [];
+  for (let i = 0; i < series.length; i++) {
+    if (i > 0 && i % adEveryNCards === 0) {
+      items.push(
+        <div key={`ad-${i}`} className="col-span-full my-2">
+          <GoogleAd adSlot={adSlot} adFormat={adFormat} adLayoutKey={adLayoutKey} className="w-full" />
+        </div>
+      );
+    }
+    items.push(renderCard(series[i], i));
+  }
+
   return (
     <div className={gridClass}>
-      {series.map((item) => (
-        <SeriesCard
-          key={item.id}
-          series={item}
-          layout={isVertical ? 'vertical' : 'horizontal'}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+      {items}
     </div>
   );
 }

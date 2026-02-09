@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import GoogleAd from './components/common/GoogleAd';
 import ThemeLoader from './components/common/ThemeLoader';
 import { BrandingProvider } from './context/BrandingContext';
 import Home from './pages/Home';
@@ -15,6 +16,8 @@ import Rankings from './pages/Rankings';
 import Favorites from './pages/Favorites';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import ContactUs from './pages/ContactUs';
 import NotFound from './pages/NotFound';
 import './App.css';
 
@@ -39,8 +42,17 @@ function App() {
                 <BrandingProvider>
                   <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)]">
                     <Navbar />
-                    <main className="container mx-auto max-w-7xl flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-                      <Routes>
+                    <div className="flex flex-1 w-full">
+                      {/* Left ad column - desktop only, outside container */}
+                      {import.meta.env.VITE_ADSENSE_SLOT_LEFT && (
+                        <aside className="hidden lg:flex lg:w-[160px] xl:w-[180px] flex-shrink-0 justify-center pt-4 pb-8 px-2">
+                          <div className="sticky top-24 w-full max-w-[160px]">
+                            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_LEFT} adFormat="rectangle" className="min-h-[600px]" />
+                          </div>
+                        </aside>
+                      )}
+                      <main className="container mx-auto max-w-7xl flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                        <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/browse" element={<Browse />} />
                         <Route path="/rankings" element={<Rankings />} />
@@ -52,9 +64,20 @@ function App() {
                         <Route path="/tag/:slug" element={<Browse />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="/contact" element={<ContactUs />} />
                         <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
+                        </Routes>
+                      </main>
+                      {/* Right ad column - desktop only, outside container */}
+                      {import.meta.env.VITE_ADSENSE_SLOT_RIGHT && (
+                        <aside className="hidden lg:flex lg:w-[160px] xl:w-[180px] flex-shrink-0 justify-center pt-4 pb-8 px-2">
+                          <div className="sticky top-24 w-full max-w-[160px]">
+                            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_RIGHT} adFormat="rectangle" className="min-h-[600px]" />
+                          </div>
+                        </aside>
+                      )}
+                    </div>
                     <Footer />
                   </div>
                 </BrandingProvider>

@@ -7,6 +7,7 @@ import { useBranding } from '../context/BrandingContext';
 import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
+import GoogleAd from '../components/common/GoogleAd';
 
 function SectionHeader({ title, linkTo, linkText = 'View All' }) {
   return (
@@ -74,16 +75,21 @@ function Home() {
               series={latest}
               loading={isLoading}
               section="home_latest"
+              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
 
-          {/* Popular */}
+          {/* Popular - in-feed ad every 5 cards */}
           <section>
             <SectionHeader title="Popular" linkTo="/rankings" linkText="See Rankings" />
             <SeriesGrid
               series={topRated}
               loading={isLoading}
               section="home_popular"
+              adSlot={import.meta.env.VITE_ADSENSE_SLOT_INFEED}
+              adEveryNCards={5}
+              adFormat="fluid"
+              adLayoutKey="+1w+rz-i-q+3f"
             />
           </section>
 
@@ -94,6 +100,7 @@ function Home() {
               series={trending}
               loading={isLoading}
               section="home_weekly_highlights"
+              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
 
@@ -104,6 +111,7 @@ function Home() {
               series={newSeries}
               loading={isLoading}
               section="home_recently_added"
+              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
         </div>
@@ -111,6 +119,9 @@ function Home() {
         {/* Sidebar */}
         <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-24 lg:self-start space-y-6">
           <RecentlyViewedCarousel />
+          {import.meta.env.VITE_ADSENSE_SLOT_HOME && (
+            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_HOME} className="my-4" />
+          )}
           <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
             <h3 className="text-lg font-semibold text-black-feather mb-2">Browse</h3>
             <p className="text-sm text-sidewalk-grey mb-3 leading-relaxed">
