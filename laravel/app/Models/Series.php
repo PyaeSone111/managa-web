@@ -234,13 +234,20 @@ class Series extends Model
     }
 
     /**
-     * Scope: order by latest published chapter (MySQL-safe; no dependency on last_chapter_at trigger).
+     * Scope: order by latest published chapter.
+     * Uses last_chapter_at column (fast index scan) when populated by the ChapterObserver.
+     * Falls back to a correlated subquery only for rows where last_chapter_at is still NULL.
+     * Requires series to have at least one published chapter.
      */
     public function scopeOrderByLatestChapter(Builder $query): Builder
     {
-        return $query->whereHas('chapters', fn ($q) => $q->where('is_published', true))
+        return $query
+            ->whereHas('chapters', fn ($q) => $q->where('is_published', true))
             ->orderByRaw(
-                '(SELECT MAX(c.published_at) FROM chapters c WHERE c.series_id = series.id AND c.is_published = 1) DESC'
+                'COALESCE(last_chapter_at,
+                    (SELECT MAX(c.published_at) FROM chapters c
+                     WHERE c.series_id = series.id AND c.is_published = 1)
+                ) DESC'
             );
     }
 

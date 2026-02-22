@@ -26,15 +26,18 @@ class DashboardController extends Controller
 
         $limit = min($request->input('limit', 12), 20);
 
-        // Use a single cache key for the entire dashboard
-        $cacheKey = "dashboard:home:v1:{$limit}";
+        // Use a single cache key for the entire dashboard (10 min TTL)
+        $cacheKey = "dashboard:home:v2:{$limit}";
 
-        $data = Cache::remember($cacheKey, 300, function () use ($limit) {
+        $data = Cache::remember($cacheKey, 600, function () use ($limit) {
+            // Check once — reused by both getTrending and getTop
+            $hasRankings = SeriesRanking::exists();
+
             return [
-                'latest' => $this->getLatest($limit),
-                'new' => $this->getNew($limit),
-                'trending' => $this->getTrending($limit),
-                'top' => $this->getTop($limit),
+                'latest'   => $this->getLatest($limit),
+                'new'      => $this->getNew($limit),
+                'trending' => $this->getTrending($limit, $hasRankings),
+                'top'      => $this->getTop($limit, $hasRankings),
                 'branding' => $this->getBranding(),
             ];
         });
@@ -143,9 +146,8 @@ class DashboardController extends Controller
     /**
      * Get trending manga.
      */
-    private function getTrending(int $limit): array
+    private function getTrending(int $limit, bool $hasRankings): array
     {
-        $hasRankings = SeriesRanking::exists();
 
         if ($hasRankings) {
             $rankings = SeriesRanking::getTrending($limit, 0);
@@ -213,9 +215,8 @@ class DashboardController extends Controller
     /**
      * Get top rated manga.
      */
-    private function getTop(int $limit): array
+    private function getTop(int $limit, bool $hasRankings): array
     {
-        $hasRankings = SeriesRanking::exists();
 
         if ($hasRankings) {
             $rankings = SeriesRanking::getTopManga($limit, 0);
