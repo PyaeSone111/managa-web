@@ -38,8 +38,9 @@ function AuthorForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateAuthor(id, data) : adminApi.createAuthor(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['authors']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['authors'] });
+      queryClient.refetchQueries({ queryKey: ['authors'] });
       navigate('/dashboard/authors');
     },
   });

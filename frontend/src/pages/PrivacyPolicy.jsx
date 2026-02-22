@@ -27,18 +27,15 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-black-feather mb-3">3. Google AdSense &amp; Cookies</h2>
+          <h2 className="text-lg font-semibold text-black-feather mb-3">3. Adsterra &amp; Cookies</h2>
           <p className="text-black-feather/90 text-sm leading-relaxed mb-2">
-            We use Google AdSense to display advertisements. Google and its partners may use cookies and similar technologies to serve ads based on your visits and other sites. You can learn more and opt out of personalized advertising at{' '}
-            <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-ruskin-blue hover:text-delta-green underline">
-              Google Ads Settings
+            We use Adsterra to display advertisements. Adsterra and its partners may use cookies and similar technologies to serve ads based on your visits and other sites. You can manage your preferences and learn more at{' '}
+            <a href="https://publishers.adsterra.com/" target="_blank" rel="noopener noreferrer" className="text-ruskin-blue hover:text-delta-green underline">
+              Adsterra
             </a>.
           </p>
           <p className="text-black-feather/90 text-sm leading-relaxed">
-            Our site uses an <a href="/ads.txt" className="text-ruskin-blue hover:text-delta-green underline">ads.txt</a> file to declare authorized digital sellers. For details, see{' '}
-            <a href="https://support.google.com/adsense/answer/12171244" target="_blank" rel="noopener noreferrer" className="text-ruskin-blue hover:text-delta-green underline">
-              Google&apos;s ads.txt help
-            </a>.
+            Our site may use an <a href="/ads.txt" className="text-ruskin-blue hover:text-delta-green underline">ads.txt</a> file to declare authorized digital sellers.
           </p>
         </section>
 

@@ -3,6 +3,7 @@ import { Rating, Star } from '@smastrom/react-rating';
 import { Pencil, Trash2, MoreVertical, Eye, BookOpen } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { toAbsoluteImageUrl } from '../../utils/helpers';
 
 /**
  * Normalize API rating to 1-5 scale for display.
@@ -88,7 +89,7 @@ function SeriesCard({ series, layout = 'vertical', onEdit, onDelete }) {
     : series.author || 'Unknown Author';
 
   const categoryName = series.categories?.[0]?.name || series.manga_type?.name || 'Manga';
-  const imageUrl = series.cover_url || series.thumbnail_url || '/placeholder.svg?height=400&width=280';
+  const imageUrl = toAbsoluteImageUrl(series.cover_url || series.thumbnail_url) || '/placeholder.svg?height=400&width=280';
 
   const statusRaw = series.status || 'ongoing';
   const statusMap = { ongoing: 'Ongoing', completed: 'Completed', hiatus: 'Hiatus', cancelled: 'Completed' };

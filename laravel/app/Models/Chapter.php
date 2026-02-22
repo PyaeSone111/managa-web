@@ -45,5 +45,13 @@ class Chapter extends Model
     {
         return $this->hasMany(ChapterPage::class)->orderBy('page_number');
     }
+
+    /**
+     * Increment the view counter via Eloquent (no raw DB facade needed in controllers).
+     */
+    public function incrementViews(): void
+    {
+        $this->increment('views');
+    }
 }
 

@@ -13,8 +13,9 @@ function MangaTypeList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteMangaType(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['manga-types']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['manga-types'] });
+      queryClient.refetchQueries({ queryKey: ['manga-types'] });
     },
   });
 

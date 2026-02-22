@@ -161,6 +161,14 @@ class Series extends Model
         return $rating?->rating;
     }
 
+    /**
+     * Increment total_views via Eloquent (no raw DB facade needed in controllers).
+     */
+    public function incrementTotalViews(): void
+    {
+        $this->increment('total_views');
+    }
+
     // ============ SCOPES ============
 
     /**
@@ -223,6 +231,36 @@ class Series extends Model
         return $query->active()
             ->orderBy('rating', 'desc')
             ->orderBy('rating_count', 'desc');
+    }
+
+    /**
+     * Scope: order by latest published chapter (MySQL-safe; no dependency on last_chapter_at trigger).
+     */
+    public function scopeOrderByLatestChapter(Builder $query): Builder
+    {
+        return $query->whereHas('chapters', fn ($q) => $q->where('is_published', true))
+            ->orderByRaw(
+                '(SELECT MAX(c.published_at) FROM chapters c WHERE c.series_id = series.id AND c.is_published = 1) DESC'
+            );
+    }
+
+    /**
+     * Scope: compute composite top-score and order by it (MySQL; fallback when SeriesRanking is empty).
+     * Score = views*0.3 + favorites*25 + rating*ratingCount*2.5 + recency bonus.
+     */
+    public function scopeOrderByTopScore(Builder $query): Builder
+    {
+        return $query->selectRaw('series.*, (
+            COALESCE(total_views, 0) * 0.3 +
+            COALESCE(total_favorites, 0) * 100 * 0.25 +
+            COALESCE(rating, 0) * COALESCE(rating_count, 0) * 10 * 0.25 +
+            CASE
+                WHEN last_chapter_at > NOW() - INTERVAL 7 DAY  THEN 1000
+                WHEN last_chapter_at > NOW() - INTERVAL 30 DAY THEN 500
+                ELSE 0
+            END * 0.2
+        ) AS top_score')
+        ->orderByRaw('top_score DESC');
     }
 
     /**

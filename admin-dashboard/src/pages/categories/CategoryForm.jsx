@@ -39,8 +39,9 @@ function CategoryForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateCategory(id, data) : adminApi.createCategory(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['categories']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.refetchQueries({ queryKey: ['categories'] });
       navigate('/dashboard/categories');
     },
   });

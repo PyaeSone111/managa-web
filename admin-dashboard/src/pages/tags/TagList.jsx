@@ -13,8 +13,9 @@ function TagList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteTag(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tags']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.refetchQueries({ queryKey: ['tags'] });
     },
   });
 

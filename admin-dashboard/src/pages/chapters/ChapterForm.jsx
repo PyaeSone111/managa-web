@@ -75,8 +75,9 @@ function ChapterForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateChapter(id, data) : adminApi.createChapter(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-chapters']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-chapters'] });
+      queryClient.refetchQueries({ queryKey: ['admin-chapters'] });
       navigate('/dashboard/chapters');
     },
   });

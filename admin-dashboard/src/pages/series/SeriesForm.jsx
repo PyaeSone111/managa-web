@@ -86,8 +86,9 @@ function SeriesForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateSeries(id, data) : adminApi.createSeries(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-series']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-series'] });
+      queryClient.refetchQueries({ queryKey: ['admin-series'] });
       navigate('/dashboard/series');
     },
   });

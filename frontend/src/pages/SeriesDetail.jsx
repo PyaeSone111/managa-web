@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { seriesApi, favoriteApi, ratingApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toAbsoluteImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ChapterList from '../components/chapters/ChapterList';
 
@@ -215,7 +216,7 @@ function SeriesDetail() {
         <title>{seriesData.title} - Myangar</title>
         <meta name="description" content={seriesData.description} />
         {seriesData.thumbnail_url && (
-          <meta property="og:image" content={seriesData.thumbnail_url} />
+          <meta property="og:image" content={toAbsoluteImageUrl(seriesData.thumbnail_url)} />
         )}
       </Helmet>
 
@@ -224,7 +225,7 @@ function SeriesDetail() {
         <div className="bg-white rounded-xl border border-quarzo shadow-sm overflow-hidden">
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
             <img
-              src={seriesData.cover_url || seriesData.thumbnail_url || '/placeholder.svg?height=400&width=280'}
+              src={toAbsoluteImageUrl(seriesData.cover_url || seriesData.thumbnail_url) || '/placeholder.svg?height=400&width=280'}
               alt={seriesData.title}
               className="w-full sm:w-48 md:w-56 lg:w-64 h-auto rounded-lg mx-auto sm:mx-0 shadow-sm"
             />

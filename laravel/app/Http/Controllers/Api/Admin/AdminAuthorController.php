@@ -12,6 +12,19 @@ use Illuminate\Support\Str;
 class AdminAuthorController extends Controller
 {
     /**
+     * Clear public API authors list cache (AuthorController uses exact keys, not wildcards).
+     */
+    protected static function clearAuthorsListCache(): void
+    {
+        $searchHash = md5('');
+        foreach ([1, 2, 3, 4, 5] as $page) {
+            foreach ([20, 50, 100] as $perPage) {
+                Cache::forget("authors:list:v2:{$page}:{$perPage}:{$searchHash}");
+            }
+        }
+    }
+
+    /**
      * List all authors (admin view).
      */
     public function index(Request $request): JsonResponse
@@ -62,7 +75,7 @@ class AdminAuthorController extends Controller
             'image_url' => $request->image_url,
         ]);
 
-        Cache::forget('authors:list:*');
+        self::clearAuthorsListCache();
 
         return response()->json([
             'message' => 'Author created successfully',
@@ -86,8 +99,8 @@ class AdminAuthorController extends Controller
 
         $author->update($request->only(['name', 'slug', 'bio', 'image_url']));
 
-        Cache::forget("author:{$id}");
-        Cache::forget('authors:list:*');
+        Cache::forget("author:{$id}:v2");
+        self::clearAuthorsListCache();
 
         return response()->json([
             'message' => 'Author updated successfully',
@@ -111,8 +124,8 @@ class AdminAuthorController extends Controller
 
         $author->delete();
 
-        Cache::forget("author:{$id}");
-        Cache::forget('authors:list:*');
+        Cache::forget("author:{$id}:v2");
+        self::clearAuthorsListCache();
 
         return response()->json([
             'message' => 'Author deleted successfully',

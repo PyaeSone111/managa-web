@@ -7,7 +7,6 @@ use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class SeriesController extends Controller
 {
@@ -137,8 +136,7 @@ class SeriesController extends Controller
                 ->firstOrFail();
         });
 
-        // Increment views asynchronously (non-blocking)
-        DB::table('series')->where('id', $seriesModel->id)->increment('total_views');
+        $seriesModel->incrementTotalViews();
 
         return response()->json([
             'success' => true,

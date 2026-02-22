@@ -97,7 +97,6 @@ function Rankings() {
             section={activeTab === 'top' ? 'rankings_top' : activeTab === 'reading' ? 'rankings_most_read' : 'rankings_trending'}
             series={series}
             loading={isLoading}
-            adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
           />
         )}
       </div>

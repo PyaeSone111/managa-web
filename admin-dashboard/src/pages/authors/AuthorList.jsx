@@ -15,8 +15,9 @@ function AuthorList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteAuthor(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['authors']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['authors'] });
+      queryClient.refetchQueries({ queryKey: ['authors'] });
     },
   });
 

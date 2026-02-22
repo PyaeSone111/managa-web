@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { brandingApi } from '../services/api';
 
-const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '');
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1').replace(/\/api\/v1\/?$/, '');
 const BRANDING_CACHE_KEY = 'branding_cache';
 const BRANDING_CACHE_TTL = 30 * 60 * 1000; // 30 minutes in localStorage
 

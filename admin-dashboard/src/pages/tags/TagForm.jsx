@@ -35,9 +35,9 @@ function TagForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateTag(id, data) : adminApi.createTag(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tags']);
-      navigate('/dashboard/tags');
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.refetchQueries({ queryKey: ['tags'] });
     },
   });
 

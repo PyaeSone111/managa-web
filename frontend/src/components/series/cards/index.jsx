@@ -36,8 +36,9 @@ const RANK_CARDS = new Set(['card_10', 'card_15']);
  * @param {Object} props.series - API series object
  * @param {string} props.section - Section key (e.g. 'home_latest', 'browse', 'rankings_top')
  * @param {number} [props.rank] - Optional 1-based rank (for rankings; used by card_10, card_15)
+ * @param {string} [props.wrapperClassName] - Optional class for the wrapper (e.g. 'h-full' for carousel)
  */
-export function MangaCard({ series, section, rank }) {
+export function MangaCard({ series, section, rank, wrapperClassName = '' }) {
   const navigate = useNavigate();
   const { cardLayout } = useBranding();
   const cardKey = (section && cardLayout[section]) ? cardLayout[section] : 'card_01';
@@ -55,7 +56,7 @@ export function MangaCard({ series, section, rank }) {
   if (needsRank && rank != null) cardProps.rank = rank;
 
   return (
-    <div onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e); } }} className="outline-none">
+    <div onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e); } }} className={`outline-none ${wrapperClassName}`.trim()}>
       <CardComponent {...cardProps} />
     </div>
   );

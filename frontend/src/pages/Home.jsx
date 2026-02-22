@@ -4,10 +4,10 @@ import { Helmet } from 'react-helmet-async';
 import { useEffect } from 'react';
 import { dashboardApi } from '../services/api';
 import { useBranding } from '../context/BrandingContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
-import GoogleAd from '../components/common/GoogleAd';
 
 function SectionHeader({ title, linkTo, linkText = 'View All' }) {
   return (
@@ -29,6 +29,7 @@ function SectionHeader({ title, linkTo, linkText = 'View All' }) {
 
 function Home() {
   const { updateBranding } = useBranding();
+  const isLg = useMediaQuery('(min-width: 1024px)');
 
   // Single consolidated API call for all homepage data
   const { data: dashboard, isLoading } = useQuery({
@@ -64,6 +65,17 @@ function Home() {
         <HeroBanner />
       </div>
 
+      {/* Mobile: 4:1 native banner under hero (desktop uses sidebar slot in App) */}
+      {!isLg && (
+        <div className="flex justify-center my-4 px-2">
+          <div
+            id="container-2286240c3512c3138eb46d938c723f95"
+            className="overflow-hidden rounded-lg bg-quarzo/20 w-full"
+            style={{ maxWidth: 728, aspectRatio: '4/1', minHeight: 90 }}
+          />
+        </div>
+      )}
+
       {/* Two-column layout */}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 mt-8">
         {/* Main content */}
@@ -75,7 +87,6 @@ function Home() {
               series={latest}
               loading={isLoading}
               section="home_latest"
-              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
 
@@ -86,10 +97,6 @@ function Home() {
               series={topRated}
               loading={isLoading}
               section="home_popular"
-              adSlot={import.meta.env.VITE_ADSENSE_SLOT_INFEED}
-              adEveryNCards={5}
-              adFormat="fluid"
-              adLayoutKey="+1w+rz-i-q+3f"
             />
           </section>
 
@@ -100,7 +107,6 @@ function Home() {
               series={trending}
               loading={isLoading}
               section="home_weekly_highlights"
-              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
 
@@ -111,7 +117,6 @@ function Home() {
               series={newSeries}
               loading={isLoading}
               section="home_recently_added"
-              adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
             />
           </section>
         </div>
@@ -119,9 +124,6 @@ function Home() {
         {/* Sidebar */}
         <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-24 lg:self-start space-y-6">
           <RecentlyViewedCarousel />
-          {import.meta.env.VITE_ADSENSE_SLOT_HOME && (
-            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_HOME} className="my-4" />
-          )}
           <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
             <h3 className="text-lg font-semibold text-black-feather mb-2">Browse</h3>
             <p className="text-sm text-sidewalk-grey mb-3 leading-relaxed">

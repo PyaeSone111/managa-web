@@ -1,3 +1,18 @@
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1').replace(/\/api\/v1\/?$/, '');
+
+/**
+ * Resolve relative image URLs from the API to absolute (avoids ERR_CONNECTION_REFUSED when API returns /storage/... or uploads/...).
+ */
+export function toAbsoluteImageUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  if (url.startsWith('//')) return `https:${url}`;
+  if (url.startsWith('/storage') || url.startsWith('/uploads') || (!url.startsWith('/') && !url.startsWith('.'))) {
+    return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+  return url;
+}
+
 /**
  * Format number with commas
  */

@@ -1,3 +1,5 @@
+import { toAbsoluteImageUrl } from '../utils/helpers';
+
 /**
  * Convert API series object to the shape expected by manga-card-design components.
  * @param {Object} series - Series from API (series list, rankings, etc.)
@@ -40,9 +42,10 @@ export function seriesToManga(series) {
         ? formatRelativeDate(series.updated_at)
         : series.updated_at)
     : '—';
-  // Prefer cover (full) image for display; thumbnail as fallback. Long/background cards use coverImageUrl.
-  const coverUrl = series.cover_url || series.thumbnail_url || '/placeholder.svg?height=400&width=280';
-  const coverImageUrl = series.cover_url || series.thumbnail_url || coverUrl;
+  // Prefer cover (full) image for display; thumbnail as fallback. Resolve relative URLs to API origin to avoid ERR_CONNECTION_REFUSED (e.g. when API returns /storage/... and frontend is on different origin).
+  const rawCover = series.cover_url || series.thumbnail_url || '/placeholder.svg?height=400&width=280';
+  const coverUrl = toAbsoluteImageUrl(rawCover) || rawCover;
+  const coverImageUrl = toAbsoluteImageUrl(series.cover_url || series.thumbnail_url) || coverUrl;
 
   return {
     id: series.id,

@@ -1,11 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import GoogleAd from './components/common/GoogleAd';
 import ThemeLoader from './components/common/ThemeLoader';
 import { BrandingProvider } from './context/BrandingContext';
 import Home from './pages/Home';
@@ -31,26 +30,17 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <AuthProvider>
-          <Router>
             <ErrorBoundary>
               <ThemeLoader>
                 <BrandingProvider>
                   <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)]">
                     <Navbar />
                     <div className="flex flex-1 w-full">
-                      {/* Left ad column - desktop only, outside container */}
-                      {import.meta.env.VITE_ADSENSE_SLOT_LEFT && (
-                        <aside className="hidden lg:flex lg:w-[160px] xl:w-[180px] flex-shrink-0 justify-center pt-4 pb-8 px-2">
-                          <div className="sticky top-24 w-full max-w-[160px]">
-                            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_LEFT} adFormat="rectangle" className="min-h-[600px]" />
-                          </div>
-                        </aside>
-                      )}
                       <main className="container mx-auto max-w-7xl flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
                         <Routes>
                         <Route path="/" element={<Home />} />
@@ -69,24 +59,23 @@ function App() {
                         <Route path="*" element={<NotFound />} />
                         </Routes>
                       </main>
-                      {/* Right ad column - desktop only, outside container */}
-                      {import.meta.env.VITE_ADSENSE_SLOT_RIGHT && (
-                        <aside className="hidden lg:flex lg:w-[160px] xl:w-[180px] flex-shrink-0 justify-center pt-4 pb-8 px-2">
-                          <div className="sticky top-24 w-full max-w-[160px]">
-                            <GoogleAd adSlot={import.meta.env.VITE_ADSENSE_SLOT_RIGHT} adFormat="rectangle" className="min-h-[600px]" />
-                          </div>
-                        </aside>
-                      )}
                     </div>
                     <Footer />
                   </div>
                 </BrandingProvider>
               </ThemeLoader>
             </ErrorBoundary>
-          </Router>
         </AuthProvider>
       </HelmetProvider>
     </QueryClientProvider>
+  );
+}
+
+function App() {
+  return (
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AppContent />
+    </Router>
   );
 }
 

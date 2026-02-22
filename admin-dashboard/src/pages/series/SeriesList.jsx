@@ -15,8 +15,9 @@ function SeriesList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteSeries(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-series']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-series'] });
+      queryClient.refetchQueries({ queryKey: ['admin-series'] });
     },
   });
 

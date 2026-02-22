@@ -41,16 +41,16 @@ export default function ContactUs() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-black-feather mb-2">AdSense / ads.txt</h2>
+            <h2 className="text-lg font-semibold text-black-feather mb-2">Adsterra / ads.txt</h2>
             <p className="text-sm text-black-feather/90">
-              Our ads are served by Google AdSense. For help with ads.txt and verification, see{' '}
+              Our ads are served by Adsterra. For publisher and ads.txt information, see{' '}
               <a
-                href="https://support.google.com/adsense/answer/12171244"
+                href="https://publishers.adsterra.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-ruskin-blue hover:text-delta-green underline"
               >
-                Google&apos;s ads.txt guide
+                Adsterra Publishers
               </a>.
             </p>
           </section>

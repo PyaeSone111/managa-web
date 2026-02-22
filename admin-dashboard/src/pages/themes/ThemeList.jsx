@@ -12,15 +12,17 @@ function ThemeList() {
 
   const activateMutation = useMutation({
     mutationFn: (id) => adminApi.activateTheme(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['themes']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+      queryClient.refetchQueries({ queryKey: ['themes'] });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteTheme(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['themes']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['themes'] });
+      queryClient.refetchQueries({ queryKey: ['themes'] });
     },
   });
 

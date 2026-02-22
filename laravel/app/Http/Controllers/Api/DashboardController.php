@@ -9,7 +9,6 @@ use App\Models\SeriesRanking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -47,14 +46,15 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get latest updated manga (ordered by last_chapter_at).
+     * Get latest updated manga (ordered by most recent chapter published_at).
+     * Uses subquery so it works even when last_chapter_at is not populated (e.g. MySQL/SQLite or before trigger ran).
      */
     private function getLatest(int $limit): array
     {
+        // Use Eloquent scope: orders by latest published chapter, works on MySQL without last_chapter_at trigger
         $series = Series::query()
             ->active()
-            ->whereNotNull('last_chapter_at')
-            ->orderBy('last_chapter_at', 'desc')
+            ->orderByLatestChapter()
             ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
                 $q->where('is_published', true)
                     ->orderBy('published_at', 'desc')
@@ -240,26 +240,11 @@ class DashboardController extends Controller
             })->all();
         }
 
-        // Fallback
-        $driver = DB::connection()->getDriverName();
-        $interval7 = $driver === 'pgsql' ? "NOW() - INTERVAL '7 days'" : 'NOW() - INTERVAL 7 DAY';
-        $interval30 = $driver === 'pgsql' ? "NOW() - INTERVAL '30 days'" : 'NOW() - INTERVAL 30 DAY';
-
+        // Fallback: use Series::scopeOrderByTopScore (Eloquent scope, no raw DB facade)
         $series = Series::query()
             ->active()
             ->with(['categories', 'mangaTypes'])
-            ->select('series.*')
-            ->selectRaw("
-                (COALESCE(total_views, 0) * 0.3 +
-                COALESCE(total_favorites, 0) * 100 * 0.25 +
-                COALESCE(rating, 0) * COALESCE(rating_count, 0) * 10 * 0.25 +
-                CASE
-                    WHEN last_chapter_at > {$interval7} THEN 1000
-                    WHEN last_chapter_at > {$interval30} THEN 500
-                    ELSE 0
-                END * 0.2) AS top_score
-            ")
-            ->orderByRaw('top_score DESC')
+            ->orderByTopScore()
             ->limit($limit)
             ->get();
 

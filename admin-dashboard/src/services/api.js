@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -20,6 +20,11 @@ api.interceptors.request.use(
     // Remove Content-Type header for FormData - axios will set it automatically with boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
+    }
+    // GET: unique URL so refetches don't come from disk cache (avoids fetch adapter / CORS issues)
+    const method = (config.method || 'get').toLowerCase();
+    if (method === 'get') {
+      config.params = { ...config.params, _: Date.now() };
     }
     return config;
   },

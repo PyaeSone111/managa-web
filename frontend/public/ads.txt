@@ -1,2 +1,1 @@
-# AdSense: https://support.google.com/adsense/answer/12171244
-google.com, pub-7422337469648732, DIRECT, f08c47fec0942fa0
+# Adsterra - add your ads.txt line from the Adsterra publisher dashboard if required

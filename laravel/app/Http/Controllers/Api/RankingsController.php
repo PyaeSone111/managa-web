@@ -8,7 +8,6 @@ use App\Models\SeriesRanking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class RankingsController extends Controller
 {
@@ -62,25 +61,11 @@ class RankingsController extends Controller
                 ];
             }
 
-            // Fallback: compute on-the-fly (interval syntax: PostgreSQL uses '7 days', MySQL uses 7 DAY)
-            $driver = DB::connection()->getDriverName();
-            $interval7 = $driver === 'pgsql' ? "NOW() - INTERVAL '7 days'" : 'NOW() - INTERVAL 7 DAY';
-            $interval30 = $driver === 'pgsql' ? "NOW() - INTERVAL '30 days'" : 'NOW() - INTERVAL 30 DAY';
+            // Fallback: use Series::scopeOrderByTopScore (Eloquent scope, no raw DB facade)
             $query = Series::query()
                 ->active()
                 ->with(['categories', 'mangaTypes'])
-                ->select('series.*')
-                ->selectRaw("
-                    (COALESCE(total_views, 0) * 0.3 +
-                    COALESCE(total_favorites, 0) * 100 * 0.25 +
-                    COALESCE(rating, 0) * COALESCE(rating_count, 0) * 10 * 0.25 +
-                    CASE
-                        WHEN last_chapter_at > {$interval7} THEN 1000
-                        WHEN last_chapter_at > {$interval30} THEN 500
-                        ELSE 0
-                    END * 0.2) AS top_score
-                ")
-                ->orderByRaw('top_score DESC');
+                ->orderByTopScore();
 
             $total = Series::active()->count();
             $items = $query->offset($offset)->limit($perPage)->get();

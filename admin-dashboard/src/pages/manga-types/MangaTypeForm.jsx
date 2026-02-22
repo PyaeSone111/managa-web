@@ -35,8 +35,9 @@ function MangaTypeForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? adminApi.updateMangaType(id, data) : adminApi.createMangaType(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['manga-types']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['manga-types'] });
+      queryClient.refetchQueries({ queryKey: ['manga-types'] });
       navigate('/dashboard/manga-types');
     },
   });

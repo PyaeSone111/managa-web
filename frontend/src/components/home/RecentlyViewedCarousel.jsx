@@ -43,10 +43,10 @@ function RecentlyViewedCarousel() {
           View All
         </Link>
       </div>
-      <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin]">
+      <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] items-stretch">
         {displayItems.map((item) => (
-          <div key={item.slug ?? item.id} className="flex-shrink-0 w-[140px] sm:w-[160px] snap-start">
-            <MangaCard series={item} section="recently_viewed" />
+          <div key={item.slug ?? item.id} className="flex-shrink-0 w-[140px] sm:w-[160px] h-[300px] sm:h-[320px] snap-start flex flex-col">
+            <MangaCard series={item} section="recently_viewed" wrapperClassName="h-full" />
           </div>
         ))}
       </div>

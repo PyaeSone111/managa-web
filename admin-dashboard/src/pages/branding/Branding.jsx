@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
 
-const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '');
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1').replace(/\/api\/v1\/?$/, '');
 
 const CARD_OPTIONS = [
   { value: 'card_01', label: '01 Classic Portrait' },
@@ -159,8 +159,9 @@ function Branding() {
 
   const updateMutation = useMutation({
     mutationFn: (formData) => adminApi.updateBranding(formData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin', 'branding']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'branding'] });
+      queryClient.refetchQueries({ queryKey: ['admin', 'branding'] });
       setLogoFile(null);
       setHeroBackgroundFile(null);
       setHeroImageFile(null);

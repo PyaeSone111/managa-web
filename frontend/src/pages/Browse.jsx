@@ -321,7 +321,6 @@ function Browse() {
                 section="browse"
                 series={data?.data || []}
                 loading={isLoading}
-                adSlot={import.meta.env.VITE_ADSENSE_SLOT_CONTENT}
               />
 
               {/* Pagination */}

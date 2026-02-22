@@ -25,8 +25,9 @@ function ChapterList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteChapter(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-chapters']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-chapters'] });
+      queryClient.refetchQueries({ queryKey: ['admin-chapters'] });
     },
   });
 

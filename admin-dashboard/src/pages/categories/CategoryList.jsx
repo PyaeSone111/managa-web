@@ -14,8 +14,9 @@ function CategoryList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['categories']);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.refetchQueries({ queryKey: ['categories'] });
     },
   });
 

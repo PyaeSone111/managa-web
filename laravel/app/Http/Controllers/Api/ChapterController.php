@@ -7,7 +7,6 @@ use App\Models\Chapter;
 use App\Models\Series;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class ChapterController extends Controller
 {
@@ -30,8 +29,7 @@ class ChapterController extends Controller
                 ->findOrFail($id);
         });
 
-        // Increment views non-blocking
-        DB::table('chapters')->where('id', $id)->increment('views');
+        Chapter::find($id)?->incrementViews();
 
         return response()->json([
             'success' => true,
@@ -96,8 +94,7 @@ class ChapterController extends Controller
                 ->firstOrFail();
         });
 
-        // Increment views non-blocking
-        DB::table('chapters')->where('id', $chapter->id)->increment('views');
+        Chapter::find($chapter->id)?->incrementViews();
 
         return response()->json([
             'success' => true,
