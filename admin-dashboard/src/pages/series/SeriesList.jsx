@@ -1,16 +1,80 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
+import { colors } from '../../theme/colors';
+
+const STATUS_COLORS = {
+  ongoing: 'success',
+  completed: 'secondary',
+  hiatus: 'warning',
+  cancelled: 'default',
+};
+
+function getAuthorLabel(item) {
+  if (item.author) return item.author;
+  if (item.authors?.length) return item.authors.map((a) => a.name).join(', ');
+  return '—';
+}
+
+function getMangaTypes(item) {
+  return item.manga_types || item.mangaTypes || [];
+}
 
 function SeriesList() {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [titleSearch, setTitleSearch] = useState('');
+  const [authorSearch, setAuthorSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
   const queryClient = useQueryClient();
 
+  const hasFilters = Boolean(titleSearch || authorSearch || typeFilter);
+
+  const { data: mangaTypesData } = useQuery({
+    queryKey: ['manga-types'],
+    queryFn: () => adminApi.getMangaTypes(),
+  });
+
+  const mangaTypeOptions = mangaTypesData?.data || [];
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-series', page],
-    queryFn: () => adminApi.getSeries({ page, per_page: 20 }),
+    queryKey: ['admin-series', page, rowsPerPage, titleSearch, authorSearch, typeFilter],
+    queryFn: () =>
+      adminApi.getSeries({
+        page: page + 1,
+        per_page: rowsPerPage,
+        search: titleSearch || authorSearch || undefined,
+        types: typeFilter || undefined,
+      }),
   });
 
   const deleteMutation = useMutation({
@@ -21,162 +85,364 @@ function SeriesList() {
     },
   });
 
+  const series = data?.data || [];
+  const pagination = data?.pagination || {};
+
+  const filteredSeries = useMemo(() => {
+    return series.filter((item) => {
+      const titleMatch =
+        !titleSearch ||
+        item.title?.toLowerCase().includes(titleSearch.toLowerCase());
+      const authorMatch =
+        !authorSearch ||
+        getAuthorLabel(item).toLowerCase().includes(authorSearch.toLowerCase());
+      const typeMatch =
+        !typeFilter ||
+        getMangaTypes(item).some((t) => String(t.id) === String(typeFilter));
+      return titleMatch && authorMatch && typeMatch;
+    });
+  }, [series, titleSearch, authorSearch, typeFilter]);
+
   const handleDelete = async (id, title) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
       try {
         await deleteMutation.mutateAsync(id);
-      } catch (error) {
-        alert('Failed to delete series: ' + error.message);
+      } catch (err) {
+        alert('Failed to delete series: ' + err.message);
       }
     }
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indiana-clay"></div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleChangePage = (_event, newPage) => {
+    setPage(newPage);
+  };
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="bg-indiana-clay/20 border border-indiana-clay/30 rounded-lg p-4">
-          <p className="text-indiana-clay">Error loading series: {error.message}</p>
-        </div>
-      </Layout>
-    );
-  }
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
-  const series = data?.data || [];
-  const pagination = data?.pagination || {};
+  const handleClearFilters = () => {
+    setTitleSearch('');
+    setAuthorSearch('');
+    setTypeFilter('');
+    setPage(0);
+  };
+
+  const handleFilterChange = (setter) => (event) => {
+    setter(event.target.value);
+    setPage(0);
+  };
+
+  const searchFieldSx = {
+    width: '100%',
+    bgcolor: '#fff',
+    borderRadius: 1,
+  };
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-torrefacto-roast">Series Management</h1>
-          <Link
+      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+            width: '100%',
+          }}
+        >
+          <Typography variant="h4" fontWeight={700} sx={{ color: colors.navy }}>
+            Series Management
+          </Typography>
+          <Button
+            component={Link}
             to="/dashboard/series/create"
-            className="px-4 py-2 bg-indiana-clay text-white rounded-lg hover:bg-indiana-clay/90 transition-colors"
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
           >
-            + Add New Series
-          </Link>
-        </div>
+            Add New Series
+          </Button>
+        </Box>
 
-        <div className="bg-bonaire rounded-lg shadow overflow-hidden border border-stone-lion/20">
-          <table className="min-w-full divide-y divide-stone-lion/20">
-            <thead className="bg-stone-lion/20">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-torrefacto-roast uppercase tracking-wider">
-                  Thumbnail
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Chapters
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-bonaire divide-y divide-stone-lion/20">
-              {series.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-stone-lion">
-                    No series found. Create your first series!
-                  </td>
-                </tr>
-              ) : (
-                series.map((item) => (
-                  <tr key={item.id} className="hover:bg-stone-lion/10">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <img
-                        src={item.thumbnail_url || '/placeholder.jpg'}
-                        alt={item.title}
-                        className="w-16 h-20 object-cover rounded"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-torrefacto-roast">{item.title}</div>
-                      <div className="text-sm text-stone-lion">{item.author}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-lion">
-                      {item.type}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          item.status === 'ongoing'
-                            ? 'bg-green-bottle/20 text-green-bottle'
-                            : item.status === 'completed'
-                            ? 'bg-indiana-clay/20 text-indiana-clay'
-                            : 'bg-stone-lion/20 text-stone-lion'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-lion">
-                      {item.total_chapters}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link
-                        to={`/dashboard/series/${item.id}/edit`}
-                        className="text-indiana-clay hover:text-indiana-clay/80"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(item.id, item.title)}
-                        className="text-indiana-clay hover:text-indiana-clay/80"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            border: '1px solid',
+            borderColor: colors.almondBorder,
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid',
+              borderColor: colors.almondBorder,
+              bgcolor: 'rgba(30, 61, 89, 0.04)',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: '1fr 1fr',
+                  lg: 'minmax(200px, 1fr) minmax(200px, 1fr) minmax(160px, 220px) auto',
+                },
+                gap: 2,
+                alignItems: 'center',
+              }}
+            >
+              <TextField
+                size="small"
+                label="Search title"
+                value={titleSearch}
+                onChange={handleFilterChange(setTitleSearch)}
+                placeholder="Filter by title..."
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={searchFieldSx}
+              />
+              <TextField
+                size="small"
+                label="Search author"
+                value={authorSearch}
+                onChange={handleFilterChange(setAuthorSearch)}
+                placeholder="Filter by author..."
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={searchFieldSx}
+              />
+              <TextField
+                select
+                size="small"
+                label="Manga type"
+                value={typeFilter}
+                onChange={handleFilterChange(setTypeFilter)}
+                sx={searchFieldSx}
+              >
+                <MenuItem value="">All types</MenuItem>
+                {mangaTypeOptions.map((type) => (
+                  <MenuItem key={type.id} value={String(type.id)}>
+                    {type.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {hasFilters && (
+                <Button
+                  size="small"
+                  onClick={handleClearFilters}
+                  sx={{ textTransform: 'none', justifySelf: { lg: 'start' } }}
+                >
+                  Clear filters
+                </Button>
               )}
-            </tbody>
-          </table>
-        </div>
+            </Box>
+          </Box>
 
-        {pagination.last_page > 1 && (
-          <div className="flex justify-center space-x-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 border border-stone-lion/40 rounded-lg disabled:opacity-50 text-torrefacto-roast hover:bg-stone-lion/20"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2">
-              Page {pagination.current_page} of {pagination.last_page}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
-              disabled={page === pagination.last_page}
-              className="px-4 py-2 border border-stone-lion/40 rounded-lg disabled:opacity-50 text-torrefacto-roast hover:bg-stone-lion/20"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
+          {error && (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading series: {error.message}
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress sx={{ color: colors.redOrange }} />
+            </Box>
+          ) : (
+            <>
+              <TableContainer sx={{ width: '100%' }}>
+                <Table sx={{ minWidth: 900 }}>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'rgba(30, 61, 89, 0.06)' }}>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 80 }}>
+                        Thumbnail
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy }}>Title</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 160 }}>
+                        Author
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 180 }}>
+                        Types
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 120 }}>
+                        Status
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 90 }} align="center">
+                        Chapters
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 100 }} align="center">
+                        Actions
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredSeries.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 6, color: colors.muted }}>
+                          {hasFilters
+                            ? 'No series match your filters.'
+                            : 'No series found. Create your first series!'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredSeries.map((item) => {
+                        const types = getMangaTypes(item);
+
+                        return (
+                          <TableRow
+                            key={item.id}
+                            hover
+                            sx={{ '&:last-child td': { borderBottom: 0 } }}
+                          >
+                            <TableCell>
+                              <Box
+                                component="img"
+                                src={item.thumbnail_url || '/placeholder.jpg'}
+                                alt={item.title}
+                                sx={{
+                                  width: 48,
+                                  height: 64,
+                                  objectFit: 'cover',
+                                  borderRadius: 1,
+                                  border: `1px solid ${colors.almondBorder}`,
+                                  display: 'block',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600} sx={{ color: colors.navy }}>
+                                {item.title}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ color: colors.muted }}>
+                                {getAuthorLabel(item)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {types.length > 0 ? (
+                                <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
+                                  {types.map((t) => (
+                                    <Chip
+                                      key={t.id}
+                                      label={t.name}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ fontSize: '0.75rem' }}
+                                    />
+                                  ))}
+                                </Stack>
+                              ) : (
+                                <Typography variant="body2" sx={{ color: colors.muted }}>
+                                  —
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={item.status}
+                                size="small"
+                                color={STATUS_COLORS[item.status] || 'default'}
+                                sx={{ textTransform: 'capitalize' }}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="body2" sx={{ color: colors.muted }}>
+                                {item.total_chapters}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center' }}>
+                                <Tooltip title="Edit series">
+                                  <IconButton
+                                    component={Link}
+                                    to={`/dashboard/series/${item.id}/edit`}
+                                    size="small"
+                                    sx={{
+                                      color: colors.navy,
+                                      border: `1px solid ${colors.navy}40`,
+                                      borderRadius: 1,
+                                      '&:hover': {
+                                        bgcolor: `${colors.navy}14`,
+                                        borderColor: colors.navy,
+                                      },
+                                    }}
+                                  >
+                                    <EditOutlinedIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete series">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDelete(item.id, item.title)}
+                                    disabled={deleteMutation.isPending}
+                                    sx={{
+                                      color: '#dc2626',
+                                      border: '1px solid rgba(220, 38, 38, 0.3)',
+                                      borderRadius: 1,
+                                      '&:hover': {
+                                        bgcolor: 'rgba(220, 38, 38, 0.08)',
+                                        borderColor: '#dc2626',
+                                      },
+                                    }}
+                                  >
+                                    <DeleteOutlinedIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TablePagination
+                component="div"
+                count={pagination.total ?? 0}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50]}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: colors.almondBorder,
+                }}
+              />
+            </>
+          )}
+        </Paper>
+      </Box>
     </Layout>
   );
 }
 
 export default SeriesList;
-

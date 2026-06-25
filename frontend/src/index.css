@@ -3,31 +3,37 @@
 @tailwind utilities;
 
 /*
-  Unified Light Theme — Serene Winter Mountain Lake Palette
-  #C9D0D9 Quarzo        – light backgrounds, card surfaces
-  #9EB3BC Dockside Blue  – borders, subtle accents
-  #799099 Sidewalk Grey  – muted / secondary text
-  #516D74 Ruskin Blue    – primary color
-  #2E4B4E Delta Green    – dark accents, navbar, hero, buttons
-  #0D211F Black Feather  – headings, body text
+  Navy, Almond, Red-orange, Mango Palette
+  #1e3d59 Navy        – primary dark, navbar, headings, text
+  #f5f0e1 Almond      – page background, light surfaces
+  #ff6e40 Red-orange  – accent, CTAs, hovers, highlights
+  #ffc13b Mango       – secondary accent, badges, featured
 */
 
 :root {
-  --color-quarzo: #C9D0D9;
-  --color-dockside: #9EB3BC;
-  --color-sidewalk: #799099;
-  --color-ruskin: #516D74;
-  --color-delta: #2E4B4E;
-  --color-feather: #0D211F;
+  --color-navy: #1e3d59;
+  --color-almond: #f5f0e1;
+  --color-red-orange: #ff6e40;
+  --color-mango: #ffc13b;
 
-  --theme-page-bg: #F4F6F8;
-  --theme-body-color: #0D211F;
-  --theme-primary: #516D74;
-  --theme-primary-hover: #2E4B4E;
-  --theme-on-primary: #FFFFFF;
-  --theme-card-bg: #FFFFFF;
-  --theme-card-border: #C9D0D9;
-  --theme-text-muted: #799099;
+  --color-quarzo: #f5f0e1;
+  --color-dockside: #ddd0b8;
+  --color-sidewalk: #6b8494;
+  --color-ruskin: #1e3d59;
+  --color-delta: #ff6e40;
+  --color-feather: #1e3d59;
+
+  --theme-page-bg: #f5f0e1;
+  --theme-body-color: #1e3d59;
+  --theme-primary: #1e3d59;
+  --theme-primary-hover: #162e44;
+  --theme-accent: #ff6e40;
+  --theme-accent-hover: #e55a2b;
+  --theme-secondary-accent: #ffc13b;
+  --theme-on-primary: #ffffff;
+  --theme-card-bg: #ffffff;
+  --theme-card-border: #ddd0b8;
+  --theme-text-muted: #6b8494;
   --theme-font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
@@ -66,17 +72,16 @@
     overflow: hidden;
   }
 
-  /* Manga card designs – Serene Winter; primary 2e4b4e (delta-green) */
   .cosmic-glow {
-    box-shadow: 0 4px 20px rgba(46, 75, 78, 0.1), 0 0 0 1px rgba(46, 75, 78, 0.08);
+    box-shadow: 0 4px 20px rgba(30, 61, 89, 0.1), 0 0 0 1px rgba(30, 61, 89, 0.08);
   }
   .cosmic-glow-strong {
-    box-shadow: 0 8px 30px rgba(46, 75, 78, 0.14), 0 0 0 1px rgba(46, 75, 78, 0.1);
+    box-shadow: 0 8px 30px rgba(30, 61, 89, 0.14), 0 0 0 1px rgba(30, 61, 89, 0.1);
   }
   .glass {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(158, 179, 188, 0.5);
+    border: 1px solid rgba(221, 208, 184, 0.8);
   }
 }

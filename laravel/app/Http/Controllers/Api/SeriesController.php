@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Series;
+use App\Support\SeriesCardFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -41,11 +42,11 @@ class SeriesController extends Controller
         ) {
             $query = Series::query()
                 ->select([
-                    'id', 'title', 'slug', 'cover_url', 'thumbnail_url',
+                    'id', 'title', 'slug', 'author', 'type', 'cover_url', 'thumbnail_url',
                     'status', 'rating', 'rating_count', 'total_views',
                     'total_favorites', 'total_chapters', 'last_chapter_at', 'created_at'
                 ])
-                ->with(['categories:id,name,slug', 'mangaTypes:id,name,slug'])
+                ->with(['categories:id,name,slug', 'mangaTypes:id,name,slug', 'authors:id,name,slug'])
                 ->where('is_active', true);
 
             if ($category) {
@@ -191,10 +192,10 @@ class SeriesController extends Controller
     {
         $limit = min($request->get('limit', 20), 50);
 
-        $series = Cache::remember("series:latest:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:latest:v2:{$limit}", 300, function () use ($limit) {
             return Series::query()
-                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
-                ->with(['categories:id,name,slug'])
+                ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(SeriesCardFormatter::relations())
                 ->where('is_active', true)
                 ->orderBy('last_chapter_at', 'desc')
                 ->limit($limit)
@@ -214,10 +215,10 @@ class SeriesController extends Controller
     {
         $limit = min($request->get('limit', 20), 50);
 
-        $series = Cache::remember("series:popular:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:popular:v2:{$limit}", 300, function () use ($limit) {
             return Series::query()
-                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
-                ->with(['categories:id,name,slug'])
+                ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(SeriesCardFormatter::relations())
                 ->where('is_active', true)
                 ->orderBy('total_views', 'desc')
                 ->limit($limit)
@@ -237,10 +238,10 @@ class SeriesController extends Controller
     {
         $limit = min($request->get('limit', 20), 50);
 
-        $series = Cache::remember("series:trending:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:trending:v2:{$limit}", 300, function () use ($limit) {
             return Series::query()
-                ->select(['id', 'title', 'slug', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
-                ->with(['categories:id,name,slug'])
+                ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
+                ->with(SeriesCardFormatter::relations())
                 ->where('is_active', true)
                 ->where('updated_at', '>=', now()->subDays(7))
                 ->orderBy('total_views', 'desc')

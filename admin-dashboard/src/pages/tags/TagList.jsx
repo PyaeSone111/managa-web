@@ -33,7 +33,7 @@ function TagList() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-orange"></div>
         </div>
       </Layout>
     );
@@ -98,7 +98,7 @@ function TagList() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link
                         to={`/dashboard/tags/${tag.id}/edit`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-red-orange hover:text-blue-900"
                       >
                         Edit
                       </Link>

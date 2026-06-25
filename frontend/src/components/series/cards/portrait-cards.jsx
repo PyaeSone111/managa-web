@@ -1,6 +1,6 @@
 import { Star, BookOpen, Eye, Flame, Heart, Award } from 'lucide-react';
 
-/* Serene Winter: primary UI = delta-green (#2e4b4e); quarzo, dockside-blue, sidewalk-grey, black-feather */
+/* Navy, Almond, Red-orange, Mango palette */
 
 function StarRating({ rating, size = 12 }) {
   return (
@@ -24,7 +24,7 @@ function StarRating({ rating, size = 12 }) {
 
 function StatusBadge({ status }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#2e4b4e] text-white border border-[#2e4b4e]">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1e3d59] text-white border border-[#1e3d59]">
       {status}
     </span>
   );
@@ -133,7 +133,7 @@ export function Card05Badges({ manga }) {
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           <StatusBadge status={manga.status} />
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#2e4b4e] text-white border border-[#2e4b4e]">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1e3d59] text-white border border-[#1e3d59]">
             <Flame size={9} /> HOT
           </span>
         </div>
@@ -248,8 +248,8 @@ export function Card09Cinematic({ manga }) {
       <div className="relative w-full aspect-[2/3] overflow-hidden">
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-95 group-hover:brightness-100" />
         <div className="absolute inset-0 bg-gradient-to-t from-delta-green/90 via-transparent to-quarzo/20" />
-        <div className="absolute top-0 left-0 right-0 h-4 bg-delta-green" />
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-delta-green" />
+        <div className="absolute top-0 left-0 right-0 h-4 bg-mango" />
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-mango" />
         <div className="absolute top-5 left-3 flex items-center gap-1">
           <Award size={12} className="text-quarzo" />
           <span className="text-[10px] font-bold text-quarzo">TOP RATED</span>
@@ -275,7 +275,7 @@ export function Card10Rank({ manga, rank }) {
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
         <div className="absolute -bottom-2 -left-1">
-          <span className="text-7xl font-black leading-none" style={{ color: '#516D74', WebkitTextStroke: '2px white', paintOrder: 'stroke fill' }}>
+          <span className="text-7xl font-black leading-none" style={{ color: '#1e3d59', WebkitTextStroke: '2px white', paintOrder: 'stroke fill' }}>
             {String(rank ?? 0).padStart(2, '0')}
           </span>
         </div>

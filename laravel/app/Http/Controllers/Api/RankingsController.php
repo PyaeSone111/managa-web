@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Series;
 use App\Models\SeriesRanking;
+use App\Support\SeriesCardFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -52,7 +53,12 @@ class RankingsController extends Controller
                             'total_views' => $ranking->series->total_views,
                             'total_favorites' => $ranking->series->total_favorites,
                             'categories' => $ranking->series->categories,
+                            'author' => $ranking->series->author,
+                            'artist' => $ranking->series->artist,
+                            'authors' => $ranking->series->authors,
+                            'manga_types' => $ranking->series->mangaTypes,
                             'types' => $ranking->series->mangaTypes,
+                            'type' => $ranking->series->type,
                             'score' => $ranking->top_score,
                             'rank' => $ranking->top_rank,
                         ];
@@ -64,7 +70,7 @@ class RankingsController extends Controller
             // Fallback: use Series::scopeOrderByTopScore (Eloquent scope, no raw DB facade)
             $query = Series::query()
                 ->active()
-                ->with(['categories', 'mangaTypes'])
+                ->with(SeriesCardFormatter::relations())
                 ->orderByTopScore();
 
             $total = Series::active()->count();
@@ -85,7 +91,12 @@ class RankingsController extends Controller
                         'total_views' => $series->total_views,
                         'total_favorites' => $series->total_favorites,
                         'categories' => $series->categories,
+                        'author' => $series->author,
+                        'artist' => $series->artist,
+                        'authors' => $series->authors,
+                        'manga_types' => $series->mangaTypes,
                         'types' => $series->mangaTypes,
+                        'type' => $series->type,
                         'score' => $series->top_score ?? 0,
                         'rank' => $offset + $index + 1,
                     ];
@@ -149,7 +160,12 @@ class RankingsController extends Controller
                             'total_views' => $s->total_views,
                             'total_favorites' => $s->total_favorites,
                             'categories' => $s->categories,
+                            'author' => $s->author,
+                            'artist' => $s->artist,
+                            'authors' => $s->authors,
+                            'manga_types' => $s->mangaTypes,
                             'types' => $s->mangaTypes,
+                            'type' => $s->type,
                             'chapters_read_7d' => $ranking->chapters_read_7d,
                             'reading_time_hours' => round($ranking->reading_time_7d / 3600, 1),
                             'active_readers' => $ranking->viewers_7d,
@@ -165,7 +181,7 @@ class RankingsController extends Controller
             // Fallback: use reading sessions/progress
             $query = Series::query()
                 ->active()
-                ->with(['categories', 'mangaTypes'])
+                ->with(SeriesCardFormatter::relations())
                 ->withCount([
                     'readingProgress as readers_7d' => function ($q) {
                         $q->where('updated_at', '>=', now()->subDays(7));
@@ -193,7 +209,12 @@ class RankingsController extends Controller
                         'total_views' => $series->total_views,
                         'total_favorites' => $series->total_favorites,
                         'categories' => $series->categories,
+                        'author' => $series->author,
+                        'artist' => $series->artist,
+                        'authors' => $series->authors,
+                        'manga_types' => $series->mangaTypes,
                         'types' => $series->mangaTypes,
+                        'type' => $series->type,
                         'chapters_read_7d' => 0,
                         'reading_time_hours' => 0,
                         'active_readers' => $score,
@@ -261,7 +282,12 @@ class RankingsController extends Controller
                             'total_views' => $s->total_views,
                             'total_favorites' => $s->total_favorites,
                             'categories' => $s->categories,
+                            'author' => $s->author,
+                            'artist' => $s->artist,
+                            'authors' => $s->authors,
+                            'manga_types' => $s->mangaTypes,
                             'types' => $s->mangaTypes,
+                            'type' => $s->type,
                             'views_7d' => $ranking->views_7d,
                             'favorites_7d' => $ranking->favorites_7d,
                             'score' => $ranking->trending_score,
@@ -277,7 +303,7 @@ class RankingsController extends Controller
             // Fallback: use recent views and favorites
             $query = Series::query()
                 ->active()
-                ->with(['categories', 'mangaTypes'])
+                ->with(SeriesCardFormatter::relations())
                 ->withCount([
                     'favorites as favorites_7d' => function ($q) {
                         $q->where('created_at', '>=', now()->subDays(7));
@@ -306,7 +332,12 @@ class RankingsController extends Controller
                         'total_views' => $series->total_views,
                         'total_favorites' => $series->total_favorites,
                         'categories' => $series->categories,
+                        'author' => $series->author,
+                        'artist' => $series->artist,
+                        'authors' => $series->authors,
+                        'manga_types' => $series->mangaTypes,
                         'types' => $series->mangaTypes,
+                        'type' => $series->type,
                         'views_7d' => 0,
                         'favorites_7d' => $score,
                         'score' => $score,
@@ -348,7 +379,7 @@ class RankingsController extends Controller
         $perPage = min($request->input('per_page', $request->input('limit', 20)), 50);
         $page = $request->input('page', 1);
 
-        $cacheKey = "manga:recent:v4:{$page}:{$perPage}";
+        $cacheKey = "manga:recent:v5:{$page}:{$perPage}";
 
         $results = Cache::remember($cacheKey, 300, function () use ($perPage) {
             // Use last_chapter_at column instead of subquery for better performance
@@ -356,12 +387,14 @@ class RankingsController extends Controller
                 ->active()
                 ->whereNotNull('last_chapter_at')
                 ->orderBy('last_chapter_at', 'desc')
-                ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
+                ->with(array_merge(SeriesCardFormatter::relations(), [
+                    'chapters' => function ($q) {
                     $q->where('is_published', true)
                         ->orderBy('published_at', 'desc')
                         ->limit(2)
                         ->select('id', 'series_id', 'chapter_number', 'title', 'published_at');
-                }])
+                },
+                ]))
                 ->paginate($perPage);
         });
 
@@ -376,7 +409,7 @@ class RankingsController extends Controller
                 'title' => $ch->title,
                 'published_at' => $ch->published_at,
             ])->values()->all();
-            return [
+            return array_merge([
                 'id' => $series->id,
                 'title' => $series->title,
                 'slug' => $series->slug,
@@ -395,7 +428,7 @@ class RankingsController extends Controller
                 ] : null,
                 'last_two_chapters' => $lastTwoChapters,
                 'categories' => $series->categories,
-            ];
+            ], SeriesCardFormatter::metaFields($series));
         });
 
         return response()->json([
@@ -425,36 +458,34 @@ class RankingsController extends Controller
         $perPage = min($request->input('per_page', $request->input('limit', 20)), 50);
         $page = $request->input('page', 1);
 
-        $cacheKey = "manga:new:v3:{$page}:{$perPage}";
+        $cacheKey = "manga:new:v4:{$page}:{$perPage}";
 
         $results = Cache::remember($cacheKey, 300, function () use ($perPage) {
             return Series::query()
                 ->active()
                 ->orderBy('created_at', 'desc')
-                ->with([
-                    'categories',
-                    'mangaTypes',
+                ->with(array_merge(SeriesCardFormatter::relations(), [
                     'chapters' => function ($q) {
                         $q->where('is_published', true)
                             ->orderBy('published_at', 'desc')
                             ->limit(2)
                             ->select('id', 'series_id', 'chapter_number', 'title', 'published_at');
                     },
-                ])
+                ]))
                 ->withCount(['chapters' => fn($q) => $q->where('is_published', true)])
                 ->paginate($perPage);
         });
 
         $data = $results->getCollection()->map(function ($series) {
-            $arr = $series->toArray();
-            $arr['last_two_chapters'] = $series->chapters->take(2)->map(fn ($ch) => [
-                'id' => $ch->id,
-                'chapter_number' => $ch->chapter_number,
-                'number' => $ch->chapter_number,
-                'title' => $ch->title,
-                'published_at' => $ch->published_at,
-            ])->values()->all();
-            return $arr;
+            return array_merge($series->toArray(), [
+                'last_two_chapters' => $series->chapters->take(2)->map(fn ($ch) => [
+                    'id' => $ch->id,
+                    'chapter_number' => $ch->chapter_number,
+                    'number' => $ch->chapter_number,
+                    'title' => $ch->title,
+                    'published_at' => $ch->published_at,
+                ])->values()->all(),
+            ], SeriesCardFormatter::metaFields($series));
         });
 
         return response()->json([

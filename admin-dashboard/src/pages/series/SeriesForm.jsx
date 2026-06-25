@@ -209,7 +209,7 @@ function SeriesForm() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
 
@@ -222,7 +222,7 @@ function SeriesForm() {
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="Auto-generated if empty"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
           </div>
@@ -236,7 +236,7 @@ function SeriesForm() {
               <button
                 type="button"
                 onClick={handleAltNameAdd}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-red-orange hover:text-blue-800"
               >
                 + Add Name
               </button>
@@ -249,12 +249,12 @@ function SeriesForm() {
                     value={alt.name}
                     onChange={(e) => handleAltNameChange(index, 'name', e.target.value)}
                     placeholder="Alternative title"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
                   />
                   <select
                     value={alt.language}
                     onChange={(e) => handleAltNameChange(index, 'language', e.target.value)}
-                    className="w-24 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-24 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
                   >
                     <option value="">Lang</option>
                     <option value="en">EN</option>
@@ -285,7 +285,7 @@ function SeriesForm() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
             />
           </div>
 
@@ -317,7 +317,7 @@ function SeriesForm() {
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               >
                 <option value="ongoing">Ongoing</option>
                 <option value="completed">Completed</option>
@@ -336,7 +336,7 @@ function SeriesForm() {
                 onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
                 min="1900"
                 max={new Date().getFullYear()}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
 
@@ -348,7 +348,7 @@ function SeriesForm() {
                 type="date"
                 value={formData.release_date}
                 onChange={(e) => setFormData({ ...formData, release_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
           </div>
@@ -363,7 +363,7 @@ function SeriesForm() {
                 type="text"
                 value={formData.author}
                 onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
                 placeholder="Free text author name"
               />
             </div>
@@ -376,7 +376,7 @@ function SeriesForm() {
                 type="text"
                 value={formData.artist}
                 onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
                 placeholder="Free text artist name"
               />
             </div>
@@ -395,7 +395,7 @@ function SeriesForm() {
                     e.target.value = '';
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               >
                 <option value="">Select an author to add...</option>
                 {authors
@@ -447,7 +447,7 @@ function SeriesForm() {
                     type="checkbox"
                     checked={formData.type_ids.includes(type.id)}
                     onChange={() => handleTypeToggle(type.id)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-red-orange focus:ring-red-orange"
                   />
                   <span className="text-sm text-gray-700">{type.name}</span>
                 </label>
@@ -467,7 +467,7 @@ function SeriesForm() {
                     type="checkbox"
                     checked={formData.category_ids.includes(category.id)}
                     onChange={() => handleCategoryToggle(category.id)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-red-orange focus:ring-red-orange"
                   />
                   <span className="text-sm text-gray-700">{category.name}</span>
                 </label>
@@ -487,7 +487,7 @@ function SeriesForm() {
                     type="checkbox"
                     checked={formData.tag_ids.includes(tag.id)}
                     onChange={() => handleTagToggle(tag.id)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-red-orange focus:ring-red-orange"
                   />
                   <span className="text-sm text-gray-700">{tag.name}</span>
                 </label>
@@ -502,7 +502,7 @@ function SeriesForm() {
                 type="checkbox"
                 checked={formData.is_featured}
                 onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-300 text-red-orange focus:ring-red-orange"
               />
               <span className="text-sm font-medium text-gray-700">Featured Series</span>
             </label>

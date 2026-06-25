@@ -1,6 +1,6 @@
 import { Star, BookOpen, Eye, Clock, Heart, Bookmark, TrendingUp, Flame, ChevronRight, Play, Sparkles } from 'lucide-react';
 
-/* Serene Winter: primary UI = delta-green (#2e4b4e); quarzo, dockside-blue, sidewalk-grey, black-feather */
+/* Navy, Almond, Red-orange, Mango palette */
 
 function StarRating({ rating, size = 12 }) {
   return (
@@ -24,7 +24,7 @@ function StarRating({ rating, size = 12 }) {
 
 function StatusBadge({ status }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#2e4b4e] text-white border border-[#2e4b4e]">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1e3d59] text-white border border-[#1e3d59]">
       {status}
     </span>
   );
@@ -150,7 +150,7 @@ export function Card14Action({ manga }) {
 export function Card15Compact({ manga, rank }) {
   return (
     <div className="group cursor-pointer flex items-center gap-3 rounded-lg border border-dockside-blue bg-quarzo/30 p-2.5 transition-all duration-300 hover:border-delta-green/40 hover:bg-quarzo/50 shadow-sm">
-      <span className="inline-flex items-center justify-center min-w-[1.75rem] text-sm font-black flex-shrink-0" style={{ color: '#516D74', WebkitTextStroke: '1.5px white', paintOrder: 'stroke fill' }}>{rank ?? 0}</span>
+      <span className="inline-flex items-center justify-center min-w-[1.75rem] text-sm font-black flex-shrink-0" style={{ color: '#1e3d59', WebkitTextStroke: '1.5px white', paintOrder: 'stroke fill' }}>{rank ?? 0}</span>
       <div className="relative flex-shrink-0 w-12 h-16 rounded-md overflow-hidden bg-quarzo/50">
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="w-full h-full object-cover" />
       </div>
@@ -250,7 +250,7 @@ export function Card18Banner({ manga }) {
         </div>
         <div className="flex flex-col justify-center gap-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2e4b4e] text-white border border-[#2e4b4e]">FEATURED</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1e3d59] text-white border border-[#1e3d59]">FEATURED</span>
             <StatusBadge status={manga.status} />
           </div>
           <h3 className="font-bold text-xl text-white line-clamp-1 leading-tight tracking-tight">{manga.title}</h3>
@@ -308,7 +308,7 @@ export function Card20Trending({ manga }) {
       <div className="relative flex-shrink-0 w-28 overflow-hidden bg-quarzo/40">
         <img src={manga.coverUrl || '/placeholder.svg'} alt={manga.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <div className="absolute top-2 left-2">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2e4b4e] text-white border border-[#2e4b4e] backdrop-blur-sm">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1e3d59] text-white border border-[#1e3d59] backdrop-blur-sm">
             <TrendingUp size={9} /> TRENDING
           </span>
         </div>

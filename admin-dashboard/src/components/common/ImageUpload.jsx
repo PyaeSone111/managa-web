@@ -108,7 +108,7 @@ function ImageUpload({ label, value, onChange, type = 'thumbnail', accept = 'ima
             onBlur={handleUrlSubmit}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUrlSubmit())}
             placeholder="Paste image URL and press Enter or blur"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent text-sm"
           />
           <button
             type="button"
@@ -129,7 +129,7 @@ function ImageUpload({ label, value, onChange, type = 'thumbnail', accept = 'ima
           disabled={uploading}
           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
         />
-        {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
+        {uploading && <p className="mt-1 text-sm text-red-orange">Uploading...</p>}
       </div>
 
       {/* Reuse existing images */}
@@ -137,7 +137,7 @@ function ImageUpload({ label, value, onChange, type = 'thumbnail', accept = 'ima
         <button
           type="button"
           onClick={() => setShowReuse((v) => !v)}
-          className="text-sm text-blue-600 hover:text-blue-800"
+          className="text-sm text-red-orange hover:text-blue-800"
         >
           {showReuse ? 'Hide' : 'Reuse'} existing images (branding & series covers)
         </button>
@@ -154,7 +154,7 @@ function ImageUpload({ label, value, onChange, type = 'thumbnail', accept = 'ima
                     key={`${item.url}-${idx}`}
                     type="button"
                     onClick={() => handleSelectExisting(item.url)}
-                    className="block rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="block rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-red-orange focus:ring-2 focus:ring-red-orange focus:outline-none"
                   >
                     <img
                       src={item.url}

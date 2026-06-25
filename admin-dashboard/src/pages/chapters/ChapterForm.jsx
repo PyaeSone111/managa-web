@@ -222,7 +222,7 @@ function ChapterForm() {
               onChange={(e) => setFormData({ ...formData, series_id: e.target.value })}
               required
               disabled={isEdit}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent disabled:bg-gray-100"
             >
               <option value="">-- Select a series --</option>
               {series.map((s) => (
@@ -247,7 +247,7 @@ function ChapterForm() {
                 }
                 required
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
 
@@ -259,7 +259,7 @@ function ChapterForm() {
                 type="date"
                 value={formData.published_at}
                 onChange={(e) => setFormData({ ...formData, published_at: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
               />
             </div>
           </div>
@@ -273,7 +273,7 @@ function ChapterForm() {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Optional chapter title"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
             />
           </div>
 
@@ -285,7 +285,7 @@ function ChapterForm() {
                 onChange={(e) =>
                   setFormData({ ...formData, is_published: e.target.checked })
                 }
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-300 text-red-orange focus:ring-red-orange"
               />
               <span className="text-sm font-medium text-gray-700">Published</span>
             </label>
@@ -314,8 +314,8 @@ function ChapterForm() {
                     onDragEnd={handleDragEnd}
                     className={`relative group bg-gray-50 rounded-lg overflow-hidden border-2 transition-all cursor-move ${
                       draggedIndex === index
-                        ? 'border-blue-500 opacity-50 scale-95'
-                        : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-red-orange opacity-50 scale-95'
+                        : 'border-gray-200 hover:border-red-orange/50'
                     }`}
                   >
                     <div className="relative">

@@ -68,7 +68,7 @@ function ChapterList() {
               setSelectedSeries(e.target.value);
               setPage(1);
             }}
-            className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
           >
             <option value="">-- Select a series --</option>
             {series.map((s) => (
@@ -106,7 +106,7 @@ function ChapterList() {
                   {isLoading ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-orange mx-auto"></div>
                       </td>
                     </tr>
                   ) : chapters.length === 0 ? (
@@ -141,7 +141,7 @@ function ChapterList() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <Link
                             to={`/dashboard/chapters/${chapter.id}/edit`}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-red-orange hover:text-blue-900"
                           >
                             Edit
                           </Link>

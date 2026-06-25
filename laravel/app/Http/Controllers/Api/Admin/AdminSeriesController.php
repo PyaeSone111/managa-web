@@ -7,6 +7,7 @@ use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -32,11 +33,121 @@ class AdminSeriesController extends Controller
     }
 
     /**
+     * Shared validation rules for series relation payloads.
+     */
+    protected function seriesRelationRules(): array
+    {
+        return [
+            'release_date' => 'nullable|date',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'exists:categories,id',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
+            'type_ids' => 'nullable|array',
+            'type_ids.*' => 'exists:manga_types,id',
+            'author_ids' => 'nullable|array',
+            'author_ids.*.id' => 'required|exists:authors,id',
+            'author_ids.*.role' => 'nullable|string|in:author,artist,both',
+            'alt_names' => 'nullable|array',
+            'alt_names.*.name' => 'required|string|max:500',
+            'alt_names.*.language' => 'nullable|string|max:10',
+        ];
+    }
+
+    /**
+     * Eager-load all series relations for admin responses.
+     */
+    protected function loadSeriesRelations(Series $series): Series
+    {
+        return $series->load([
+            'categories',
+            'tags',
+            'mangaTypes',
+            'authors',
+            'altNames',
+        ]);
+    }
+
+    /**
+     * Clear public API caches for a series (by id and slug).
+     */
+    protected function clearSeriesCache(Series $series, ?string $previousSlug = null): void
+    {
+        Cache::forget("series:show:{$series->id}");
+        Cache::forget("series:show:{$series->slug}");
+
+        if ($previousSlug && $previousSlug !== $series->slug) {
+            Cache::forget("series:show:{$previousSlug}");
+        }
+    }
+
+    /**
+     * Sync pivot / related records sent from the admin form.
+     */
+    protected function syncSeriesRelations(Series $series, Request $request, array $validated): void
+    {
+        $payload = $request->all();
+
+        if (array_key_exists('category_ids', $payload)) {
+            $series->categories()->sync($validated['category_ids'] ?? []);
+        }
+
+        if (array_key_exists('tag_ids', $payload)) {
+            $series->tags()->sync($validated['tag_ids'] ?? []);
+        }
+
+        if (array_key_exists('type_ids', $payload)) {
+            $series->mangaTypes()->sync($validated['type_ids'] ?? []);
+        }
+
+        if (array_key_exists('author_ids', $payload)) {
+            $sync = [];
+            foreach ($validated['author_ids'] ?? [] as $entry) {
+                $authorId = is_array($entry) ? ($entry['id'] ?? null) : $entry;
+                if ($authorId) {
+                    $sync[$authorId] = [
+                        'role' => is_array($entry) ? ($entry['role'] ?? 'author') : 'author',
+                    ];
+                }
+            }
+            $series->authors()->sync($sync);
+        }
+
+        if (array_key_exists('alt_names', $payload)) {
+            $series->altNames()->delete();
+            foreach ($validated['alt_names'] ?? [] as $alt) {
+                $series->altNames()->create([
+                    'name' => $alt['name'],
+                    'language' => $alt['language'] ?? null,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Strip relation keys before persisting scalar series columns.
+     */
+    protected function extractScalarAttributes(array $validated): array
+    {
+        unset(
+            $validated['category_ids'],
+            $validated['tag_ids'],
+            $validated['type_ids'],
+            $validated['author_ids'],
+            $validated['alt_names'],
+            $validated['cover_image'],
+            $validated['thumbnail_image']
+        );
+
+        return $validated;
+    }
+
+    /**
      * Create a new series
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:series,slug',
             'description' => 'nullable|string',
@@ -49,14 +160,9 @@ class AdminSeriesController extends Controller
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
             'year' => 'nullable|integer|min:1900|max:' . date('Y'),
-            'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'exists:tags,id',
             'is_featured' => 'nullable|boolean',
-        ]);
+        ], $this->seriesRelationRules()));
 
-        // Upload images to R2 when provided (override URL if both sent)
         $coverUrl = $this->storeImageToR2($request, 'cover_image', 'cover');
         if ($coverUrl !== null) {
             $validated['cover_url'] = $coverUrl;
@@ -65,12 +171,9 @@ class AdminSeriesController extends Controller
         if ($thumbUrl !== null) {
             $validated['thumbnail_url'] = $thumbUrl;
         }
-        unset($validated['cover_image'], $validated['thumbnail_image']);
 
-        // Generate slug if not provided
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
-            // Ensure uniqueness
             $counter = 1;
             $originalSlug = $validated['slug'];
             while (Series::where('slug', $validated['slug'])->exists()) {
@@ -79,25 +182,13 @@ class AdminSeriesController extends Controller
             }
         }
 
-        $categoryIds = $validated['category_ids'] ?? [];
-        $tagIds = $validated['tag_ids'] ?? [];
-        unset($validated['category_ids'], $validated['tag_ids']);
-
-        $series = Series::create($validated);
-
-        if (!empty($categoryIds)) {
-            $series->categories()->attach($categoryIds);
-        }
-
-        if (!empty($tagIds)) {
-            $series->tags()->attach($tagIds);
-        }
-
-        $series->load(['categories', 'tags']);
+        $series = Series::create($this->extractScalarAttributes($validated));
+        $this->syncSeriesRelations($series, $request, $validated);
+        $this->clearSeriesCache($series);
 
         return response()->json([
             'success' => true,
-            'data' => $series,
+            'data' => $this->loadSeriesRelations($series),
             'message' => 'Series created successfully'
         ], 201);
     }
@@ -108,8 +199,9 @@ class AdminSeriesController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $series = Series::findOrFail($id);
+        $previousSlug = $series->slug;
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'sometimes|string|max:255',
             'slug' => ['sometimes', 'string', 'max:255', Rule::unique('series', 'slug')->ignore($id)],
             'description' => 'nullable|string',
@@ -122,15 +214,10 @@ class AdminSeriesController extends Controller
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
             'year' => 'nullable|integer|min:1900|max:' . date('Y'),
-            'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'exists:tags,id',
             'is_featured' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
-        ]);
+        ], $this->seriesRelationRules()));
 
-        // Upload images to R2 when provided
         $coverUrl = $this->storeImageToR2($request, 'cover_image', 'cover');
         if ($coverUrl !== null) {
             $validated['cover_url'] = $coverUrl;
@@ -139,27 +226,15 @@ class AdminSeriesController extends Controller
         if ($thumbUrl !== null) {
             $validated['thumbnail_url'] = $thumbUrl;
         }
-        unset($validated['cover_image'], $validated['thumbnail_image']);
 
-        $categoryIds = $validated['category_ids'] ?? null;
-        $tagIds = $validated['tag_ids'] ?? null;
-        unset($validated['category_ids'], $validated['tag_ids']);
-
-        $series->update($validated);
-
-        if ($categoryIds !== null) {
-            $series->categories()->sync($categoryIds);
-        }
-
-        if ($tagIds !== null) {
-            $series->tags()->sync($tagIds);
-        }
-
-        $series->load(['categories', 'tags']);
+        $series->update($this->extractScalarAttributes($validated));
+        $this->syncSeriesRelations($series, $request, $validated);
+        $series->refresh();
+        $this->clearSeriesCache($series, $previousSlug);
 
         return response()->json([
             'success' => true,
-            'data' => $series,
+            'data' => $this->loadSeriesRelations($series),
             'message' => 'Series updated successfully'
         ]);
     }
@@ -170,6 +245,7 @@ class AdminSeriesController extends Controller
     public function destroy($id): JsonResponse
     {
         $series = Series::findOrFail($id);
+        $this->clearSeriesCache($series);
         $series->delete();
 
         return response()->json([
@@ -178,4 +254,3 @@ class AdminSeriesController extends Controller
         ]);
     }
 }
-

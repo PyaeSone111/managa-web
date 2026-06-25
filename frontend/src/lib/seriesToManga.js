@@ -1,4 +1,5 @@
 import { toAbsoluteImageUrl } from '../utils/helpers';
+import { getSeriesAuthorLabel, getSeriesTypeLabel } from './seriesDisplay';
 
 /**
  * Convert API series object to the shape expected by manga-card-design components.
@@ -11,10 +12,8 @@ export function seriesToManga(series) {
   const num = rawRating != null ? Number(rawRating) : NaN;
   const rating = (Number.isNaN(num) || num <= 0) ? 0 : num <= 5 ? Math.min(5, num) : Math.min(5, num / 2);
   const ratingCount = series.rating_count ?? 0;
-  const authorText = series.authors?.length
-    ? series.authors.map((a) => (typeof a === 'object' ? a.name : a)).join(', ')
-    : series.author || 'Unknown Author';
-  const categoryName = series.categories?.[0]?.name || series.manga_type?.name || 'Manga';
+  const authorText = getSeriesAuthorLabel(series);
+  const categoryName = getSeriesTypeLabel(series);
   const statusRaw = String(series.status || 'ongoing').toLowerCase();
   const statusMap = { ongoing: 'Ongoing', completed: 'Completed', hiatus: 'Hiatus', cancelled: 'Completed', dropped: 'Completed' };
   const status = statusMap[statusRaw] || 'Ongoing';

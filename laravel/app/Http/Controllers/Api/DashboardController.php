@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branding;
 use App\Models\Series;
 use App\Models\SeriesRanking;
+use App\Support\SeriesCardFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -27,7 +28,7 @@ class DashboardController extends Controller
         $limit = min($request->input('limit', 12), 20);
 
         // Use a single cache key for the entire dashboard (10 min TTL)
-        $cacheKey = "dashboard:home:v2:{$limit}";
+        $cacheKey = "dashboard:home:v3:{$limit}";
 
         $data = Cache::remember($cacheKey, 600, function () use ($limit) {
             // Check once — reused by both getTrending and getTop
@@ -58,18 +59,13 @@ class DashboardController extends Controller
         $series = Series::query()
             ->active()
             ->orderByLatestChapter()
-            ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
-                $q->where('is_published', true)
-                    ->orderBy('published_at', 'desc')
-                    ->limit(2)
-                    ->select('id', 'series_id', 'chapter_number', 'title', 'published_at');
-            }])
+            ->with($this->cardRelationsWithChapters())
             ->limit($limit)
             ->get();
 
         return $series->map(function ($s) {
             $latestChapter = $s->chapters->first();
-            return [
+            return array_merge([
                 'id' => $s->id,
                 'title' => $s->title,
                 'slug' => $s->slug,
@@ -93,8 +89,7 @@ class DashboardController extends Controller
                     'published_at' => $ch->published_at,
                 ])->values()->all(),
                 'categories' => $s->categories,
-                'types' => $s->mangaTypes,
-            ];
+            ], SeriesCardFormatter::metaFields($s));
         })->all();
     }
 
@@ -106,18 +101,13 @@ class DashboardController extends Controller
         $series = Series::query()
             ->active()
             ->orderBy('created_at', 'desc')
-            ->with(['categories', 'mangaTypes', 'chapters' => function ($q) {
-                $q->where('is_published', true)
-                    ->orderBy('published_at', 'desc')
-                    ->limit(2)
-                    ->select('id', 'series_id', 'chapter_number', 'title', 'published_at');
-            }])
+            ->with($this->cardRelationsWithChapters())
             ->withCount(['chapters' => fn($q) => $q->where('is_published', true)])
             ->limit($limit)
             ->get();
 
         return $series->map(function ($s) {
-            return [
+            return array_merge([
                 'id' => $s->id,
                 'title' => $s->title,
                 'slug' => $s->slug,
@@ -138,8 +128,7 @@ class DashboardController extends Controller
                     'published_at' => $ch->published_at,
                 ])->values()->all(),
                 'categories' => $s->categories,
-                'types' => $s->mangaTypes,
-            ];
+            ], SeriesCardFormatter::metaFields($s));
         })->all();
     }
 
@@ -153,7 +142,7 @@ class DashboardController extends Controller
             $rankings = SeriesRanking::getTrending($limit, 0);
             return $rankings->map(function ($ranking) {
                 $s = $ranking->series;
-                return [
+                return array_merge([
                     'id' => $s->id,
                     'title' => $s->title,
                     'slug' => $s->slug,
@@ -167,19 +156,18 @@ class DashboardController extends Controller
                     'total_views' => $s->total_views,
                     'total_favorites' => $s->total_favorites,
                     'categories' => $s->categories,
-                    'types' => $s->mangaTypes,
                     'views_7d' => $ranking->views_7d,
                     'favorites_7d' => $ranking->favorites_7d,
                     'score' => $ranking->trending_score,
                     'rank' => $ranking->trending_rank,
-                ];
+                ], SeriesCardFormatter::metaFields($s));
             })->all();
         }
 
         // Fallback
         $series = Series::query()
             ->active()
-            ->with(['categories', 'mangaTypes'])
+            ->with(SeriesCardFormatter::relations())
             ->withCount([
                 'favorites as favorites_7d' => fn($q) => $q->where('created_at', '>=', now()->subDays(7))
             ])
@@ -189,7 +177,7 @@ class DashboardController extends Controller
             ->get();
 
         return $series->map(function ($s, $index) {
-            return [
+            return array_merge([
                 'id' => $s->id,
                 'title' => $s->title,
                 'slug' => $s->slug,
@@ -203,12 +191,11 @@ class DashboardController extends Controller
                 'total_views' => $s->total_views,
                 'total_favorites' => $s->total_favorites,
                 'categories' => $s->categories,
-                'types' => $s->mangaTypes,
                 'views_7d' => 0,
                 'favorites_7d' => $s->favorites_7d ?? 0,
                 'score' => $s->favorites_7d ?? 0,
                 'rank' => $index + 1,
-            ];
+            ], SeriesCardFormatter::metaFields($s));
         })->all();
     }
 
@@ -221,36 +208,36 @@ class DashboardController extends Controller
         if ($hasRankings) {
             $rankings = SeriesRanking::getTopManga($limit, 0);
             return $rankings->map(function ($ranking) {
-                return [
-                    'id' => $ranking->series->id,
-                    'title' => $ranking->series->title,
-                    'slug' => $ranking->series->slug,
-                    'cover_url' => $ranking->series->cover_url,
-                    'thumbnail_url' => $ranking->series->thumbnail_url,
-                    'status' => $ranking->series->status,
-                    'rating' => $ranking->series->rating,
-                    'average_rating' => $ranking->series->rating,
-                    'rating_count' => $ranking->series->rating_count,
-                    'total_views' => $ranking->series->total_views,
-                    'total_favorites' => $ranking->series->total_favorites,
-                    'categories' => $ranking->series->categories,
-                    'types' => $ranking->series->mangaTypes,
+                $s = $ranking->series;
+                return array_merge([
+                    'id' => $s->id,
+                    'title' => $s->title,
+                    'slug' => $s->slug,
+                    'cover_url' => $s->cover_url,
+                    'thumbnail_url' => $s->thumbnail_url,
+                    'status' => $s->status,
+                    'rating' => $s->rating,
+                    'average_rating' => $s->rating,
+                    'rating_count' => $s->rating_count,
+                    'total_views' => $s->total_views,
+                    'total_favorites' => $s->total_favorites,
+                    'categories' => $s->categories,
                     'score' => $ranking->top_score,
                     'rank' => $ranking->top_rank,
-                ];
+                ], SeriesCardFormatter::metaFields($s));
             })->all();
         }
 
         // Fallback: use Series::scopeOrderByTopScore (Eloquent scope, no raw DB facade)
         $series = Series::query()
             ->active()
-            ->with(['categories', 'mangaTypes'])
+            ->with(SeriesCardFormatter::relations())
             ->orderByTopScore()
             ->limit($limit)
             ->get();
 
         return $series->map(function ($s, $index) {
-            return [
+            return array_merge([
                 'id' => $s->id,
                 'title' => $s->title,
                 'slug' => $s->slug,
@@ -263,11 +250,22 @@ class DashboardController extends Controller
                 'total_views' => $s->total_views,
                 'total_favorites' => $s->total_favorites,
                 'categories' => $s->categories,
-                'types' => $s->mangaTypes,
                 'score' => $s->top_score ?? 0,
                 'rank' => $index + 1,
-            ];
+            ], SeriesCardFormatter::metaFields($s));
         })->all();
+    }
+
+    private function cardRelationsWithChapters(): array
+    {
+        return array_merge(SeriesCardFormatter::relations(), [
+            'chapters' => function ($q) {
+                $q->where('is_published', true)
+                    ->orderBy('published_at', 'desc')
+                    ->limit(2)
+                    ->select('id', 'series_id', 'chapter_number', 'title', 'published_at');
+            },
+        ]);
     }
 
     /**

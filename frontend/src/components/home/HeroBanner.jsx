@@ -16,24 +16,24 @@ function HeroBanner() {
     >
       <div
         className={`relative flex min-h-[200px] sm:min-h-[240px] md:min-h-[280px] items-center justify-center px-4 sm:px-6 lg:px-8 py-10 sm:py-12 ${
-          hasBgImage ? '' : 'bg-delta-green'
+          hasBgImage ? '' : 'bg-navy'
         }`}
         style={sectionStyle}
       >
         {/* Overlay for background images */}
-        {hasBgImage && <div className="absolute inset-0 bg-delta-green/70" />}
+        {hasBgImage && <div className="absolute inset-0 bg-navy/70" />}
 
         <div className="relative container mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div className="flex-1">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight text-balance">
               Discover New Stories
             </h2>
-            <p className="mt-2 text-dockside-blue text-sm sm:text-base max-w-xl leading-relaxed">
+            <p className="mt-2 text-almond/90 text-sm sm:text-base max-w-xl leading-relaxed">
               Read the latest manga, manhwa, and manhua. New releases added weekly.
             </p>
             <Link
               to="/browse"
-              className="mt-4 inline-block px-5 py-2.5 text-sm font-medium bg-ruskin-blue text-white rounded-lg hover:bg-ruskin-blue/80 transition-all duration-200"
+              className="mt-4 inline-block px-5 py-2.5 text-sm font-medium bg-red-orange text-white rounded-lg hover:bg-mango hover:text-navy transition-all duration-200"
             >
               Browse All
             </Link>

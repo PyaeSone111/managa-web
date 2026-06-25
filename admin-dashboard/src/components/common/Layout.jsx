@@ -1,15 +1,40 @@
+import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
+import {
+  SidebarProvider,
+  useSidebar,
+  SIDEBAR_WIDTH_COLLAPSED,
+  SIDEBAR_WIDTH_EXPANDED,
+} from '../../context/SidebarContext';
+
+function LayoutContent({ children }) {
+  const { collapsed } = useSidebar();
+  const sidebarOffset = collapsed ? SIDEBAR_WIDTH_COLLAPSED + 32 : SIDEBAR_WIDTH_EXPANDED + 32;
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Sidebar />
+      <Box
+        component="main"
+        sx={{
+          minHeight: '100vh',
+          p: { xs: 2, sm: 3, lg: 4 },
+          ml: { xs: 0, lg: `${sidebarOffset}px` },
+          transition: 'margin-left 0.25s ease',
+        }}
+      >
+        <Box sx={{ width: '100%', maxWidth: 1600, mx: 'auto' }}>{children}</Box>
+      </Box>
+    </Box>
+  );
+}
 
 function Layout({ children }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 w-full lg:w-auto bg-gray-50">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </SidebarProvider>
   );
 }
 
 export default Layout;
-

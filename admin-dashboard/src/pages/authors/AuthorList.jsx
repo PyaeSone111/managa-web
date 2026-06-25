@@ -53,7 +53,7 @@ function AuthorList() {
               placeholder="Search authors..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
             />
           </div>
 
@@ -105,7 +105,7 @@ function AuthorList() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <Link
                         to={`/dashboard/authors/${author.id}/edit`}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-red-orange hover:text-blue-800"
                       >
                         Edit
                       </Link>

@@ -7,33 +7,35 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* Navy, Almond, Red-orange, Mango palette (matches frontend) */
+        navy: '#1e3d59',
+        almond: '#f5f0e1',
+        'red-orange': '#ff6e40',
+        mango: '#ffc13b',
+        'dockside-blue': '#ddd0b8',
+        'sidewalk-grey': '#6b8494',
+        'ruskin-blue': '#1e3d59',
+        'delta-green': '#ff6e40',
+        'black-feather': '#1e3d59',
+        /* Admin legacy aliases */
+        bonaire: '#ffffff',
+        'torrefacto-roast': '#1e3d59',
+        'stone-lion': '#6b8494',
+        'indiana-clay': '#ff6e40',
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f5f0e1',
+          100: '#ede4d0',
+          200: '#ddd0b8',
+          300: '#c4b8a0',
+          400: '#ff6e40',
+          500: '#ff6e40',
+          600: '#ff6e40',
+          700: '#e55a2b',
+          800: '#1e3d59',
+          900: '#162e44',
         },
-        // Admin white theme
-        'bonaire': '#ffffff',
-        'torrefacto-roast': '#111827',
-        'stone-lion': '#6b7280',
-        'indiana-clay': '#2563eb',
-        // Legacy palette (kept for any refs)
-        'silver-grass': '#6b7280',
-        'bamboo-shoot': '#9ca3af',
-        'paradise-found': '#6b7280',
-        'bracken-green': '#374151',
-        'bracken-fern': '#1f2937',
-        'deep-slate-green': '#111827',
       },
     },
   },
   plugins: [],
-}
-
+};

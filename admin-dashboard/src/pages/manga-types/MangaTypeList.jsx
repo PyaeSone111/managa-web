@@ -82,7 +82,7 @@ function MangaTypeList() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <Link
                         to={`/dashboard/manga-types/${type.id}/edit`}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-red-orange hover:text-blue-800"
                       >
                         Edit
                       </Link>

@@ -4,6 +4,7 @@ import { Pencil, Trash2, MoreVertical, Eye, BookOpen } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { toAbsoluteImageUrl } from '../../utils/helpers';
+import { getSeriesAuthorLabel, getSeriesTypeLabel } from '../../lib/seriesDisplay';
 
 /**
  * Normalize API rating to 1-5 scale for display.
@@ -17,9 +18,9 @@ function normalizeRating(raw) {
 
 const ratingStyle = {
   itemShapes: Star,
-  activeFillColor: '#516D74',
-  inactiveFillColor: '#C9D0D9',
-  inactiveStrokeColor: '#9EB3BC',
+  activeFillColor: '#ff6e40',
+  inactiveFillColor: '#f5f0e1',
+  inactiveStrokeColor: '#ddd0b8',
   itemStrokeWidth: 1.5,
 };
 
@@ -28,7 +29,7 @@ function StatusBadge({ status }) {
   const label = s.charAt(0).toUpperCase() + s.slice(1) || 'Ongoing';
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#2e4b4e] text-white border border-[#2e4b4e]">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy text-white border border-navy">
       {label}
     </span>
   );
@@ -84,11 +85,8 @@ function SeriesCard({ series, layout = 'vertical', onEdit, onDelete }) {
   const rating = normalizeRating(rawRating);
   const ratingCount = series.rating_count ?? 0;
 
-  const authorText = series.authors?.length
-    ? series.authors.map((a) => (typeof a === 'object' ? a.name : a)).join(', ')
-    : series.author || 'Unknown Author';
-
-  const categoryName = series.categories?.[0]?.name || series.manga_type?.name || 'Manga';
+  const authorText = getSeriesAuthorLabel(series);
+  const categoryName = getSeriesTypeLabel(series);
   const imageUrl = toAbsoluteImageUrl(series.cover_url || series.thumbnail_url) || '/placeholder.svg?height=400&width=280';
 
   const statusRaw = series.status || 'ongoing';
