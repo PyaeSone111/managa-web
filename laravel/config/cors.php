@@ -31,6 +31,9 @@ return [
             'https://myangar-prod-frontend.web.app',
             'https://myangar-prod-frontend.firebaseapp.com',
             'https://myangar.fatelight.org',
+            // Production admin dashboard (Firebase)
+            'https://myanga-prod-admin.web.app',
+            'https://myanga-prod-admin.firebaseapp.com',
         ],
         env('CORS_ALLOWED_ORIGINS') ? explode(',', env('CORS_ALLOWED_ORIGINS')) : []
     )),
