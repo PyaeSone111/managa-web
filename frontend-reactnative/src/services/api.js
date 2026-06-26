@@ -103,6 +103,7 @@ export const favoriteApi = {
 };
 
 export const ratingApi = {
+  getAll: (params) => api.get('/user/ratings', { params }),
   get: (seriesId) => api.get(`/manga/${seriesId}/rate`),
   rate: (seriesId, rating1to5) => api.post(`/manga/${seriesId}/rate`, { rating: rating1to5 * 2 }),
   remove: (seriesId) => api.delete(`/manga/${seriesId}/rate`),
@@ -129,7 +130,13 @@ export const themeApi = {
 };
 
 export const brandingApi = {
-  getBranding: () => api.get('/branding'),
+  getBranding: (params) =>
+    api.get('/branding', {
+      params,
+      headers: params?._refresh
+        ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+        : undefined,
+    }),
 };
 
 export const dashboardApi = {

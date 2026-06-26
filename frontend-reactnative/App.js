@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MonetagAdView from './src/components/MonetagAdView';
 import SplashScreen from './src/components/SplashScreen';
 import { AuthProvider } from './src/context/AuthContext';
+import { ProfileImageProvider } from './src/context/ProfileImageContext';
 import { BrandingProvider } from './src/context/BrandingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import colors from './src/theme/colors';
@@ -32,10 +33,11 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <BrandingProvider>
+          <ProfileImageProvider>
+            <BrandingProvider>
             <StatusBar
               barStyle={showSplash ? 'dark-content' : 'light-content'}
-              backgroundColor={showSplash ? colors.almond : colors.navy}
+              backgroundColor={showSplash ? colors.white : colors.navy}
             />
             {showSplash ? (
               <SplashScreen onFinish={handleSplashFinish} />
@@ -48,7 +50,8 @@ export default function App() {
                 />
               </>
             )}
-          </BrandingProvider>
+            </BrandingProvider>
+          </ProfileImageProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

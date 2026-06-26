@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi, ratingApi, seriesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import { addRecentlyViewed } from '../hooks/useRecentlyViewed';
 import { toAbsoluteImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import MonetagAdView from '../components/MonetagAdView';
 import ChapterList from '../components/ChapterList';
 import StarRating from '../components/StarRating';
 import colors from '../theme/colors';
@@ -99,16 +101,29 @@ function UserRating({ seriesId, slug }) {
 
 export default function SeriesDetailScreen({ route, navigation }) {
   const { slug } = route.params;
+  const [adVisible, setAdVisible] = useState(false);
+  const [pendingChapter, setPendingChapter] = useState(null);
 
-  const { data: series, isLoading } = useQuery({
+  const { data: series, isLoading, refetch: refetchSeries, isFetching: seriesFetching } = useQuery({
     queryKey: ['series', slug],
     queryFn: () => seriesApi.getById(slug),
   });
 
-  const { data: chapters } = useQuery({
+  const { data: chapters, refetch: refetchChapters, isFetching: chaptersFetching } = useQuery({
     queryKey: ['series', slug, 'chapters'],
     queryFn: () => seriesApi.getChapters(slug),
     enabled: Boolean(slug),
+  });
+
+  const refetchAll = useCallback(
+    () => Promise.all([refetchSeries(), refetchChapters()]),
+    [refetchSeries, refetchChapters]
+  );
+
+  const isFetching = seriesFetching || chaptersFetching;
+  const refreshControl = useRefreshControl(refetchAll, {
+    isFetching,
+    isLoading: isLoading && !series?.data,
   });
 
   useEffect(() => {
@@ -117,7 +132,7 @@ export default function SeriesDetailScreen({ route, navigation }) {
     }
   }, [series?.data?.slug]);
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && !series?.data) return <LoadingSpinner />;
 
   if (!series?.data) {
     return (
@@ -141,8 +156,27 @@ export default function SeriesDetailScreen({ route, navigation }) {
     });
   };
 
+  const openChapterWithAd = (chapter) => {
+    setPendingChapter(chapter);
+    setAdVisible(true);
+  };
+
+  const handleAdClose = () => {
+    setAdVisible(false);
+    const target = pendingChapter;
+    setPendingChapter(null);
+    if (target) {
+      openChapter(target);
+    }
+  };
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
       <View style={styles.card}>
         <Image
           source={{ uri: toAbsoluteImageUrl(s.cover_url || s.thumbnail_url) || undefined }}
@@ -218,8 +252,10 @@ export default function SeriesDetailScreen({ route, navigation }) {
       </View>
 
       <Text style={styles.sectionTitle}>Chapters</Text>
-      <ChapterList chapters={chapters?.data || []} onChapterPress={openChapter} />
+      <ChapterList chapters={chapters?.data || []} onChapterPress={openChapterWithAd} />
     </ScrollView>
+    <MonetagAdView visible={adVisible} onClose={handleAdClose} />
+    </>
   );
 }
 
@@ -236,9 +272,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cover: {
-    width: '100%',
+    width: '65%',
+    maxWidth: 260,
     aspectRatio: 2 / 3,
     maxHeight: 360,
+    alignSelf: 'center',
     borderRadius: 10,
     marginBottom: 12,
     backgroundColor: `${colors.almondBorder}66`,

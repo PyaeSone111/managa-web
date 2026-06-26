@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import MonetagAdView from '../components/MonetagAdView';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import { chapterApi, seriesApi } from '../services/api';
 import { formatChapterLabel, toAbsoluteImageUrl } from '../utils/helpers';
 import colors from '../theme/colors';
@@ -13,19 +14,30 @@ export default function ReaderScreen({ route, navigation }) {
   const [adVisible, setAdVisible] = useState(false);
   const [pendingChapter, setPendingChapter] = useState(null);
 
-  const { data: chapter, isLoading } = useQuery({
+  const { data: chapter, isLoading, refetch: refetchChapter, isFetching: chapterFetching } = useQuery({
     queryKey: ['chapter', seriesSlug, chapterNumber],
     queryFn: () => chapterApi.getBySeriesAndNumber(seriesSlug, chapterNumber),
     enabled: Boolean(seriesSlug && chapterNumber),
   });
 
-  const { data: chaptersRes } = useQuery({
+  const { data: chaptersRes, refetch: refetchChapters, isFetching: chaptersFetching } = useQuery({
     queryKey: ['series', seriesSlug, 'chapters'],
     queryFn: () => seriesApi.getChapters(seriesSlug),
     enabled: Boolean(seriesSlug && chapter?.data),
   });
 
-  if (isLoading) return <LoadingSpinner />;
+  const refetchAll = useCallback(
+    () => Promise.all([refetchChapter(), refetchChapters()]),
+    [refetchChapter, refetchChapters]
+  );
+
+  const isFetching = chapterFetching || chaptersFetching;
+  const refreshControl = useRefreshControl(refetchAll, {
+    isFetching,
+    isLoading: isLoading && !chapter?.data,
+  });
+
+  if (isLoading && !chapter?.data) return <LoadingSpinner />;
 
   if (!chapter?.data) {
     return (
@@ -79,15 +91,19 @@ export default function ReaderScreen({ route, navigation }) {
 
   return (
     <>
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
+      {/* <View style={styles.header}>
         <Text style={styles.title}>
           {chapterData.title || formatChapterLabel(chapterData.chapter_number)}
         </Text>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>Back</Text>
         </Pressable>
-      </View>
+      </View> */}
 
       <View style={styles.nav}>
         {prevChapter ? (

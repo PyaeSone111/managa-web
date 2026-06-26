@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import { rankingsApi } from '../services/api';
 import { RANKING_TABS } from '../utils/constants';
 import SeriesGrid from '../components/SeriesGrid';
@@ -17,7 +18,7 @@ export default function RankingsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('top');
   const [period, setPeriod] = useState('all');
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['rankings', activeTab, period],
     queryFn: () => {
       const params = { per_page: 50 };
@@ -37,10 +38,16 @@ export default function RankingsScreen({ navigation }) {
     if (series?.slug) navigation.navigate('SeriesDetail', { slug: series.slug });
   };
 
+  const refreshControl = useRefreshControl(refetch, { isFetching, isLoading });
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Rankings</Text>
+        {/* <Text style={styles.title}>Rankings</Text> */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.periodRow}>
           {PERIOD_OPTIONS.map((opt) => (
             <Pressable

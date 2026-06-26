@@ -1,11 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { brandingApi } from '../services/api';
 import { API_BASE_URL, BRANDING_CACHE_KEY } from '../utils/constants';
-import { getJson, setJson } from '../services/storage';
+import { getJson, removeItem, setJson } from '../services/storage';
 
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 const BRANDING_CACHE_TTL = 30 * 60 * 1000;
+const BRANDING_QUERY_KEY = ['branding'];
 
 function toAbsoluteUrl(url) {
   if (!url || typeof url !== 'string') return null;
@@ -39,25 +40,53 @@ const BrandingContext = createContext({
   heroImageUrl: null,
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
+  layoutVersion: '0',
+  revision: 0,
   isLoading: false,
   updateBranding: () => {},
+  refetchBranding: async () => {},
 });
 
+function buildBrandingValue(branding, revision) {
+  const cardLayout = { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) };
+  const gridColumns = branding.grid_columns || null;
+  return {
+    logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
+    heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
+    heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
+    cardLayout,
+    gridColumns,
+    layoutVersion: `${revision}:${JSON.stringify(cardLayout)}:${JSON.stringify(gridColumns)}`,
+    revision,
+  };
+}
+
 export function BrandingProvider({ children }) {
-  const [initialData, setInitialData] = useState(null);
-  const [overrideBranding, setOverrideBranding] = useState(null);
+  const queryClient = useQueryClient();
+  const [ready, setReady] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    getLocalCache().then(setInitialData);
-  }, []);
+    let mounted = true;
+    (async () => {
+      const cached = await getLocalCache();
+      if (cached && mounted) {
+        queryClient.setQueryData(BRANDING_QUERY_KEY, { data: cached });
+      }
+      if (mounted) setReady(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [queryClient]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['branding'],
+  const { data, isLoading, dataUpdatedAt } = useQuery({
+    queryKey: BRANDING_QUERY_KEY,
     queryFn: () => brandingApi.getBranding(),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
     gcTime: 60 * 60 * 1000,
     retry: 2,
-    initialData: initialData ? { data: initialData } : undefined,
+    enabled: ready,
   });
 
   useEffect(() => {
@@ -66,24 +95,40 @@ export function BrandingProvider({ children }) {
     }
   }, [data]);
 
-  const branding = overrideBranding ?? data?.data ?? initialData ?? {};
-
-  const updateBranding = (newBranding) => {
-    if (newBranding) {
-      setOverrideBranding(newBranding);
+  const updateBranding = useCallback(
+    (newBranding) => {
+      if (!newBranding) return;
+      queryClient.setQueryData(BRANDING_QUERY_KEY, { data: newBranding });
       setJson(BRANDING_CACHE_KEY, { data: newBranding, timestamp: Date.now() });
-    }
-  };
+      setRevision((n) => n + 1);
+    },
+    [queryClient]
+  );
 
-  const value = {
-    logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
-    heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
-    heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
-    cardLayout: { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) },
-    gridColumns: branding.grid_columns || null,
-    isLoading: isLoading && !initialData,
-    updateBranding,
-  };
+  const refetchBranding = useCallback(async () => {
+    await removeItem(BRANDING_CACHE_KEY);
+    const result = await queryClient.fetchQuery({
+      queryKey: BRANDING_QUERY_KEY,
+      queryFn: () => brandingApi.getBranding({ _refresh: Date.now() }),
+      staleTime: 0,
+    });
+    if (result?.data) {
+      queryClient.setQueryData(BRANDING_QUERY_KEY, result);
+      await setJson(BRANDING_CACHE_KEY, { data: result.data, timestamp: Date.now() });
+    }
+    setRevision((n) => n + 1);
+    return result;
+  }, [queryClient]);
+
+  const value = useMemo(() => {
+    const branding = data?.data ?? {};
+    return {
+      ...buildBrandingValue(branding, revision),
+      isLoading: !ready || isLoading,
+      updateBranding,
+      refetchBranding,
+    };
+  }, [data, dataUpdatedAt, revision, ready, isLoading, updateBranding, refetchBranding]);
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
 }

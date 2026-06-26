@@ -1,8 +1,7 @@
-import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
-import { useBranding } from '../context/BrandingContext';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import HeroBanner from '../components/HeroBanner';
 import SeriesGrid from '../components/SeriesGrid';
 import RecentlyViewedCarousel from '../components/RecentlyViewedCarousel';
@@ -22,19 +21,11 @@ function SectionHeader({ title, onViewAll }) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { updateBranding } = useBranding();
-
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['dashboard', 'home'],
     queryFn: () => dashboardApi.getHomepage({ limit: 12 }),
     staleTime: 5 * 60 * 1000,
   });
-
-  useEffect(() => {
-    if (dashboard?.data?.branding) {
-      updateBranding(dashboard.data.branding);
-    }
-  }, [dashboard, updateBranding]);
 
   const latest = dashboard?.data?.latest || [];
   const newSeries = dashboard?.data?.new || [];
@@ -45,8 +36,14 @@ export default function HomeScreen({ navigation }) {
     if (series?.slug) navigation.navigate('SeriesDetail', { slug: series.slug });
   };
 
+  const refreshControl = useRefreshControl(refetch, { isFetching, isLoading });
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
       <HeroBanner onBrowsePress={() => navigation.navigate('Browse')} />
       {/* <RecentlyViewedCarousel onSeriesPress={openSeries} /> */}
 

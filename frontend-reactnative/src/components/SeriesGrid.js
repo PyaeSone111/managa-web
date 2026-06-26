@@ -31,7 +31,7 @@ export default function SeriesGrid({
   section,
   numColumns: numColumnsProp,
 }) {
-  const { cardLayout, gridColumns } = useBranding();
+  const { cardLayout, gridColumns, layoutVersion } = useBranding();
   const useDesignCards = Boolean(section);
   const cardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
   const portrait = useDesignCards ? isPortraitCard(cardKey) : true;
@@ -41,7 +41,7 @@ export default function SeriesGrid({
 
   if (loading) {
     return (
-      <View style={styles.grid}>
+      <View key={`skeleton-${section}-${layoutVersion}`} style={styles.grid}>
         {[...Array(portrait ? 6 : 4)].map((_, i) => (
           <View key={i} style={{ width: `${100 / numColumns}%`, padding: 6 }}>
             <SkeletonCard portrait={portrait} />
@@ -61,12 +61,13 @@ export default function SeriesGrid({
 
   if (useDesignCards && !portrait) {
     return (
-      <View style={styles.list}>
+      <View style={styles.list} key={`${section}-${cardKey}-${layoutVersion}`}>
         {series.map((item, index) => (
           <MangaCard
-            key={item.id}
+            key={`${item.id}-${cardKey}`}
             series={item}
             section={section}
+            cardKey={cardKey}
             rank={index + 1}
             onPress={onSeriesPress}
             style={{ marginHorizontal: 10, marginVertical: 6 }}
@@ -79,10 +80,11 @@ export default function SeriesGrid({
   return (
     <FlatList
       data={series}
-      key={`${section || 'grid'}-${numColumns}`}
+      key={`${section || 'grid'}-${cardKey}-${numColumns}-${layoutVersion}`}
       keyExtractor={(item) => String(item.id)}
       numColumns={numColumns}
       scrollEnabled={false}
+      extraData={`${cardKey}-${numColumns}-${layoutVersion}`}
       columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
       contentContainerStyle={styles.listContent}
       renderItem={({ item, index }) =>
@@ -91,6 +93,7 @@ export default function SeriesGrid({
             <MangaCard
               series={item}
               section={section}
+              cardKey={cardKey}
               rank={index + 1}
               onPress={onSeriesPress}
             />

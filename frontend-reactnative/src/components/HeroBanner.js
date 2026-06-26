@@ -17,9 +17,9 @@ export default function HeroBanner({ onBrowsePress }) {
           <Text style={styles.buttonText}>Browse All</Text>
         </Pressable>
       </View>
-      {heroImageUrl ? (
+      {/* {heroImageUrl ? (
         <Image source={{ uri: heroImageUrl }} style={styles.heroImage} resizeMode="cover" />
-      ) : null}
+      ) : null} */}
     </View>
   );
 

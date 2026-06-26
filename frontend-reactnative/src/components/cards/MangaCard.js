@@ -52,9 +52,9 @@ export function getNumColumnsForSection(section, cardLayout, gridColumns) {
   return Math.min(3, Math.max(1, Number(value) || (portrait ? 2 : 1)));
 }
 
-export default function MangaCard({ series, section, rank, onPress, style }) {
+export default function MangaCard({ series, section, cardKey: cardKeyOverride, rank, onPress, style }) {
   const { cardLayout } = useBranding();
-  const cardKey = getCardKeyForSection(section, cardLayout);
+  const cardKey = cardKeyOverride ?? getCardKeyForSection(section, cardLayout);
   const CardComponent = CARD_MAP[cardKey] || CARD_MAP.card_01;
   const manga = seriesToManga(series);
 
@@ -66,7 +66,11 @@ export default function MangaCard({ series, section, rank, onPress, style }) {
   }
 
   return (
-    <Pressable onPress={() => onPress?.(series)} style={[{ flex: 1, margin: 6 }, style]}>
+    <Pressable
+      key={cardKey}
+      onPress={() => onPress?.(series)}
+      style={[{ flex: 1, margin: 6 }, style]}
+    >
       <CardComponent {...cardProps} />
     </Pressable>
   );

@@ -38,7 +38,7 @@ function HeroBanner() {
               Browse All
             </Link>
           </div>
-          <div className="hidden sm:block flex-shrink-0" aria-hidden>
+          {/* <div className="hidden sm:block flex-shrink-0" aria-hidden>
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
@@ -52,7 +52,7 @@ function HeroBanner() {
                 </svg>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

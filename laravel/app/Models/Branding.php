@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Branding extends Model
 {
@@ -143,5 +144,17 @@ class Branding extends Model
             'hero_background_url' => null,
             'hero_image_url' => null,
         ]);
+    }
+
+    /**
+     * Clear cached public branding and homepage dashboard payloads.
+     */
+    public static function clearPublicCache(): void
+    {
+        Cache::forget('branding:public:v1');
+
+        for ($limit = 1; $limit <= 20; $limit++) {
+            Cache::forget("dashboard:home:v3:{$limit}");
+        }
     }
 }

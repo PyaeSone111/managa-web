@@ -1,41 +1,163 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
+  Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import LoadingSpinner from './LoadingSpinner';
 import { MONETAG_SMART_LINK } from '../utils/constants';
 import colors from '../theme/colors';
 
-const CLOSE_DELAY_MS = 15000;
+const CLOSE_DELAY_SEC = 15;
+const WEBVIEW_USER_AGENT =
+  'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+function getAdUrl() {
+  const url = MONETAG_SMART_LINK?.trim();
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return null;
+  }
+  return url;
+}
+
+function isWebUrl(url) {
+  return /^https?:\/\//i.test(url) || url === 'about:blank';
+}
+
+function getIntentFallbackUrl(intentUrl) {
+  const match = intentUrl.match(/S\.browser_fallback_url=([^;]+)/i);
+  if (!match?.[1]) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
 
 export default function MonetagAdView({ visible = true, onClose }) {
-  const [canClose, setCanClose] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SEC);
+  const [sessionKey, setSessionKey] = useState(0);
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState(null);
+
+  const adUrl = useMemo(() => getAdUrl(), []);
+  const canClose = secondsLeft <= 0;
+  const showSpinner = Boolean(adUrl) && !pageLoaded;
 
   useEffect(() => {
     if (!visible) {
-      setCanClose(false);
+      setSecondsLeft(CLOSE_DELAY_SEC);
+      setPageLoaded(false);
+      setCurrentUrl(null);
       return undefined;
     }
 
-    setCanClose(false);
-    const timer = setTimeout(() => setCanClose(true), CLOSE_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [visible]);
+    setSessionKey((key) => key + 1);
+    setPageLoaded(false);
+    setCurrentUrl(adUrl);
+    setSecondsLeft(CLOSE_DELAY_SEC);
+
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [visible, adUrl]);
+
+  const finishLoading = useCallback(() => setPageLoaded(true), []);
+
+  const openExternalUrl = useCallback(
+    async (url) => {
+      if (!url) {
+        return;
+      }
+
+      if (Platform.OS === 'android' && url.startsWith('intent://')) {
+        try {
+          await Linking.openURL(url);
+        } catch {
+          // Ad intent redirects are optional; keep the current WebView page.
+        }
+        finishLoading();
+        return;
+      }
+
+      try {
+        await Linking.openURL(url);
+      } catch {
+        // Ignore unsupported custom schemes from ad redirects.
+      }
+
+      finishLoading();
+    },
+    [finishLoading],
+  );
+
+  const handleShouldStartLoadWithRequest = useCallback(
+    (request) => {
+      const { url } = request;
+      if (!url || isWebUrl(url)) {
+        return true;
+      }
+
+      if (Platform.OS === 'android' && url.startsWith('intent://')) {
+        const fallback = getIntentFallbackUrl(url);
+        if (fallback && isWebUrl(fallback)) {
+          setCurrentUrl(fallback);
+          return false;
+        }
+      }
+
+      openExternalUrl(url);
+      return false;
+    },
+    [openExternalUrl],
+  );
+
+  const handleWebViewError = useCallback(
+    (event) => {
+      const { description, code } = event.nativeEvent;
+      const isUnknownScheme =
+        code === -10 ||
+        String(description || '').includes('ERR_UNKNOWN_URL_SCHEME');
+
+      if (isUnknownScheme) {
+        finishLoading();
+        return;
+      }
+
+      finishLoading();
+    },
+    [finishLoading],
+  );
 
   if (!visible) {
     return null;
   }
 
   const handleClose = () => {
-    if (canClose) {
-      onClose?.();
+    if (!canClose) {
+      return;
     }
+    setPageLoaded(false);
+    setCurrentUrl(null);
+    onClose?.();
   };
+
+  const webViewSource = currentUrl ? { uri: currentUrl } : null;
 
   return (
     <Modal
@@ -57,19 +179,39 @@ export default function MonetagAdView({ visible = true, onClose }) {
               >
                 <Text style={styles.closeBtnText}>Close Ad ✕</Text>
               </Pressable>
-            ) : null}
+            ) : (
+              <View style={styles.timerBadge}>
+                <Text style={styles.timerText}>{secondsLeft}s</Text>
+              </View>
+            )}
           </View>
+
           <View style={styles.webviewWrap}>
-            <WebView
-              source={{ uri: MONETAG_SMART_LINK }}
-              style={styles.webview}
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.loadingWrap}>
-                  <ActivityIndicator size="large" color={colors.redOrange} />
-                </View>
-              )}
-            />
+            {showSpinner ? (
+              <View style={styles.loadingOverlay}>
+                <LoadingSpinner style={styles.loadingSpinner} />
+              </View>
+            ) : null}
+            {webViewSource ? (
+              <WebView
+                key={sessionKey}
+                source={webViewSource}
+                style={[styles.webview, showSpinner && styles.webviewHidden]}
+                userAgent={WEBVIEW_USER_AGENT}
+                javaScriptEnabled
+                domStorageEnabled
+                thirdPartyCookiesEnabled
+                sharedCookiesEnabled
+                originWhitelist={['http://*', 'https://*']}
+                setSupportMultipleWindows={false}
+                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+                onLoadStart={() => setPageLoaded(false)}
+                onLoadEnd={finishLoading}
+                onError={handleWebViewError}
+                onHttpError={finishLoading}
+                renderError={() => <View style={styles.webview} />}
+              />
+            ) : null}
           </View>
         </View>
       </View>
@@ -128,17 +270,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
+  timerBadge: {
+    minWidth: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+  },
+  timerText: {
+    color: colors.almond,
+    fontWeight: '700',
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+  },
   webviewWrap: {
     flex: 1,
+    backgroundColor: colors.almond,
   },
   webview: {
     flex: 1,
     backgroundColor: colors.almond,
   },
-  loadingWrap: {
+  webviewHidden: {
+    opacity: 0,
+  },
+  loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+    zIndex: 2,
+    backgroundColor: colors.almond,
+  },
+  loadingSpinner: {
+    flex: 1,
     backgroundColor: colors.almond,
   },
 });

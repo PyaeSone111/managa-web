@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { favoriteApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import SeriesGrid from '../components/SeriesGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import colors from '../theme/colors';
@@ -9,10 +10,15 @@ import colors from '../theme/colors';
 export default function FavoritesScreen({ navigation }) {
   const { isAuthenticated, loading: authLoading } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['favorites'],
     queryFn: () => favoriteApi.getAll({ per_page: 50 }),
     enabled: isAuthenticated,
+  });
+
+  const refreshControl = useRefreshControl(refetch, {
+    isFetching,
+    isLoading: isAuthenticated && isLoading,
   });
 
   if (authLoading) {
@@ -38,8 +44,12 @@ export default function FavoritesScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>My Favorites</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
+      {/* <Text style={styles.title}>My Favorites</Text> */}
       {!isLoading && series.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.message}>You haven't favorited any manga yet.</Text>

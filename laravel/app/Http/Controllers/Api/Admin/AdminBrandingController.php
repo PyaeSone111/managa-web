@@ -101,6 +101,8 @@ class AdminBrandingController extends Controller
 
         $branding->save();
 
+        Branding::clearPublicCache();
+
         $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
         $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
         return response()->json([

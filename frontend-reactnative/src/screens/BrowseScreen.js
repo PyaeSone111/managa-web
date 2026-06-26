@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useRefreshControl } from '../hooks/usePullToRefresh';
 import {
   authorApi,
   categoryApi,
@@ -58,7 +59,7 @@ export default function BrowseScreen({ navigation, route }) {
     queryFn: () => authorApi.getAll({ per_page: 100 }),
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['series', 'browse', { query, selectedCategories, selectedTypes, selectedAuthors, status, sort, page }],
     queryFn: () =>
       seriesApi.getAll({
@@ -116,10 +117,16 @@ export default function BrowseScreen({ navigation, route }) {
     [selectedCategories, selectedTypes, selectedAuthors, status]
   );
 
+  const refreshControl = useRefreshControl(refetch, { isFetching, isLoading });
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={refreshControl}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>{query ? `Search: "${query}"` : 'Browse Series'}</Text>
+        <Text style={styles.title}>{query ? `Search: "${query}"` : null}</Text>
         {pagination.total > 0 && (
           <Text style={styles.count}>{pagination.total} series found</Text>
         )}
