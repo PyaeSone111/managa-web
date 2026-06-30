@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FaSignInAlt, FaUserPlus, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { useBranding } from '../../context/BrandingContext';
+import GetAppButton from './GetAppButton';
 import SearchBar from '../search/SearchBar';
 
 function Navbar() {
@@ -48,6 +49,7 @@ function Navbar() {
             {isAuthenticated && (
               <Link to="/favorites" className={navLinkClass}>Favorites</Link>
             )}
+            <GetAppButton size="sm" />
             <div className="hidden xl:block">
               <SearchBar onSearch={handleSearch} />
             </div>
@@ -128,6 +130,13 @@ function Navbar() {
             {isAuthenticated && (
               <Link to="/favorites" className={mobileNavLinkClass} onClick={() => setMobileMenuOpen(false)}>My Favorites</Link>
             )}
+            <div className="px-2">
+              <GetAppButton
+                size="sm"
+                className="w-full justify-center"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+            </div>
             <div className="px-2 py-2">
               <SearchBar onSearch={handleSearch} />
             </div>

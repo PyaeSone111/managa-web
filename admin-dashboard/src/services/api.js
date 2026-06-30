@@ -82,8 +82,9 @@ export const adminApi = {
   
   // Chapters
   getChapters: (seriesId, params) => api.get(`/series/${seriesId}/chapters`, { params }),
-  getChapterById: (id) => api.get(`/chapters/${id}`),
+  getChapterById: (id) => api.get(`/admin/chapters/${id}`),
   createChapter: (data) => api.post('/admin/chapters', data),
+  bulkImportChapters: (data) => api.post('/admin/chapters/bulk-import', data),
   updateChapter: (id, data) => api.put(`/admin/chapters/${id}`, data),
   deleteChapter: (id) => api.delete(`/admin/chapters/${id}`),
   

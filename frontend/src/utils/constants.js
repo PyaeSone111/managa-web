@@ -21,3 +21,11 @@ export const READING_MODES = {
   ORIGINAL: 'original',
 };
 
+export const APP_DOWNLOAD = {
+  fileName: 'myangarread00121v01.apk',
+  url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  version: '1.0',
+  sizeMB: '29',
+};
+
+/** @deprecated Use useBranding().appDownload — kept as fallback only */

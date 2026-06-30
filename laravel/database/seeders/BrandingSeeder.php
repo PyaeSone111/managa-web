@@ -11,11 +11,11 @@ class BrandingSeeder extends Seeder
     {
         Branding::firstOrCreate(
             ['id' => 1],
-            [
+            array_merge([
                 'logo_url' => null,
                 'hero_background_url' => null,
                 'hero_image_url' => null,
-            ]
+            ], Branding::defaultAppDownload())
         );
     }
 }

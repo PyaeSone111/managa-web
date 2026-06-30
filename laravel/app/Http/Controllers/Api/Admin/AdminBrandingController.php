@@ -20,14 +20,16 @@ class AdminBrandingController extends Controller
         $branding = Branding::current();
         $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
         $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
+        $appDownload = Branding::appDownloadPayload($branding);
+
         return response()->json([
-            'data' => [
+            'data' => array_merge([
                 'logo_url' => $branding->logo_url,
                 'hero_background_url' => $branding->hero_background_url,
                 'hero_image_url' => $branding->hero_image_url,
                 'card_layout' => $cardLayout,
                 'grid_columns' => $gridColumns,
-            ],
+            ], $appDownload),
         ]);
     }
 
@@ -70,11 +72,15 @@ class AdminBrandingController extends Controller
             $branding->hero_image_url = $disk->url($path);
         }
 
-        if ($request->isJson() || $request->has('logo_url') || $request->has('hero_background_url') || $request->has('hero_image_url') || $request->has('card_layout') || $request->has('grid_columns')) {
+        if ($request->isJson() || $request->has('logo_url') || $request->has('hero_background_url') || $request->has('hero_image_url') || $request->has('card_layout') || $request->has('grid_columns') || $request->has('app_download_url') || $request->has('app_download_filename') || $request->has('app_version') || $request->has('app_size_mb')) {
             $request->validate([
                 'logo_url' => 'nullable|string|max:500',
                 'hero_background_url' => 'nullable|string|max:500',
                 'hero_image_url' => 'nullable|string|max:500',
+                'app_download_url' => 'nullable|string|max:500',
+                'app_download_filename' => 'nullable|string|max:120',
+                'app_version' => 'nullable|string|max:20',
+                'app_size_mb' => 'nullable|string|max:10',
                 'card_layout' => 'nullable',
                 'grid_columns' => 'nullable',
             ]);
@@ -86,6 +92,18 @@ class AdminBrandingController extends Controller
             }
             if ($request->has('hero_image_url')) {
                 $branding->hero_image_url = $request->input('hero_image_url') ?: null;
+            }
+            if ($request->has('app_download_url')) {
+                $branding->app_download_url = $request->input('app_download_url') ?: null;
+            }
+            if ($request->has('app_download_filename')) {
+                $branding->app_download_filename = $request->input('app_download_filename') ?: null;
+            }
+            if ($request->has('app_version')) {
+                $branding->app_version = $request->input('app_version') ?: null;
+            }
+            if ($request->has('app_size_mb')) {
+                $branding->app_size_mb = $request->input('app_size_mb') ?: null;
             }
             if ($request->has('card_layout')) {
                 $v = $request->input('card_layout');
@@ -105,14 +123,16 @@ class AdminBrandingController extends Controller
 
         $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
         $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
+        $appDownload = Branding::appDownloadPayload($branding);
+
         return response()->json([
-            'data' => [
+            'data' => array_merge([
                 'logo_url' => $branding->logo_url,
                 'hero_background_url' => $branding->hero_background_url,
                 'hero_image_url' => $branding->hero_image_url,
                 'card_layout' => $cardLayout,
                 'grid_columns' => $gridColumns,
-            ],
+            ], $appDownload),
             'message' => 'Branding updated successfully',
         ]);
     }

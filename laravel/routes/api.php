@@ -200,6 +200,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/chapters', [AdminChapterController::class, 'index']);
     Route::post('/chapters', [AdminChapterController::class, 'store']);
+    Route::post('/chapters/bulk-import', [AdminChapterController::class, 'bulkImport']);
     Route::get('/chapters/{id}', [AdminChapterController::class, 'show']);
     Route::put('/chapters/{id}', [AdminChapterController::class, 'update']);
     Route::delete('/chapters/{id}', [AdminChapterController::class, 'destroy']);

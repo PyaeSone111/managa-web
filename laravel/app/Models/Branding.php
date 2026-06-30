@@ -13,9 +13,35 @@ class Branding extends Model
         'logo_url',
         'hero_background_url',
         'hero_image_url',
+        'app_download_url',
+        'app_download_filename',
+        'app_version',
+        'app_size_mb',
         'card_layout',
         'grid_columns',
     ];
+
+    public static function defaultAppDownload(): array
+    {
+        return [
+            'app_download_url' => 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+            'app_download_filename' => 'myangarread00121v01.apk',
+            'app_version' => '1.0',
+            'app_size_mb' => '29',
+        ];
+    }
+
+    public static function appDownloadPayload(self $branding): array
+    {
+        $defaults = self::defaultAppDownload();
+
+        return [
+            'app_download_url' => $branding->app_download_url ?: $defaults['app_download_url'],
+            'app_download_filename' => $branding->app_download_filename ?: $defaults['app_download_filename'],
+            'app_version' => $branding->app_version ?: $defaults['app_version'],
+            'app_size_mb' => $branding->app_size_mb ?: $defaults['app_size_mb'],
+        ];
+    }
 
     protected $casts = [
         'card_layout' => 'array',

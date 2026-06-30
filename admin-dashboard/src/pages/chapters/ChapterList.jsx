@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
+import ChapterBulkImport from '../../components/chapters/ChapterBulkImport';
 
 function ChapterList() {
   const [selectedSeries, setSelectedSeries] = useState('');
@@ -57,6 +58,8 @@ function ChapterList() {
             + Add New Chapter
           </Link>
         </div>
+
+        <ChapterBulkImport />
 
         <div className="bg-white rounded-lg shadow p-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -51,10 +51,18 @@ const DEFAULT_CARD_LAYOUT = {
   favorites: 'card_11',
 };
 
+const DEFAULT_APP_DOWNLOAD = {
+  url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  fileName: 'myangarread00121v01.apk',
+  version: '1.0',
+  sizeMB: '29',
+};
+
 const BrandingContext = createContext({
   logoUrl: null,
   heroBackgroundUrl: null,
   heroImageUrl: null,
+  appDownload: DEFAULT_APP_DOWNLOAD,
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
   isLoading: false,
@@ -94,6 +102,12 @@ export function BrandingProvider({ children }) {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
+    appDownload: {
+      url: branding.app_download_url || DEFAULT_APP_DOWNLOAD.url,
+      fileName: branding.app_download_filename || DEFAULT_APP_DOWNLOAD.fileName,
+      version: branding.app_version || DEFAULT_APP_DOWNLOAD.version,
+      sizeMB: branding.app_size_mb || DEFAULT_APP_DOWNLOAD.sizeMB,
+    },
     cardLayout: { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) },
     gridColumns: branding.grid_columns || null,
     isLoading: isLoading && !initialData,

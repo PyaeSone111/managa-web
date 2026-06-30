@@ -95,11 +95,22 @@ function fullUrl(url) {
   return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
+const DEFAULT_APP_DOWNLOAD = {
+  app_download_url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  app_download_filename: 'myangarread00121v01.apk',
+  app_version: '1.0',
+  app_size_mb: '29',
+};
+
 function Branding() {
   const queryClient = useQueryClient();
   const [logoUrl, setLogoUrl] = useState('');
   const [heroBackgroundUrl, setHeroBackgroundUrl] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [appDownloadUrl, setAppDownloadUrl] = useState(DEFAULT_APP_DOWNLOAD.app_download_url);
+  const [appDownloadFilename, setAppDownloadFilename] = useState(DEFAULT_APP_DOWNLOAD.app_download_filename);
+  const [appVersion, setAppVersion] = useState(DEFAULT_APP_DOWNLOAD.app_version);
+  const [appSizeMb, setAppSizeMb] = useState(DEFAULT_APP_DOWNLOAD.app_size_mb);
   const [logoFile, setLogoFile] = useState(null);
   const [heroBackgroundFile, setHeroBackgroundFile] = useState(null);
   const [heroImageFile, setHeroImageFile] = useState(null);
@@ -119,6 +130,10 @@ function Branding() {
       setLogoUrl(data.data.logo_url || '');
       setHeroBackgroundUrl(data.data.hero_background_url || '');
       setHeroImageUrl(data.data.hero_image_url || '');
+      setAppDownloadUrl(data.data.app_download_url || DEFAULT_APP_DOWNLOAD.app_download_url);
+      setAppDownloadFilename(data.data.app_download_filename || DEFAULT_APP_DOWNLOAD.app_download_filename);
+      setAppVersion(data.data.app_version || DEFAULT_APP_DOWNLOAD.app_version);
+      setAppSizeMb(data.data.app_size_mb || DEFAULT_APP_DOWNLOAD.app_size_mb);
       if (data.data.card_layout && typeof data.data.card_layout === 'object') {
         setCardLayout({ ...DEFAULT_CARD_LAYOUT, ...data.data.card_layout });
       }
@@ -177,6 +192,10 @@ function Branding() {
     else formData.append('hero_background_url', heroBackgroundUrl);
     if (heroImageFile) formData.append('hero_image', heroImageFile);
     else formData.append('hero_image_url', heroImageUrl);
+    formData.append('app_download_url', appDownloadUrl);
+    formData.append('app_download_filename', appDownloadFilename);
+    formData.append('app_version', appVersion);
+    formData.append('app_size_mb', appSizeMb);
     formData.append('card_layout', JSON.stringify(cardLayout));
     formData.append('grid_columns', JSON.stringify(gridColumns));
 
@@ -331,6 +350,58 @@ function Branding() {
                   placeholder="Or enter image URL"
                   className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* App download */}
+          <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">App download</h2>
+            <p className="text-sm text-stone-lion mb-4">
+              Set the APK download link shown on the frontend Get App page. Use MediaFire, Google Drive, or any direct download URL.
+            </p>
+            <div className="space-y-4 max-w-xl">
+              <div>
+                <label className="block text-sm font-medium text-torrefacto-roast mb-1">Download URL</label>
+                <input
+                  type="url"
+                  value={appDownloadUrl}
+                  onChange={(e) => setAppDownloadUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
+                />
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-torrefacto-roast mb-1">APK filename</label>
+                  <input
+                    type="text"
+                    value={appDownloadFilename}
+                    onChange={(e) => setAppDownloadFilename(e.target.value)}
+                    placeholder="myangar-v1.apk"
+                    className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-torrefacto-roast mb-1">Version</label>
+                  <input
+                    type="text"
+                    value={appVersion}
+                    onChange={(e) => setAppVersion(e.target.value)}
+                    placeholder="1.0"
+                    className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-torrefacto-roast mb-1">Size (MB)</label>
+                  <input
+                    type="text"
+                    value={appSizeMb}
+                    onChange={(e) => setAppSizeMb(e.target.value)}
+                    placeholder="29"
+                    className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
           </div>

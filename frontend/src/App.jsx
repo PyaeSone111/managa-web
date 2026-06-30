@@ -17,6 +17,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import ContactUs from './pages/ContactUs';
+import DownloadApp from './pages/DownloadApp';
 import NotFound from './pages/NotFound';
 import './App.css';
 
@@ -31,6 +32,9 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  const location = useLocation();
+  const isDownloadPage = location.pathname === '/download';
+
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
@@ -41,7 +45,10 @@ function AppContent() {
                   <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)]">
                     <Navbar />
                     <div className="flex flex-1 w-full">
-                      <main className="container mx-auto max-w-7xl flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                      <main className={isDownloadPage
+                        ? 'flex-1 w-full min-w-0'
+                        : 'container mx-auto max-w-7xl flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8'
+                      }>
                         <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/browse" element={<Browse />} />
@@ -56,6 +63,7 @@ function AppContent() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                         <Route path="/contact" element={<ContactUs />} />
+                        <Route path="/download" element={<DownloadApp />} />
                         <Route path="*" element={<NotFound />} />
                         </Routes>
                       </main>

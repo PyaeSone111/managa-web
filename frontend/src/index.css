@@ -84,4 +84,227 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(221, 208, 184, 0.8);
   }
+
+  .get-app-btn {
+    background: linear-gradient(135deg, #ff6e40 0%, #ffc13b 100%);
+    box-shadow: 0 4px 18px rgba(255, 110, 64, 0.35);
+  }
+
+  .get-app-btn:hover {
+    box-shadow: 0 6px 26px rgba(255, 110, 64, 0.45);
+  }
+
+  .get-app-btn__shine {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  .get-app-btn__shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.08) 42%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0.08) 58%,
+      transparent 65%
+    );
+    transform: translateX(-200%) skewX(-18deg);
+    animation: get-app-glass-shine 2.8s linear infinite;
+  }
+
+  @keyframes get-app-glass-shine {
+    0% {
+      transform: translateX(-200%) skewX(-18deg);
+    }
+    100% {
+      transform: translateX(450%) skewX(-18deg);
+    }
+  }
+
+  /* Phone mockup animations */
+  .phone-screen-reflection::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.06) 42%,
+      rgba(255, 255, 255, 0.35) 50%,
+      rgba(255, 255, 255, 0.06) 58%,
+      transparent 65%
+    );
+    animation: phone-reflection 3.5s linear infinite;
+  }
+
+  @keyframes phone-reflection {
+    0% {
+      transform: translateX(-180%) skewX(-18deg);
+    }
+    100% {
+      transform: translateX(380%) skewX(-18deg);
+    }
+  }
+
+  .phone-scroll-track--list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: phone-scroll-y 10s linear infinite;
+  }
+
+  .phone-scroll-track--grid {
+    animation: phone-scroll-y 12s linear infinite;
+  }
+
+  @keyframes phone-scroll-y {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
+  }
+
+  /* Left phone: 3-tab cycle (12s seamless) */
+  .phone-panel--1 {
+    animation: phone-panel-1 12s ease-in-out infinite;
+  }
+  .phone-panel--2 {
+    animation: phone-panel-2 12s ease-in-out infinite;
+  }
+  .phone-panel--3 {
+    animation: phone-panel-3 12s ease-in-out infinite;
+  }
+
+  @keyframes phone-panel-1 {
+    0%, 28% { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    33%, 97% { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+    100% { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  }
+  @keyframes phone-panel-2 {
+    0%, 28% { opacity: 0; transform: translateX(6px); pointer-events: none; }
+    33%, 61% { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    66%, 100% { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+  }
+  @keyframes phone-panel-3 {
+    0%, 61% { opacity: 0; transform: translateX(6px); pointer-events: none; }
+    66%, 94% { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    97%, 100% { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+  }
+
+  .phone-mockup--left .phone-tab-indicator {
+    animation: phone-tab-slide-3 12s ease-in-out infinite;
+  }
+
+  @keyframes phone-tab-slide-3 {
+    0%, 28% { left: 4px; }
+    33%, 61% { left: calc(33.333% + 1px); }
+    66%, 94% { left: calc(66.666% - 2px); }
+    97%, 100% { left: 4px; }
+  }
+
+  .phone-mockup--left .phone-tab-dot:nth-child(2) {
+    animation: phone-tab-1-label 12s ease-in-out infinite;
+  }
+  .phone-mockup--left .phone-tab-dot:nth-child(3) {
+    animation: phone-tab-2-label 12s ease-in-out infinite;
+  }
+  .phone-mockup--left .phone-tab-dot:nth-child(4) {
+    animation: phone-tab-3-label 12s ease-in-out infinite;
+  }
+
+  @keyframes phone-tab-1-label {
+    0%, 28% { color: rgba(245, 240, 225, 0.95); }
+    33%, 97% { color: rgba(245, 240, 225, 0.35); }
+    100% { color: rgba(245, 240, 225, 0.95); }
+  }
+  @keyframes phone-tab-2-label {
+    0%, 28% { color: rgba(245, 240, 225, 0.35); }
+    33%, 61% { color: rgba(245, 240, 225, 0.95); }
+    66%, 100% { color: rgba(245, 240, 225, 0.35); }
+  }
+  @keyframes phone-tab-3-label {
+    0%, 61% { color: rgba(245, 240, 225, 0.35); }
+    66%, 94% { color: rgba(245, 240, 225, 0.95); }
+    97%, 100% { color: rgba(245, 240, 225, 0.35); }
+  }
+
+  .phone-mockup--right .phone-screen-reflection::before {
+    animation-delay: 1.75s;
+  }
+
+  /* Right phone: 2-tab cycle (10s seamless) */
+  .phone-panel-browse--1 {
+    animation: phone-browse-1 10s ease-in-out infinite;
+  }
+  .phone-panel-browse--2 {
+    animation: phone-browse-2 10s ease-in-out infinite;
+  }
+
+  @keyframes phone-browse-1 {
+    0%, 45% { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    50%, 97% { opacity: 0; transform: translateY(4px); pointer-events: none; }
+    100% { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  }
+  @keyframes phone-browse-2 {
+    0%, 45% { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+    50%, 95% { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    100% { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+  }
+
+  .phone-mockup--right .phone-tab-indicator {
+    width: calc(50% - 4px) !important;
+    animation: phone-tab-slide-2 10s ease-in-out infinite;
+  }
+
+  @keyframes phone-tab-slide-2 {
+    0%, 45% { left: 4px; }
+    50%, 95% { left: calc(50% + 1px); }
+    100% { left: 4px; }
+  }
+
+  .phone-mockup--right .phone-tab-dot:nth-child(2) {
+    animation: phone-tab-browse-active 10s ease-in-out infinite;
+  }
+  .phone-mockup--right .phone-tab-dot:nth-child(3) {
+    animation: phone-tab-rank-active 10s ease-in-out infinite;
+  }
+
+  @keyframes phone-tab-browse-active {
+    0%, 45% { color: rgba(30, 61, 89, 0.95); }
+    50%, 100% { color: rgba(30, 61, 89, 0.35); }
+  }
+  @keyframes phone-tab-rank-active {
+    0%, 45% { color: rgba(30, 61, 89, 0.35); }
+    50%, 95% { color: rgba(30, 61, 89, 0.95); }
+    100% { color: rgba(30, 61, 89, 0.35); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .phone-scroll-track--list,
+    .phone-scroll-track--grid,
+    .phone-panel--1,
+    .phone-panel--2,
+    .phone-panel--3,
+    .phone-panel-browse--1,
+    .phone-panel-browse--2,
+    .phone-screen-reflection::before,
+    .phone-mockup--left .phone-tab-indicator,
+    .phone-mockup--right .phone-tab-indicator {
+      animation: none !important;
+    }
+  }
 }

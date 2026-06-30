@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../services/api';
@@ -32,45 +32,54 @@ function ChapterForm() {
   });
 
   const chapterData = chapterResponse?.data;
+  const formInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (isEdit && chapterData) {
-      // Extract file names from image URLs if not present
-      const pages = (chapterData.pages || []).map((page) => {
-        // Use original_filename from database if available
-        const originalFilename = page.original_filename || page.file_name;
-        
-        if (!originalFilename && page.image_url) {
-          // Extract filename from URL as fallback
-          const urlParts = page.image_url.split('/');
-          const filename = urlParts[urlParts.length - 1];
-          // Remove query parameters if any
-          const cleanFilename = filename.split('?')[0];
-          return {
-            ...page,
-            file_name: cleanFilename || `Page ${page.page_number}`,
-            original_filename: cleanFilename || null,
-          };
-        }
-        return {
-          ...page,
-          file_name: originalFilename || `Page ${page.page_number}`,
-          original_filename: originalFilename || null,
-        };
-      });
+    formInitializedRef.current = false;
+  }, [id]);
 
-      setFormData({
-        series_id: chapterData.series_id || '',
-        chapter_number: chapterData.chapter_number || '',
-        title: chapterData.title || '',
-        is_published: chapterData.is_published ?? true,
-        published_at: chapterData.published_at
-          ? new Date(chapterData.published_at).toISOString().split('T')[0]
-          : new Date().toISOString().split('T')[0],
-        pages: pages,
-      });
+  const extractFilenameFromUrl = (url) => {
+    if (!url) return null;
+    try {
+      const pathname = new URL(url).pathname;
+      const segment = pathname.split('/').filter(Boolean).pop() || '';
+      return decodeURIComponent(segment.split('?')[0]) || null;
+    } catch {
+      const parts = url.split('/');
+      return decodeURIComponent((parts.pop() || '').split('?')[0]) || null;
     }
-  }, [isEdit, chapterData]);
+  };
+
+  useEffect(() => {
+    if (!isEdit || !chapterData || formInitializedRef.current) return;
+    if (String(chapterData.id) !== String(id)) return;
+
+    const pages = (chapterData.pages || []).map((page) => {
+      const originalFilename =
+        page.original_filename ||
+        page.file_name ||
+        extractFilenameFromUrl(page.image_url);
+
+      return {
+        ...page,
+        file_name: originalFilename || `Page ${page.page_number}`,
+        original_filename: originalFilename || null,
+      };
+    });
+
+    setFormData({
+      series_id: chapterData.series_id || '',
+      chapter_number: chapterData.chapter_number || '',
+      title: chapterData.title || '',
+      is_published: chapterData.is_published ?? true,
+      published_at: chapterData.published_at
+        ? new Date(chapterData.published_at).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      pages,
+    });
+
+    formInitializedRef.current = true;
+  }, [isEdit, id, chapterData]);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -165,6 +174,7 @@ function ChapterForm() {
     const updatedPages = newPages.map((page, idx) => ({
       ...page,
       page_number: idx + 1,
+      file_name: page.file_name || page.original_filename || `Page ${idx + 1}`,
       original_filename: page.original_filename || page.file_name || null,
     }));
 
@@ -307,12 +317,12 @@ function ChapterForm() {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto border border-gray-300 rounded-lg p-4">
                 {formData.pages.map((page, index) => (
                   <div
-                    key={index}
+                    key={page.id ?? `${page.image_url}-${index}`}
                     draggable
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`relative group bg-gray-50 rounded-lg overflow-hidden border-2 transition-all cursor-move ${
+                    className={`relative group bg-gray-50 rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${
                       draggedIndex === index
                         ? 'border-red-orange opacity-50 scale-95'
                         : 'border-gray-200 hover:border-red-orange/50'
@@ -322,10 +332,11 @@ function ChapterForm() {
                       <img
                         src={page.image_url}
                         alt={`Page ${page.page_number}`}
-                        className="w-full h-32 object-cover pointer-events-none"
+                        className="w-full h-32 object-cover pointer-events-none select-none"
+                        draggable={false}
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity rounded flex items-center justify-center">
-                        <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity rounded flex items-center justify-center pointer-events-none">
+                        <div className="opacity-0 group-hover:opacity-100 flex space-x-1 pointer-events-auto">
                           {index > 0 && (
                             <button
                               type="button"

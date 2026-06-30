@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Chapter;
 use App\Models\ChapterPage;
 use App\Models\Series;
+use App\Services\MediaFireService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -40,6 +41,22 @@ class AdminChapterController extends Controller
         $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
         $fragment = isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
         return $scheme . '://' . $host . $port . $path . $query . $fragment;
+    }
+
+    /**
+     * Get chapter details for admin edit (includes unpublished + original_filename).
+     */
+    public function show($id): JsonResponse
+    {
+        $chapter = Chapter::with([
+            'series:id,title,slug',
+            'pages' => fn ($q) => $q->orderBy('page_number', 'asc'),
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $chapter,
+        ]);
     }
 
     /**
@@ -220,6 +237,149 @@ class AdminChapterController extends Controller
                 'message' => 'Failed to update chapter: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Bulk import chapters from Excel rows (MediaFire folder URLs).
+     */
+    public function bulkImport(Request $request, MediaFireService $mediaFireService): JsonResponse
+    {
+        $validated = $request->validate([
+            'rows' => 'required|array|min:1|max:100',
+            'rows.*.series_id' => 'required|integer|exists:series,id',
+            'rows.*.chapter_number' => 'required|numeric|min:0',
+            'rows.*.title' => 'nullable|string|max:255',
+            'rows.*.mediafire_folder_url' => 'required|url',
+            'rows.*.row_number' => 'nullable|integer',
+            'is_published' => 'nullable|boolean',
+        ]);
+
+        $isPublished = $validated['is_published'] ?? true;
+        $results = [];
+        $imported = 0;
+        $skipped = 0;
+        $failed = 0;
+
+        foreach ($validated['rows'] as $index => $row) {
+            $rowNum = $row['row_number'] ?? ($index + 2);
+
+            if (!str_contains($row['mediafire_folder_url'], 'mediafire.com')) {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'failed',
+                    'message' => 'Invalid MediaFire folder URL',
+                ];
+                continue;
+            }
+
+            $series = Series::find($row['series_id']);
+            if (!$series) {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'failed',
+                    'message' => 'Manga ID not found',
+                ];
+                continue;
+            }
+
+            if (Chapter::where('series_id', $row['series_id'])
+                ->where('chapter_number', $row['chapter_number'])
+                ->exists()) {
+                $skipped++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'skipped',
+                    'message' => 'Chapter number already exists for this series',
+                ];
+                continue;
+            }
+
+            try {
+                $images = $mediaFireService->getFolderImages($row['mediafire_folder_url']);
+            } catch (\Exception $e) {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'failed',
+                    'message' => $e->getMessage(),
+                ];
+                continue;
+            }
+
+            $seriesSlug = $series->slug;
+            $chapterNum = $row['chapter_number'];
+            $slug = Str::slug("{$seriesSlug}-chapter-{$chapterNum}");
+            $counter = 1;
+            $originalSlug = $slug;
+            while (Chapter::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            $pages = [];
+            foreach ($images as $i => $image) {
+                $pages[] = [
+                    'page_number' => $i + 1,
+                    'image_url' => $this->encodeUrlPath($image['image_url']),
+                    'original_filename' => $image['original_filename'],
+                ];
+            }
+
+            DB::beginTransaction();
+            try {
+                $chapter = Chapter::create([
+                    'series_id' => $row['series_id'],
+                    'chapter_number' => $row['chapter_number'],
+                    'title' => $row['title'] ?? null,
+                    'slug' => $slug,
+                    'is_published' => $isPublished,
+                    'published_at' => now(),
+                ]);
+
+                foreach ($pages as $pageData) {
+                    ChapterPage::create([
+                        'chapter_id' => $chapter->id,
+                        'page_number' => $pageData['page_number'],
+                        'image_url' => $pageData['image_url'],
+                        'original_filename' => $pageData['original_filename'],
+                    ]);
+                }
+
+                $chapter->update(['page_count' => count($pages)]);
+                $series->increment('total_chapters');
+
+                DB::commit();
+
+                $imported++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'success',
+                    'chapter_id' => $chapter->id,
+                    'page_count' => count($pages),
+                ];
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $failed++;
+                $results[] = [
+                    'row' => $rowNum,
+                    'status' => 'failed',
+                    'message' => 'Failed to create chapter: ' . $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'failed' => $failed,
+                'results' => $results,
+            ],
+            'message' => "Import complete: {$imported} imported, {$skipped} skipped, {$failed} failed",
+        ]);
     }
 
     /**

@@ -18,15 +18,16 @@ class BrandingController extends Controller
         $branding = Branding::current();
         $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
         $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
+        $appDownload = Branding::appDownloadPayload($branding);
 
         return response()->json([
-            'data' => [
+            'data' => array_merge([
                 'logo_url' => $branding->logo_url,
                 'hero_background_url' => $branding->hero_background_url,
                 'hero_image_url' => $branding->hero_image_url,
                 'card_layout' => $cardLayout,
                 'grid_columns' => $gridColumns,
-            ],
+            ], $appDownload),
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 }
