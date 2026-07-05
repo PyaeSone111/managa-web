@@ -403,10 +403,13 @@ class Series extends Model
         $sort = $filters['sort'] ?? 'relevance';
         switch ($sort) {
             case 'latest':
-                $query->orderBy('last_chapter_at', 'desc');
+                $query->orderByDesc('last_chapter_at')->orderByDesc('updated_at');
                 break;
             case 'newest':
                 $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
                 break;
             case 'rating':
                 $query->orderBy('rating', 'desc')->orderBy('rating_count', 'desc');
@@ -417,6 +420,10 @@ class Series extends Model
             case 'favorites':
                 $query->orderBy('total_favorites', 'desc');
                 break;
+            case 'title_desc':
+                $query->orderBy('title', 'desc');
+                break;
+            case 'title_asc':
             case 'title':
                 $query->orderBy('title', 'asc');
                 break;

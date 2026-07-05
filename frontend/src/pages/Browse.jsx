@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { seriesApi, categoryApi, mangaTypeApi, authorApi } from '../services/api';
+import { searchApi, categoryApi, mangaTypeApi, authorApi } from '../services/api';
 import SeriesGrid from '../components/series/SeriesGrid';
+import Pagination from '../components/common/Pagination';
+
+const PER_PAGE = 24;
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -74,16 +77,17 @@ function Browse() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['series', 'browse', { query, selectedCategories, selectedTypes, selectedAuthors, status, sort, page }],
-    queryFn: () => seriesApi.getAll({
-      search: query,
-      categories: selectedCategories.join(','),
-      types: selectedTypes.join(','),
-      authors: selectedAuthors.join(','),
-      status,
-      sort,
-      page,
-      per_page: 20,
-    }),
+    queryFn: () =>
+      searchApi.search({
+        q: query || undefined,
+        categories: selectedCategories.length ? selectedCategories.join(',') : undefined,
+        types: selectedTypes.length ? selectedTypes.join(',') : undefined,
+        authors: selectedAuthors.length ? selectedAuthors.join(',') : undefined,
+        status: status || undefined,
+        sort,
+        page,
+        per_page: PER_PAGE,
+      }),
   });
 
   const categories = categoriesData?.data || [];
@@ -113,7 +117,22 @@ function Browse() {
   };
 
   const hasActiveFilters = selectedCategories.length > 0 || selectedTypes.length > 0 || selectedAuthors.length > 0 || status;
-  const pagination = data?.meta || {};
+  const meta = data?.meta || data?.pagination || {};
+  const lastPage = meta.total_pages ?? meta.last_page ?? 1;
+  const total = meta.total ?? 0;
+  const currentPage = meta.current_page ?? page;
+
+  const goToPage = (nextPage) => {
+    const safePage = Math.max(1, Math.min(nextPage, lastPage));
+    const newParams = new URLSearchParams(searchParams);
+    if (safePage <= 1) {
+      newParams.delete('page');
+    } else {
+      newParams.set('page', String(safePage));
+    }
+    setSearchParams(newParams);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -248,9 +267,10 @@ function Browse() {
             <h1 className="text-2xl sm:text-3xl font-bold text-black-feather">
               {query ? `Search Results for "${query}"` : 'Browse Series'}
             </h1>
-            {pagination.total > 0 && (
+            {total > 0 && (
               <span className="text-sm text-sidewalk-grey">
-                {pagination.total} series found
+                {total} series found
+                {lastPage > 1 && ` · page ${currentPage} of ${lastPage}`}
               </span>
             )}
           </div>
@@ -323,28 +343,13 @@ function Browse() {
                 loading={isLoading}
               />
 
-              {/* Pagination */}
-              {pagination.last_page > 1 && (
-                <div className="flex justify-center gap-2 pt-6">
-                  <button
-                    onClick={() => updateFilter('page', String(page - 1))}
-                    disabled={page <= 1}
-                    className="px-4 py-2 border border-quarzo rounded-lg bg-white text-black-feather disabled:opacity-50 disabled:cursor-not-allowed hover:bg-quarzo/30 transition-all shadow-sm"
-                  >
-                    Previous
-                  </button>
-                  <span className="flex items-center px-4 text-sidewalk-grey text-sm">
-                    Page {page} of {pagination.last_page}
-                  </span>
-                  <button
-                    onClick={() => updateFilter('page', String(page + 1))}
-                    disabled={page >= pagination.last_page}
-                    className="px-4 py-2 border border-quarzo rounded-lg bg-white text-black-feather disabled:opacity-50 disabled:cursor-not-allowed hover:bg-quarzo/30 transition-all shadow-sm"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
+              <Pagination
+                page={currentPage}
+                lastPage={lastPage}
+                total={total}
+                perPage={meta.per_page ?? PER_PAGE}
+                onPageChange={goToPage}
+              />
             </>
           )}
         </div>

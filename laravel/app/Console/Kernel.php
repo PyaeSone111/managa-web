@@ -15,6 +15,19 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // Process queued bulk imports every minute (requires schedule:run or schedule:work)
+        $schedule->command('queue:work', [
+            'database',
+            '--stop-when-empty',
+            '--max-jobs' => 100,
+            '--max-time' => 3600,
+            '--timeout' => 600,
+            '--tries' => 1,
+        ])
+            ->everyMinute()
+            ->withoutOverlapping(5)
+            ->runInBackground();
+
         // Aggregate daily stats every hour
         $schedule->command('stats:aggregate')
             ->hourly()

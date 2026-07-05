@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useRef, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { adminApi } from '../../services/api';
 
@@ -88,11 +88,61 @@ function ChapterBulkImport() {
   const [parseError, setParseError] = useState('');
   const [fileName, setFileName] = useState('');
   const [importResults, setImportResults] = useState(null);
+  const [importBatchId, setImportBatchId] = useState(null);
+  const [importProgress, setImportProgress] = useState(null);
+
+  const isImportRunning = Boolean(importBatchId);
+
+  const { data: batchStatusData } = useQuery({
+    queryKey: ['chapter-import-batch', importBatchId],
+    queryFn: () => adminApi.getChapterBulkImportStatus(importBatchId),
+    enabled: Boolean(importBatchId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.status;
+      return status === 'completed' || status === 'failed' ? false : 2000;
+    },
+  });
+
+  useEffect(() => {
+    const batch = batchStatusData?.data;
+    if (!batch) return;
+
+    setImportProgress({
+      processed: batch.processed,
+      total: batch.total,
+      progress_percent: batch.progress_percent,
+      results: batch.results,
+    });
+
+    if (batch.status === 'completed') {
+      setImportResults({
+        imported: batch.imported,
+        skipped: batch.skipped,
+        failed: batch.failed,
+        results: batch.results,
+      });
+      setImportBatchId(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-chapters'] });
+    }
+  }, [batchStatusData, queryClient]);
 
   const importMutation = useMutation({
     mutationFn: (rows) => adminApi.bulkImportChapters({ rows }),
     onSuccess: async (response) => {
-      setImportResults(response.data);
+      const data = response?.data;
+      if (data?.batch_id) {
+        setImportResults(null);
+        setImportBatchId(data.batch_id);
+        setImportProgress({
+          processed: data.processed ?? 0,
+          total: data.total ?? 0,
+          progress_percent: data.progress_percent ?? 0,
+          results: data.results ?? [],
+        });
+        return;
+      }
+
+      setImportResults(data);
       await queryClient.invalidateQueries({ queryKey: ['admin-chapters'] });
     },
   });
@@ -161,6 +211,8 @@ function ChapterBulkImport() {
     setParseError('');
     setFileName('');
     setImportResults(null);
+    setImportBatchId(null);
+    setImportProgress(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -172,7 +224,7 @@ function ChapterBulkImport() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Bulk Import Chapters</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Import multiple chapters from Excel. Page images are fetched from each MediaFire folder URL.
+            Import multiple chapters from Excel. Imports run in the background queue — start the queue worker locally.
           </p>
         </div>
         <button
@@ -241,6 +293,20 @@ function ChapterBulkImport() {
         </div>
       )}
 
+      {importProgress && isImportRunning && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+          <p className="text-sm font-medium text-gray-900">
+            Import in progress — {importProgress.processed} / {importProgress.total} chapters
+          </p>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all duration-500"
+              style={{ width: `${importProgress.progress_percent ?? 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {importResults && (
         <div className="rounded-lg border border-gray-200 p-4 space-y-2">
           <p className="text-sm font-medium text-gray-900">
@@ -272,16 +338,20 @@ function ChapterBulkImport() {
         <button
           type="button"
           onClick={handleImport}
-          disabled={parsedRows.length === 0 || importMutation.isPending}
+          disabled={parsedRows.length === 0 || importMutation.isPending || isImportRunning}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {importMutation.isPending ? 'Importing...' : `Import ${parsedRows.length || ''} Chapters`}
+          {importMutation.isPending
+            ? 'Queuing...'
+            : isImportRunning
+            ? 'Import running...'
+            : `Import ${parsedRows.length || ''} Chapters`}
         </button>
         {(parsedRows.length > 0 || fileName) && (
           <button
             type="button"
             onClick={handleClear}
-            disabled={importMutation.isPending}
+            disabled={importMutation.isPending || isImportRunning}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
             Clear

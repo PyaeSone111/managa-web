@@ -11,6 +11,21 @@ use Illuminate\Support\Str;
 class AdminCategoryController extends Controller
 {
     /**
+     * List all categories (admin, no cache).
+     */
+    public function index(): JsonResponse
+    {
+        $categories = Category::withCount('series')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
      * Create a new category
      */
     public function store(Request $request): JsonResponse
@@ -31,8 +46,21 @@ class AdminCategoryController extends Controller
         return response()->json([
             'success' => true,
             'data' => $category,
-            'message' => 'Category created successfully'
+            'message' => 'Category created successfully',
         ], 201);
+    }
+
+    /**
+     * Get a category for admin edit.
+     */
+    public function show($id): JsonResponse
+    {
+        $category = Category::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $category,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

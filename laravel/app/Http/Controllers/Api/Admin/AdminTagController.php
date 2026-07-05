@@ -11,6 +11,21 @@ use Illuminate\Support\Str;
 class AdminTagController extends Controller
 {
     /**
+     * List all tags (admin, no cache).
+     */
+    public function index(): JsonResponse
+    {
+        $tags = Tag::withCount('series')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tags,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
      * Create a new tag
      */
     public function store(Request $request): JsonResponse
@@ -31,6 +46,19 @@ class AdminTagController extends Controller
             'data' => $tag,
             'message' => 'Tag created successfully'
         ], 201);
+    }
+
+    /**
+     * Get a tag for admin edit.
+     */
+    public function show($id): JsonResponse
+    {
+        $tag = Tag::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tag,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

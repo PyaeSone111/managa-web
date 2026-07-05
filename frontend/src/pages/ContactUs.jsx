@@ -39,21 +39,6 @@ export default function ContactUs() {
               </Link>.
             </p>
           </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-black-feather mb-2">Adsterra / ads.txt</h2>
-            <p className="text-sm text-black-feather/90">
-              Our ads are served by Adsterra. For publisher and ads.txt information, see{' '}
-              <a
-                href="https://publishers.adsterra.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-ruskin-blue hover:text-delta-green underline"
-              >
-                Adsterra Publishers
-              </a>.
-            </p>
-          </section>
         </div>
 
         <p className="text-sm text-sidewalk-grey mt-8 text-center">

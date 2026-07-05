@@ -1,9 +1,7 @@
 import { Helmet } from 'react-helmet-async';
-import { FaBook, FaDownload, FaStar, FaBookmark } from 'react-icons/fa';
+import { FaBook, FaMobileAlt, FaStar, FaBookmark } from 'react-icons/fa';
 import GetAppButton from '../components/common/GetAppButton';
 import { AnimatedHomePhone, AnimatedBrowsePhone } from '../components/download/AnimatedPhoneMockups';
-import { useBranding } from '../context/BrandingContext';
-import { downloadApk } from '../utils/downloadApk';
 
 function FloatingIcon({ icon: Icon, color, className }) {
   return (
@@ -17,17 +15,13 @@ function FloatingIcon({ icon: Icon, color, className }) {
 }
 
 export default function DownloadApp() {
-  const { appDownload } = useBranding();
-  const { url, fileName, version, sizeMB } = appDownload;
-  const handleDownload = () => downloadApk(url, fileName);
-
   return (
     <>
       <Helmet>
-        <title>Get the App - Myangar</title>
+        <title>Mobile App — Coming Soon - Myangar</title>
         <meta
           name="description"
-          content="Download the Myangar Android app. Read manga, manhwa, and manhua on your phone."
+          content="The Myangar mobile app is coming soon. Read manga, manhwa, and manhua on the website for now."
         />
       </Helmet>
 
@@ -101,15 +95,15 @@ export default function DownloadApp() {
               </div>
 
               <div className="absolute bottom-[6%] sm:bottom-[10%] right-[4%] sm:right-[12%] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-navy text-white text-[10px] sm:text-xs font-medium shadow-lg">
-                <FaDownload className="w-3 h-3 text-mango" />
-                Downloaded 1000+ times
+                <FaMobileAlt className="w-3 h-3 text-mango" />
+                Coming soon
               </div>
             </div>
 
             {/* Right — copy & CTA */}
             <div className="text-center lg:text-left max-w-xl mx-auto lg:mx-0">
               <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-red-orange uppercase mb-3">
-                Android · {fileName.replace('.apk', '')} · v{version}
+                Android · Coming soon
               </p>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy leading-tight tracking-tight mb-3">
                 MYANGAR
@@ -117,60 +111,28 @@ export default function DownloadApp() {
                 <span className="text-red-orange">MOBILE APP</span>
               </h1>
               <p className="text-sm sm:text-base font-bold text-navy/80 tracking-wide uppercase mb-4">
-                Download and read manga for free
+                On the way — stay tuned
               </p>
               <p className="text-sm sm:text-base text-sidewalk-grey leading-relaxed mb-8">
-                Take your library anywhere. Browse thousands of manga, manhwa, and manhua,
-                save favorites, and pick up right where you left off — all from your Android phone.
+                We&apos;re building the Myangar Android app so you can browse manga, save favorites,
+                and keep reading on the go. For now, enjoy the full library right here on the website.
               </p>
 
-              <GetAppButton
-                as="button"
-                onClick={handleDownload}
-                size="lg"
-                icon={FaDownload}
-                className="uppercase tracking-wide shadow-xl"
-              >
-                Download Now
-              </GetAppButton>
+              <GetAppButton size="lg" tone="light" className="uppercase tracking-wide shadow-xl" />
 
               <p className="mt-4 text-xs text-sidewalk-grey">
-                ~{sizeMB} MB · Android 7.0+ ·{' '}
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="text-ruskin-blue hover:text-delta-green underline"
-                >
-                  Direct download link
-                </button>
+                iOS is not available yet — use the website on iPhone or iPad in the meantime.
               </p>
             </div>
           </div>
 
           {/* Install steps */}
           <div className="mt-14 sm:mt-20 max-w-3xl mx-auto">
-            <div className="glass rounded-2xl p-6 sm:p-8">
-              <h2 className="text-lg font-bold text-navy mb-4">How to install</h2>
-              <ol className="grid sm:grid-cols-2 gap-3 text-sm text-navy/85">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">1</span>
-                  Download the APK using the button above.
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">2</span>
-                  Open the file on your Android device.
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">3</span>
-                  Allow installation from unknown sources if prompted.
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">4</span>
-                  Follow the on-screen steps to finish setup.
-                </li>
-              </ol>
-              <p className="text-xs text-sidewalk-grey mt-5 text-center">
-                iOS is not available yet — use the website on iPhone or iPad in the meantime.
+            <div className="glass rounded-2xl p-6 sm:p-8 text-center">
+              <h2 className="text-lg font-bold text-navy mb-3">Coming soon</h2>
+              <p className="text-sm text-navy/85 leading-relaxed max-w-md mx-auto">
+                The Android app isn&apos;t ready for download yet. Check back later — we&apos;ll announce
+                here when it&apos;s available.
               </p>
             </div>
           </div>

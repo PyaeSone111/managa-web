@@ -29,9 +29,11 @@ class AdvancedSearchController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
+        $this->normalizeSearchRequest($request);
+
         $request->validate([
             'q' => 'nullable|string|max:255',
-            'status' => 'nullable|in:ongoing,completed,dropped,hiatus',
+            'status' => 'nullable|in:ongoing,completed,dropped,hiatus,cancelled',
             'categories' => 'nullable|array',
             'categories.*' => 'integer|exists:categories,id',
             'types' => 'nullable|array',
@@ -40,7 +42,7 @@ class AdvancedSearchController extends Controller
             'authors.*' => 'integer|exists:authors,id',
             'release_from' => 'nullable|date',
             'release_to' => 'nullable|date',
-            'sort' => 'nullable|in:relevance,latest,newest,rating,views,favorites,title',
+            'sort' => 'nullable|in:relevance,latest,newest,oldest,rating,views,favorites,title,title_asc,title_desc',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
@@ -74,9 +76,26 @@ class AdvancedSearchController extends Controller
                 'per_page' => $results->perPage(),
                 'total' => $results->total(),
                 'total_pages' => $results->lastPage(),
+                'last_page' => $results->lastPage(),
             ],
             'filters_applied' => array_filter($filters),
         ]);
+    }
+
+    private function normalizeSearchRequest(Request $request): void
+    {
+        if ($request->filled('search') && !$request->filled('q')) {
+            $request->merge(['q' => $request->input('search')]);
+        }
+
+        foreach (['categories', 'types', 'authors'] as $key) {
+            $value = $request->input($key);
+            if (is_string($value) && $value !== '') {
+                $request->merge([
+                    $key => array_values(array_filter(array_map('intval', explode(',', $value)))),
+                ]);
+            }
+        }
     }
 
     /**

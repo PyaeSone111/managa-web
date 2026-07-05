@@ -81,6 +81,8 @@ return [
     'pagination' => [
         'default_per_page' => 20,
         'max_per_page' => 50,
+        /** Max series returned across all ranking list endpoints (top / reading / trending). */
+        'rankings_max_results' => 100,
     ],
 
     /*

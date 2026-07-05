@@ -27,8 +27,10 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
+import SeriesBulkImport from '../../components/series/SeriesBulkImport';
 import { colors } from '../../theme/colors';
 
 const STATUS_COLORS = {
@@ -46,6 +48,42 @@ function getAuthorLabel(item) {
 
 function getMangaTypes(item) {
   return item.manga_types || item.mangaTypes || [];
+}
+
+function CopyableId({ id }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(String(id));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      alert('Failed to copy ID');
+    }
+  };
+
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <Typography
+        variant="body2"
+        component="span"
+        sx={{
+          fontFamily: 'monospace',
+          color: colors.navy,
+          fontWeight: 600,
+          userSelect: 'all',
+        }}
+      >
+        {id}
+      </Typography>
+      <Tooltip title={copied ? 'Copied!' : 'Copy ID'}>
+        <IconButton size="small" onClick={handleCopy} sx={{ p: 0.25 }}>
+          <ContentCopyIcon sx={{ fontSize: 14, color: colors.muted }} />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
 }
 
 function SeriesList() {
@@ -172,6 +210,8 @@ function SeriesList() {
           </Button>
         </Box>
 
+        <SeriesBulkImport />
+
         <Paper
           elevation={0}
           sx={{
@@ -282,6 +322,9 @@ function SeriesList() {
                       <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 80 }}>
                         Thumbnail
                       </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 90 }}>
+                        ID
+                      </TableCell>
                       <TableCell sx={{ fontWeight: 600, color: colors.navy }}>Title</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 160 }}>
                         Author
@@ -303,7 +346,7 @@ function SeriesList() {
                   <TableBody>
                     {filteredSeries.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 6, color: colors.muted }}>
+                        <TableCell colSpan={8} align="center" sx={{ py: 6, color: colors.muted }}>
                           {hasFilters
                             ? 'No series match your filters.'
                             : 'No series found. Create your first series!'}
@@ -333,6 +376,9 @@ function SeriesList() {
                                   display: 'block',
                                 }}
                               />
+                            </TableCell>
+                            <TableCell>
+                              <CopyableId id={item.id} />
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2" fontWeight={600} sx={{ color: colors.navy }}>

@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet-async';
 import { useEffect } from 'react';
 import { dashboardApi } from '../services/api';
 import { useBranding } from '../context/BrandingContext';
-import { useMediaQuery } from '../hooks/useMediaQuery';
 import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
@@ -29,7 +28,6 @@ function SectionHeader({ title, linkTo, linkText = 'View All' }) {
 
 function Home() {
   const { updateBranding } = useBranding();
-  const isLg = useMediaQuery('(min-width: 1024px)');
 
   // Single consolidated API call for all homepage data
   const { data: dashboard, isLoading } = useQuery({
@@ -64,17 +62,6 @@ function Home() {
       <div className="-mx-4 sm:-mx-6 lg:-mx-8">
         <HeroBanner />
       </div>
-
-      {/* Mobile: 4:1 native banner under hero (desktop uses sidebar slot in App) */}
-      {!isLg && (
-        <div className="flex justify-center my-4 px-2">
-          <div
-            id="container-2286240c3512c3138eb46d938c723f95"
-            className="overflow-hidden rounded-lg bg-quarzo/20 w-full"
-            style={{ maxWidth: 728, aspectRatio: '4/1', minHeight: 90 }}
-          />
-        </div>
-      )}
 
       {/* Two-column layout */}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 mt-8">

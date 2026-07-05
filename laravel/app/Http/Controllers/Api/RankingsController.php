@@ -13,29 +13,77 @@ use Illuminate\Support\Facades\Cache;
 class RankingsController extends Controller
 {
     /**
+     * @return array{page: int, per_page: int, fetch_limit: int, offset: int, max_results: int}
+     */
+    private function resolveRankingPagination(Request $request): array
+    {
+        $default = (int) config('manga.pagination.default_per_page', 20);
+        $maxPerPage = (int) config('manga.pagination.max_per_page', 50);
+        $maxResults = (int) config('manga.pagination.rankings_max_results', 100);
+
+        $request->validate([
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:' . $maxPerPage,
+            'limit' => 'nullable|integer|min:1|max:' . $maxPerPage,
+        ]);
+
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = min(
+            (int) $request->input('per_page', $request->input('limit', $default)),
+            $maxPerPage
+        );
+        $offset = ($page - 1) * $perPage;
+        $remaining = max(0, $maxResults - $offset);
+        $fetchLimit = min($perPage, $remaining);
+
+        return [
+            'page' => $page,
+            'per_page' => $perPage,
+            'fetch_limit' => $fetchLimit,
+            'offset' => $offset,
+            'max_results' => $maxResults,
+        ];
+    }
+
+    /**
+     * @param  int  $rawTotal  Un capped row count from DB
+     * @return array{current_page: int, per_page: int, total: int, total_pages: int, limit: int}
+     */
+    private function rankingMeta(int $page, int $perPage, int $rawTotal, int $maxResults): array
+    {
+        $total = min($rawTotal, $maxResults);
+
+        return [
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'total_pages' => $perPage > 0 ? (int) ceil($total / $perPage) : 0,
+            'limit' => $perPage,
+        ];
+    }
+
+    /**
      * Get top manga (overall best based on views, favorites, ratings, recency).
      *
      * GET /api/v1/rankings/top
      */
     public function top(Request $request): JsonResponse
     {
-        $request->validate([
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:50',
-        ]);
+        $pagination = $this->resolveRankingPagination($request);
+        $page = $pagination['page'];
+        $perPage = $pagination['per_page'];
+        $fetchLimit = $pagination['fetch_limit'];
+        $offset = $pagination['offset'];
+        $maxResults = $pagination['max_results'];
 
-        $perPage = min($request->input('per_page', 20), 50);
-        $page = $request->input('page', 1);
-        $offset = ($page - 1) * $perPage;
+        $cacheKey = "rankings:top:v3:{$page}:{$perPage}";
 
-        $cacheKey = "rankings:top:v2:{$page}:{$perPage}";
-
-        $data = Cache::remember($cacheKey, 900, function () use ($perPage, $offset) {
+        $data = Cache::remember($cacheKey, 900, function () use ($fetchLimit, $offset) {
             // If rankings table is populated, use it
             $hasRankings = SeriesRanking::exists();
 
             if ($hasRankings) {
-                $rankings = SeriesRanking::getTopManga($perPage, $offset);
+                $rankings = SeriesRanking::getTopManga($fetchLimit, $offset);
                 $total = SeriesRanking::whereHas('series', fn($q) => $q->where('is_active', true))->count();
 
                 return [
@@ -74,7 +122,7 @@ class RankingsController extends Controller
                 ->orderByTopScore();
 
             $total = Series::active()->count();
-            $items = $query->offset($offset)->limit($perPage)->get();
+            $items = $query->offset($offset)->limit($fetchLimit)->get();
 
             return [
                 'items' => $items->map(function ($series, $index) use ($offset) {
@@ -107,12 +155,7 @@ class RankingsController extends Controller
 
         return response()->json([
             'data' => $data['items'],
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $data['total'],
-                'total_pages' => ceil($data['total'] / $perPage),
-            ],
+            'meta' => $this->rankingMeta($page, $perPage, $data['total'], $maxResults),
             'ranking_type' => 'top',
             'description' => 'Overall best manga based on views, favorites, ratings, and recency',
         ]);
@@ -125,22 +168,20 @@ class RankingsController extends Controller
      */
     public function reading(Request $request): JsonResponse
     {
-        $request->validate([
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:50',
-        ]);
+        $pagination = $this->resolveRankingPagination($request);
+        $page = $pagination['page'];
+        $perPage = $pagination['per_page'];
+        $fetchLimit = $pagination['fetch_limit'];
+        $offset = $pagination['offset'];
+        $maxResults = $pagination['max_results'];
 
-        $perPage = min($request->input('per_page', 20), 50);
-        $page = $request->input('page', 1);
-        $offset = ($page - 1) * $perPage;
+        $cacheKey = "rankings:reading:v3:{$page}:{$perPage}";
 
-        $cacheKey = "rankings:reading:v2:{$page}:{$perPage}";
-
-        $data = Cache::remember($cacheKey, 900, function () use ($perPage, $offset) {
+        $data = Cache::remember($cacheKey, 900, function () use ($fetchLimit, $offset) {
             $hasRankings = SeriesRanking::exists();
 
             if ($hasRankings) {
-                $rankings = SeriesRanking::getTopReading($perPage, $offset);
+                $rankings = SeriesRanking::getTopReading($fetchLimit, $offset);
                 $total = SeriesRanking::whereHas('series', fn($q) => $q->where('is_active', true))->count();
 
                 return [
@@ -190,7 +231,7 @@ class RankingsController extends Controller
                 ->orderByDesc('readers_7d');
 
             $total = Series::active()->count();
-            $items = $query->offset($offset)->limit($perPage)->get();
+            $items = $query->offset($offset)->limit($fetchLimit)->get();
 
             return [
                 'items' => $items->map(function ($series, $index) use ($offset) {
@@ -229,12 +270,7 @@ class RankingsController extends Controller
 
         return response()->json([
             'data' => $data['items'],
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $data['total'],
-                'total_pages' => ceil($data['total'] / $perPage),
-            ],
+            'meta' => $this->rankingMeta($page, $perPage, $data['total'], $maxResults),
             'ranking_type' => 'reading',
             'description' => 'Most actively read manga based on readers, chapters read, and reading time',
         ]);
@@ -247,22 +283,20 @@ class RankingsController extends Controller
      */
     public function trending(Request $request): JsonResponse
     {
-        $request->validate([
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:50',
-        ]);
+        $pagination = $this->resolveRankingPagination($request);
+        $page = $pagination['page'];
+        $perPage = $pagination['per_page'];
+        $fetchLimit = $pagination['fetch_limit'];
+        $offset = $pagination['offset'];
+        $maxResults = $pagination['max_results'];
 
-        $perPage = min($request->input('per_page', 20), 50);
-        $page = $request->input('page', 1);
-        $offset = ($page - 1) * $perPage;
+        $cacheKey = "rankings:trending:v3:{$page}:{$perPage}";
 
-        $cacheKey = "rankings:trending:v2:{$page}:{$perPage}";
-
-        $data = Cache::remember($cacheKey, 300, function () use ($perPage, $offset) {
+        $data = Cache::remember($cacheKey, 300, function () use ($fetchLimit, $offset) {
             $hasRankings = SeriesRanking::exists();
 
             if ($hasRankings) {
-                $rankings = SeriesRanking::getTrending($perPage, $offset);
+                $rankings = SeriesRanking::getTrending($fetchLimit, $offset);
                 $total = SeriesRanking::whereHas('series', fn($q) => $q->where('is_active', true))->count();
 
                 return [
@@ -313,7 +347,7 @@ class RankingsController extends Controller
                 ->orderByDesc('total_views');
 
             $total = Series::active()->count();
-            $items = $query->offset($offset)->limit($perPage)->get();
+            $items = $query->offset($offset)->limit($fetchLimit)->get();
 
             return [
                 'items' => $items->map(function ($series, $index) use ($offset) {
@@ -352,12 +386,7 @@ class RankingsController extends Controller
 
         return response()->json([
             'data' => $data['items'],
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $data['total'],
-                'total_pages' => ceil($data['total'] / $perPage),
-            ],
+            'meta' => $this->rankingMeta($page, $perPage, $data['total'], $maxResults),
             'ranking_type' => 'trending',
             'description' => 'Trending manga based on recent growth in views and favorites',
         ]);

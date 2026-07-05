@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\StartChapterBulkImportJob;
 use App\Models\Chapter;
+use App\Models\ChapterImportBatch;
 use App\Models\ChapterPage;
 use App\Models\Series;
 use App\Services\MediaFireService;
+use App\Support\QueueGuard;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -14,6 +17,36 @@ use Illuminate\Support\Facades\DB;
 
 class AdminChapterController extends Controller
 {
+    /**
+     * List chapters for a series (admin, no cache, includes unpublished).
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'series_id' => 'required|integer|exists:series,id',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $perPage = min((int) ($validated['per_page'] ?? 50), 100);
+
+        $result = Chapter::query()
+            ->where('series_id', $validated['series_id'])
+            ->orderByDesc('chapter_number')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result->items(),
+            'pagination' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ],
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
     /**
      * Normalize image URL so it passes 'url' validation (e.g. encode spaces in path).
      */
@@ -241,9 +274,14 @@ class AdminChapterController extends Controller
 
     /**
      * Bulk import chapters from Excel rows (MediaFire folder URLs).
+     * Each row is queued as a background job.
      */
-    public function bulkImport(Request $request, MediaFireService $mediaFireService): JsonResponse
+    public function bulkImport(Request $request): JsonResponse
     {
+        if ($response = QueueGuard::ensureAsyncQueue()) {
+            return $response;
+        }
+
         $validated = $request->validate([
             'rows' => 'required|array|min:1|max:100',
             'rows.*.series_id' => 'required|integer|exists:series,id',
@@ -255,130 +293,36 @@ class AdminChapterController extends Controller
         ]);
 
         $isPublished = $validated['is_published'] ?? true;
-        $results = [];
-        $imported = 0;
-        $skipped = 0;
-        $failed = 0;
 
-        foreach ($validated['rows'] as $index => $row) {
-            $rowNum = $row['row_number'] ?? ($index + 2);
+        $batch = ChapterImportBatch::create([
+            'user_id' => $request->user()?->id,
+            'status' => ChapterImportBatch::STATUS_PENDING,
+            'total_rows' => count($validated['rows']),
+            'rows' => $validated['rows'],
+            'is_published' => $isPublished,
+            'results' => [],
+        ]);
 
-            if (!str_contains($row['mediafire_folder_url'], 'mediafire.com')) {
-                $failed++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'failed',
-                    'message' => 'Invalid MediaFire folder URL',
-                ];
-                continue;
-            }
-
-            $series = Series::find($row['series_id']);
-            if (!$series) {
-                $failed++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'failed',
-                    'message' => 'Manga ID not found',
-                ];
-                continue;
-            }
-
-            if (Chapter::where('series_id', $row['series_id'])
-                ->where('chapter_number', $row['chapter_number'])
-                ->exists()) {
-                $skipped++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'skipped',
-                    'message' => 'Chapter number already exists for this series',
-                ];
-                continue;
-            }
-
-            try {
-                $images = $mediaFireService->getFolderImages($row['mediafire_folder_url']);
-            } catch (\Exception $e) {
-                $failed++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'failed',
-                    'message' => $e->getMessage(),
-                ];
-                continue;
-            }
-
-            $seriesSlug = $series->slug;
-            $chapterNum = $row['chapter_number'];
-            $slug = Str::slug("{$seriesSlug}-chapter-{$chapterNum}");
-            $counter = 1;
-            $originalSlug = $slug;
-            while (Chapter::where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-
-            $pages = [];
-            foreach ($images as $i => $image) {
-                $pages[] = [
-                    'page_number' => $i + 1,
-                    'image_url' => $this->encodeUrlPath($image['image_url']),
-                    'original_filename' => $image['original_filename'],
-                ];
-            }
-
-            DB::beginTransaction();
-            try {
-                $chapter = Chapter::create([
-                    'series_id' => $row['series_id'],
-                    'chapter_number' => $row['chapter_number'],
-                    'title' => $row['title'] ?? null,
-                    'slug' => $slug,
-                    'is_published' => $isPublished,
-                    'published_at' => now(),
-                ]);
-
-                foreach ($pages as $pageData) {
-                    ChapterPage::create([
-                        'chapter_id' => $chapter->id,
-                        'page_number' => $pageData['page_number'],
-                        'image_url' => $pageData['image_url'],
-                        'original_filename' => $pageData['original_filename'],
-                    ]);
-                }
-
-                $chapter->update(['page_count' => count($pages)]);
-                $series->increment('total_chapters');
-
-                DB::commit();
-
-                $imported++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'success',
-                    'chapter_id' => $chapter->id,
-                    'page_count' => count($pages),
-                ];
-            } catch (\Exception $e) {
-                DB::rollBack();
-                $failed++;
-                $results[] = [
-                    'row' => $rowNum,
-                    'status' => 'failed',
-                    'message' => 'Failed to create chapter: ' . $e->getMessage(),
-                ];
-            }
-        }
+        StartChapterBulkImportJob::dispatch($batch->id)->onConnection('database');
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'imported' => $imported,
-                'skipped' => $skipped,
-                'failed' => $failed,
-                'results' => $results,
-            ],
-            'message' => "Import complete: {$imported} imported, {$skipped} skipped, {$failed} failed",
+            'data' => array_merge($batch->toStatusPayload(), [
+                'message' => 'Import queued. Processing in background.',
+            ]),
+        ], 202);
+    }
+
+    /**
+     * Poll chapter bulk import batch progress.
+     */
+    public function bulkImportStatus(int $batchId): JsonResponse
+    {
+        $batch = ChapterImportBatch::findOrFail($batchId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $batch->toStatusPayload(),
         ]);
     }
 

@@ -31,11 +31,11 @@ class AdminAuthorController extends Controller
     {
         $request->validate([
             'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:100',
+            'per_page' => 'nullable|integer|min:1|max:1000',
             'search' => 'nullable|string|max:100',
         ]);
 
-        $perPage = min($request->input('per_page', 20), 100);
+        $perPage = min($request->input('per_page', 20), 1000);
 
         $query = Author::withCount('series');
 
@@ -53,7 +53,20 @@ class AdminAuthorController extends Controller
                 'total' => $authors->total(),
                 'total_pages' => $authors->lastPage(),
             ],
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
+     * Get an author for admin edit.
+     */
+    public function show(int $id): JsonResponse
+    {
+        $author = Author::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $author,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

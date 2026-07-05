@@ -44,9 +44,11 @@ import './App.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      staleTime: 0,
+      gcTime: 0,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
       retry: 1,
-      staleTime: 5 * 60 * 1000,
     },
   },
 });

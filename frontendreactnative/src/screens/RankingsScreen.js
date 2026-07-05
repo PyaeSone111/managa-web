@@ -21,7 +21,7 @@ export default function RankingsScreen({ navigation }) {
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['rankings', activeTab, period],
     queryFn: () => {
-      const params = { per_page: 50 };
+      const params = { limit: 20 };
       if (period !== 'all') params.period = period;
       switch (activeTab) {
         case 'reading':

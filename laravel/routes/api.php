@@ -191,6 +191,9 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/series', [AdminSeriesController::class, 'index']);
     Route::post('/series', [AdminSeriesController::class, 'store']);
+    Route::post('/series/bulk-import', [AdminSeriesController::class, 'bulkImport']);
+    Route::get('/series/bulk-import/{batchId}', [AdminSeriesController::class, 'bulkImportStatus'])
+        ->whereNumber('batchId');
     Route::get('/series/{id}', [AdminSeriesController::class, 'show']);
     Route::put('/series/{id}', [AdminSeriesController::class, 'update']);
     Route::delete('/series/{id}', [AdminSeriesController::class, 'destroy']);
@@ -201,6 +204,8 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     Route::get('/chapters', [AdminChapterController::class, 'index']);
     Route::post('/chapters', [AdminChapterController::class, 'store']);
     Route::post('/chapters/bulk-import', [AdminChapterController::class, 'bulkImport']);
+    Route::get('/chapters/bulk-import/{batchId}', [AdminChapterController::class, 'bulkImportStatus'])
+        ->whereNumber('batchId');
     Route::get('/chapters/{id}', [AdminChapterController::class, 'show']);
     Route::put('/chapters/{id}', [AdminChapterController::class, 'update']);
     Route::delete('/chapters/{id}', [AdminChapterController::class, 'destroy']);
@@ -210,6 +215,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/categories', [AdminCategoryController::class, 'index']);
     Route::post('/categories', [AdminCategoryController::class, 'store']);
+    Route::get('/categories/{id}', [AdminCategoryController::class, 'show']);
     Route::put('/categories/{id}', [AdminCategoryController::class, 'update']);
     Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
 
@@ -218,6 +224,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/tags', [AdminTagController::class, 'index']);
     Route::post('/tags', [AdminTagController::class, 'store']);
+    Route::get('/tags/{id}', [AdminTagController::class, 'show']);
     Route::put('/tags/{id}', [AdminTagController::class, 'update']);
     Route::delete('/tags/{id}', [AdminTagController::class, 'destroy']);
 
@@ -226,6 +233,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/authors', [AdminAuthorController::class, 'index']);
     Route::post('/authors', [AdminAuthorController::class, 'store']);
+    Route::get('/authors/{id}', [AdminAuthorController::class, 'show']);
     Route::put('/authors/{id}', [AdminAuthorController::class, 'update']);
     Route::delete('/authors/{id}', [AdminAuthorController::class, 'destroy']);
 
@@ -234,6 +242,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // ======================================================================
     Route::get('/manga-types', [AdminMangaTypeController::class, 'index']);
     Route::post('/manga-types', [AdminMangaTypeController::class, 'store']);
+    Route::get('/manga-types/{id}', [AdminMangaTypeController::class, 'show']);
     Route::put('/manga-types/{id}', [AdminMangaTypeController::class, 'update']);
     Route::delete('/manga-types/{id}', [AdminMangaTypeController::class, 'destroy']);
 

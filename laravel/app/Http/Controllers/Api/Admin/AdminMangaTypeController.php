@@ -22,7 +22,7 @@ class AdminMangaTypeController extends Controller
 
         return response()->json([
             'data' => $types,
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**
@@ -48,6 +48,19 @@ class AdminMangaTypeController extends Controller
             'message' => 'Manga type created successfully',
             'data' => $type,
         ], 201);
+    }
+
+    /**
+     * Get a manga type for admin edit.
+     */
+    public function show(int $id): JsonResponse
+    {
+        $type = MangaType::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $type,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

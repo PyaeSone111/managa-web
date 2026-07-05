@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { FaMobileAlt } from 'react-icons/fa';
 
+export const APP_DOWNLOAD_ENABLED = false;
+
 const sizeStyles = {
   sm: {
     btn: 'px-3 py-1.5 text-sm gap-1.5 rounded-lg',
@@ -24,13 +26,34 @@ export default function GetAppButton({
   onClick,
   icon: Icon = FaMobileAlt,
   children = 'Get App',
+  enabled = APP_DOWNLOAD_ENABLED,
+  tone = 'dark',
 }) {
   const { btn, icon } = sizeStyles[size];
+  const gapClass = size === 'lg' ? 'gap-2.5' : 'gap-1.5';
+  const disabledTone =
+    tone === 'light'
+      ? 'bg-navy/10 border border-navy/20 text-navy/75'
+      : 'bg-white/10 border border-white/25 text-white/85';
+
+  if (!enabled) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center font-semibold cursor-not-allowed opacity-90 ${btn} ${disabledTone} ${className}`}
+        aria-disabled="true"
+      >
+        <span className={`inline-flex items-center ${gapClass}`}>
+          {Icon && <Icon className={icon} />}
+          Coming soon...
+        </span>
+      </span>
+    );
+  }
 
   const content = (
     <>
       <span className="get-app-btn__shine" aria-hidden="true" />
-      <span className={`relative z-[1] inline-flex items-center ${size === 'lg' ? 'gap-2.5' : 'gap-1.5'}`}>
+      <span className={`relative z-[1] inline-flex items-center ${gapClass}`}>
         {Icon && <Icon className={icon} />}
         {children}
       </span>

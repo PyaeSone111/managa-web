@@ -71,47 +71,51 @@ export const authApi = {
   me: () => api.get('/auth/me'),
 };
 
-// Admin API
+// Admin API — use /admin/* routes (no server-side response cache)
 export const adminApi = {
   // Series
-  getSeries: (params) => api.get('/series', { params }),
-  getSeriesById: (id) => api.get(`/series/${id}`),
+  getSeries: (params) => api.get('/admin/series', { params }),
+  getSeriesById: (id) => api.get(`/admin/series/${id}`),
   createSeries: (data) => api.post('/admin/series', data),
+  bulkImportSeries: (data) => api.post('/admin/series/bulk-import', data),
+  getSeriesBulkImportStatus: (batchId) => api.get(`/admin/series/bulk-import/${batchId}`),
   updateSeries: (id, data) => api.put(`/admin/series/${id}`, data),
   deleteSeries: (id) => api.delete(`/admin/series/${id}`),
   
   // Chapters
-  getChapters: (seriesId, params) => api.get(`/series/${seriesId}/chapters`, { params }),
+  getChapters: (seriesId, params) =>
+    api.get('/admin/chapters', { params: { series_id: seriesId, ...params } }),
   getChapterById: (id) => api.get(`/admin/chapters/${id}`),
   createChapter: (data) => api.post('/admin/chapters', data),
   bulkImportChapters: (data) => api.post('/admin/chapters/bulk-import', data),
+  getChapterBulkImportStatus: (batchId) => api.get(`/admin/chapters/bulk-import/${batchId}`),
   updateChapter: (id, data) => api.put(`/admin/chapters/${id}`, data),
   deleteChapter: (id) => api.delete(`/admin/chapters/${id}`),
   
   // Categories
-  getCategories: () => api.get('/categories'),
-  getCategoryById: (id) => api.get(`/categories/${id}`),
+  getCategories: () => api.get('/admin/categories'),
+  getCategoryById: (id) => api.get(`/admin/categories/${id}`),
   createCategory: (data) => api.post('/admin/categories', data),
   updateCategory: (id, data) => api.put(`/admin/categories/${id}`, data),
   deleteCategory: (id) => api.delete(`/admin/categories/${id}`),
   
   // Tags
-  getTags: () => api.get('/tags'),
-  getTagById: (id) => api.get(`/tags/${id}`),
+  getTags: () => api.get('/admin/tags'),
+  getTagById: (id) => api.get(`/admin/tags/${id}`),
   createTag: (data) => api.post('/admin/tags', data),
   updateTag: (id, data) => api.put(`/admin/tags/${id}`, data),
   deleteTag: (id) => api.delete(`/admin/tags/${id}`),
 
   // Authors
-  getAuthors: (params) => api.get('/authors', { params }),
-  getAuthorById: (id) => api.get(`/authors/${id}`),
+  getAuthors: (params) => api.get('/admin/authors', { params }),
+  getAuthorById: (id) => api.get(`/admin/authors/${id}`),
   createAuthor: (data) => api.post('/admin/authors', data),
   updateAuthor: (id, data) => api.put(`/admin/authors/${id}`, data),
   deleteAuthor: (id) => api.delete(`/admin/authors/${id}`),
 
   // Manga Types
-  getMangaTypes: () => api.get('/types'),
-  getMangaTypeById: (id) => api.get(`/types/${id}`),
+  getMangaTypes: () => api.get('/admin/manga-types'),
+  getMangaTypeById: (id) => api.get(`/admin/manga-types/${id}`),
   createMangaType: (data) => api.post('/admin/manga-types', data),
   updateMangaType: (id, data) => api.put(`/admin/manga-types/${id}`, data),
   deleteMangaType: (id) => api.delete(`/admin/manga-types/${id}`),
