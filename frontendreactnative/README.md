@@ -25,8 +25,8 @@ npm install
 Configure `.env`:
 
 ```
-EXPO_PUBLIC_API_BASE_URL=https://manga-apis.fatelight.org/api/v1
-EXPO_PUBLIC_CONTACT_EMAIL=info@fatelight.org
+API_BASE_URL=https://manga-apis.fatelight.org/api/v1
+CONTACT_EMAIL=info@fatelight.org
 ```
 
 ## Run

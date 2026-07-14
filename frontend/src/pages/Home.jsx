@@ -8,7 +8,7 @@ import SeriesGrid from '../components/series/SeriesGrid';
 import HeroBanner from '../components/home/HeroBanner';
 import RecentlyViewedCarousel from '../components/home/RecentlyViewedCarousel';
 
-function SectionHeader({ title, linkTo, linkText = 'View All' }) {
+function SectionHeader({ title, linkTo, linkText = 'View All >>' }) {
   return (
     <div className="flex items-center justify-between mb-4 sm:mb-6">
       <h2 className="text-xl sm:text-2xl font-bold text-black-feather">
@@ -69,7 +69,7 @@ function Home() {
         <div className="flex-1 min-w-0 space-y-10 md:space-y-12">
           {/* Latest Release */}
           <section>
-            <SectionHeader title="Latest Release" linkTo="/browse?sort=latest" linkText="View All" />
+            <SectionHeader title="Latest Release" linkTo="/browse?sort=latest" linkText="View All >>" />
             <SeriesGrid
               series={latest}
               loading={isLoading}
@@ -99,7 +99,7 @@ function Home() {
 
           {/* Recently Added */}
           <section>
-            <SectionHeader title="Recently Added" linkTo="/browse?sort=newest" linkText="View All" />
+            <SectionHeader title="Recently Added" linkTo="/browse?sort=newest" linkText="View All >>" />
             <SeriesGrid
               series={newSeries}
               loading={isLoading}
@@ -120,7 +120,7 @@ function Home() {
               to="/browse"
               className="inline-block px-4 py-2 text-sm font-medium bg-delta-green text-white rounded-lg hover:bg-ruskin-blue transition-all duration-200"
             >
-              Browse All
+              Browse All →
             </Link>
           </section>
         </aside>

@@ -18,6 +18,11 @@ const VARIANTS = {
     title: 'Favorites',
     icon: 'heart-outline',
   },
+  recent: {
+    eyebrow: 'Pick up where you left off',
+    title: 'Recent',
+    icon: 'time-outline',
+  },
   profile: {
     eyebrow: 'Your account',
     title: 'Profile',

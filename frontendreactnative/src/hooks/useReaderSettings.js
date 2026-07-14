@@ -3,19 +3,17 @@ import {
   DEFAULT_READER_SETTINGS,
   READER_MODE_SCROLL,
   READER_ORIENTATION_AUTO,
-  READER_ORIENTATION_LANDSCAPE,
-  READER_ORIENTATION_PORTRAIT,
   READER_SETTINGS_KEY,
 } from '../utils/constants';
 import { getJson, setJson } from '../services/storage';
 
 const SCALE_MIN = 1;
-const SCALE_MAX = 3;
-const SCALE_STEP = 0.25;
+const SCALE_MAX = 3.5;
 
 export function clampScale(value) {
-  const rounded = Math.round(value / SCALE_STEP) * SCALE_STEP;
-  return Math.min(SCALE_MAX, Math.max(SCALE_MIN, Number(rounded.toFixed(2))));
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(SCALE_MAX, Math.max(SCALE_MIN, n));
 }
 
 export function useReaderSettings() {
@@ -59,35 +57,32 @@ export function useReaderSettings() {
     [persist, settings]
   );
 
-  const setScale = useCallback(
-    (scale) => persist({ ...settings, scale: clampScale(scale) }),
-    [persist, settings]
-  );
+  /** Live zoom during pinch — no AsyncStorage write. */
+  const setScaleLive = useCallback((scale) => {
+    const next = clampScale(scale);
+    setSettings((prev) => (prev.scale === next ? prev : { ...prev, scale: next }));
+  }, []);
 
-  const zoomIn = useCallback(() => setScale(settings.scale + SCALE_STEP), [setScale, settings.scale]);
-  const zoomOut = useCallback(() => setScale(settings.scale - SCALE_STEP), [setScale, settings.scale]);
-  const resetZoom = useCallback(() => setScale(1), [setScale]);
+  /** Persist zoom (call on pinch end / reset). */
+  const commitScale = useCallback((scale) => {
+    const next = clampScale(scale ?? 1);
+    setSettings((prev) => {
+      const merged = { ...prev, scale: next };
+      setJson(READER_SETTINGS_KEY, merged);
+      return merged;
+    });
+  }, []);
 
-  const cycleOrientation = useCallback(() => {
-    const order = [
-      READER_ORIENTATION_AUTO,
-      READER_ORIENTATION_PORTRAIT,
-      READER_ORIENTATION_LANDSCAPE,
-    ];
-    const idx = order.indexOf(settings.orientation);
-    setOrientation(order[(idx + 1) % order.length]);
-  }, [setOrientation, settings.orientation]);
+  const resetZoom = useCallback(() => commitScale(1), [commitScale]);
 
   return {
     settings,
     ready,
     setMode,
     setOrientation,
-    setScale,
-    zoomIn,
-    zoomOut,
+    setScaleLive,
+    commitScale,
     resetZoom,
-    cycleOrientation,
     SCALE_MIN,
     SCALE_MAX,
   };

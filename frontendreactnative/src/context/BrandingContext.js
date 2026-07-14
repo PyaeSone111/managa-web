@@ -22,6 +22,7 @@ async function getLocalCache() {
 }
 
 const DEFAULT_CARD_LAYOUT = {
+  home_hero: 'card_01',
   home_latest: 'card_01',
   home_popular: 'card_11',
   home_weekly_highlights: 'card_03',
@@ -45,6 +46,7 @@ const BrandingContext = createContext({
   logoUrl: null,
   heroBackgroundUrl: null,
   heroImageUrl: null,
+  heroSeries: [],
   appDownload: DEFAULT_APP_DOWNLOAD,
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
@@ -60,10 +62,12 @@ const BrandingContext = createContext({
 function buildBrandingValue(branding, revision) {
   const cardLayout = { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) };
   const gridColumns = branding.grid_columns || null;
+  const heroSeries = Array.isArray(branding.hero_series) ? branding.hero_series : [];
   return {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
+    heroSeries,
     appDownload: {
       url: APP_DOWNLOAD_PAGE_URL,
       fileName: branding.app_download_filename || DEFAULT_APP_DOWNLOAD.fileName,
@@ -72,7 +76,7 @@ function buildBrandingValue(branding, revision) {
     },
     cardLayout,
     gridColumns,
-    layoutVersion: `${revision}:${JSON.stringify(cardLayout)}:${JSON.stringify(gridColumns)}`,
+    layoutVersion: `${revision}:${JSON.stringify(cardLayout)}:${JSON.stringify(gridColumns)}:${heroSeries.map((s) => s.id).join(',')}`,
     revision,
   };
 }
@@ -138,7 +142,8 @@ export function BrandingProvider({ children }) {
 
   const value = useMemo(() => {
     const branding = data?.data ?? {};
-    const brandingReady = ready && isFetched && !isFetching;
+    // Stay ready during background reloads — flipping this blanks the whole app (ForceUpdateGate).
+    const brandingReady = ready && isFetched;
     return {
       ...buildBrandingValue(branding, revision),
       isLoading: !ready || isLoading,

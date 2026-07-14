@@ -1,13 +1,13 @@
 import {
-  EXPO_PUBLIC_API_BASE_URL,
-  EXPO_PUBLIC_CONTACT_EMAIL,
+  API_BASE_URL as ENV_API_BASE_URL,
+  CONTACT_EMAIL as ENV_CONTACT_EMAIL,
 } from '@env';
 
 export const API_BASE_URL =
-  EXPO_PUBLIC_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1';
+  ENV_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1';
 
 export const CONTACT_EMAIL =
-  EXPO_PUBLIC_CONTACT_EMAIL || 'info@fatelight.org';
+  ENV_CONTACT_EMAIL || 'info@fatelight.org';
 
 export const ITEMS_PER_PAGE = 20;
 export const CHAPTERS_PER_PAGE = 50;

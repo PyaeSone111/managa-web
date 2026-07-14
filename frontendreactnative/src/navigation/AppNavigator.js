@@ -11,6 +11,7 @@ import HeaderBrandLogo, { HEADER_HORIZONTAL_PADDING } from '../components/naviga
 // import BottomAdBanner from '../components/ads/BottomAdBanner';
 import HomeScreen from '../screens/HomeScreen';
 import BrowseScreen from '../screens/BrowseScreen';
+import RecentScreen from '../screens/RecentScreen';
 import RankingsScreen from '../screens/RankingsScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import SeriesDetailScreen from '../screens/SeriesDetailScreen';
@@ -88,6 +89,7 @@ const stackScreenOptions = {
 const TAB_ICONS = {
   Home: { focused: 'home', unfocused: 'home-outline' },
   Browse: { focused: 'search', unfocused: 'search-outline' },
+  Recent: { focused: 'time', unfocused: 'time-outline' },
   Rankings: { focused: 'trophy', unfocused: 'trophy-outline' },
   Favorites: { focused: 'heart', unfocused: 'heart-outline' },
 };
@@ -95,6 +97,7 @@ const TAB_ICONS = {
 const TAB_LABELS = {
   Home: 'Home',
   Browse: 'Browse',
+  Recent: 'Recent',
   Rankings: 'Rankings',
   Favorites: 'Favorites',
 };
@@ -134,6 +137,14 @@ function MainTabs() {
         options={({ navigation }) => ({
           ...buildHeaderOptions(navigation, 'Browse'),
           tabBarIcon: tabBarIcon('Browse'),
+        })}
+      />
+      <Tab.Screen
+        name="Recent"
+        component={RecentScreen}
+        options={({ navigation }) => ({
+          ...buildHeaderOptions(navigation, 'Recent'),
+          tabBarIcon: tabBarIcon('Recent'),
         })}
       />
       <Tab.Screen

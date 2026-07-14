@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../services/api';
 import { useRefreshControl } from '../hooks/usePullToRefresh';
@@ -12,8 +13,17 @@ function SectionHeader({ title, onViewAll }) {
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {onViewAll ? (
-        <Pressable onPress={onViewAll}>
+        <Pressable onPress={onViewAll} style={styles.viewAllBtn} hitSlop={8}>
           <Text style={styles.viewAll}>View All</Text>
+          <View style={styles.viewAllIcons}>
+            <Ionicons name="chevron-forward" size={14} color={colors.navy} />
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.navy}
+              style={styles.viewAllIconOverlap}
+            />
+          </View>
         </Pressable>
       ) : null}
     </View>
@@ -44,8 +54,11 @@ export default function HomeScreen({ navigation }) {
       contentContainerStyle={styles.content}
       refreshControl={refreshControl}
     >
-      <HeroBanner onBrowsePress={() => navigation.navigate('Browse')} />
-      <ContinueReadingCarousel navigation={navigation} />
+      <HeroBanner
+        onBrowsePress={() => navigation.navigate('Browse')}
+        onSeriesPress={openSeries}
+      />
+      {/* <ContinueReadingCarousel navigation={navigation} /> */}
 
       <SectionHeader title="Latest Release" onViewAll={() => navigation.navigate('Browse', { sort: 'latest' })} />
       <SeriesGrid series={latest} loading={isLoading} onSeriesPress={openSeries} section="home_latest" />
@@ -96,11 +109,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.navy,
   },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   viewAll: {
     fontSize: 14,
     color: colors.navy,
     fontWeight: '600',
   },
+  viewAllIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 1,
+  },
+  viewAllIconOverlap: {
+    marginLeft: -8,
+  },
+
   browseCard: {
     marginHorizontal: 16,
     marginTop: 24,

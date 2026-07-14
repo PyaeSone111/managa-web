@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import * as ScreenOrientation from 'expo-screen-orientation';
+import { useMemo } from 'react';
+import { useWindowDimensions } from 'react-native';
 import {
   READER_ORIENTATION_AUTO,
   READER_ORIENTATION_LANDSCAPE,
@@ -7,41 +7,43 @@ import {
 } from '../utils/constants';
 
 /**
- * Lock screen orientation while the reader is focused.
+ * Reader orientation preference without native lock modules.
+ * Uses window size so Portrait/Landscape still affect page layout on a bare RN app.
  */
-export function useReaderOrientation(orientation, enabled = true) {
-  const appliedRef = useRef(null);
+export function useReaderOrientation(orientation) {
+  const { width, height } = useWindowDimensions();
 
-  useEffect(() => {
-    if (!enabled) return undefined;
+  return useMemo(() => {
+    const shortest = Math.min(width, height);
+    const longest = Math.max(width, height);
+    const isDeviceLandscape = width > height;
 
-    let cancelled = false;
-
-    async function apply() {
-      try {
-        let lock = ScreenOrientation.OrientationLock.DEFAULT;
-        if (orientation === READER_ORIENTATION_PORTRAIT) {
-          lock = ScreenOrientation.OrientationLock.PORTRAIT_UP;
-        } else if (orientation === READER_ORIENTATION_LANDSCAPE) {
-          lock = ScreenOrientation.OrientationLock.LANDSCAPE;
-        } else if (orientation === READER_ORIENTATION_AUTO) {
-          lock = ScreenOrientation.OrientationLock.DEFAULT;
-        }
-
-        if (appliedRef.current === lock) return;
-        await ScreenOrientation.lockAsync(lock);
-        if (!cancelled) appliedRef.current = lock;
-      } catch {
-        // Native module may be unavailable in Expo Go / some builds — ignore.
-      }
+    if (orientation === READER_ORIENTATION_PORTRAIT) {
+      return {
+        contentWidth: shortest,
+        isLandscapeLayout: false,
+        rotateHint: isDeviceLandscape
+          ? 'Rotate to portrait for the intended layout'
+          : null,
+      };
     }
 
-    apply();
+    if (orientation === READER_ORIENTATION_LANDSCAPE) {
+      return {
+        contentWidth: longest,
+        isLandscapeLayout: true,
+        rotateHint: !isDeviceLandscape
+          ? 'Rotate to landscape for a wider view'
+          : null,
+      };
+    }
 
-    return () => {
-      cancelled = true;
-      ScreenOrientation.unlockAsync().catch(() => {});
-      appliedRef.current = null;
+    // auto
+    return {
+      contentWidth: width,
+      isLandscapeLayout: isDeviceLandscape,
+      rotateHint: null,
+      orientation: READER_ORIENTATION_AUTO,
     };
-  }, [orientation, enabled]);
+  }, [height, orientation, width]);
 }

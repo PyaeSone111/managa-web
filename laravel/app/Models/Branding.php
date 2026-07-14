@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SeriesCardFormatter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -13,6 +14,7 @@ class Branding extends Model
         'logo_url',
         'hero_background_url',
         'hero_image_url',
+        'hero_series_ids',
         'app_download_url',
         'app_download_filename',
         'app_version',
@@ -46,6 +48,7 @@ class Branding extends Model
     protected $casts = [
         'card_layout' => 'array',
         'grid_columns' => 'array',
+        'hero_series_ids' => 'array',
     ];
 
     /**
@@ -59,6 +62,7 @@ class Branding extends Model
             'home_popular' => 'card_11',
             'home_weekly_highlights' => 'card_03',
             'home_recently_added' => 'card_13',
+            'home_hero' => 'card_01',
             'browse' => 'card_11',
             'rankings_top' => 'card_15',
             'rankings_most_read' => 'card_15',
@@ -69,7 +73,7 @@ class Branding extends Model
     }
 
     /**
-     * Section keys that have a grid (for grid_columns). Recently viewed is carousel, so excluded.
+     * Section keys that have a grid (for grid_columns).
      */
     public static function gridColumnSectionKeys(): array
     {
@@ -82,6 +86,7 @@ class Branding extends Model
             'rankings_top',
             'rankings_most_read',
             'rankings_trending',
+            'recently_viewed',
             'favorites',
         ];
     }
@@ -108,7 +113,7 @@ class Branding extends Model
         $sections = self::gridColumnSectionKeys();
         $result = [];
         foreach ($sections as $key) {
-            $result[$key] = in_array($key, ['home_latest', 'home_weekly_highlights'], true)
+            $result[$key] = in_array($key, ['home_latest', 'home_weekly_highlights', 'recently_viewed'], true)
                 ? $vertical
                 : $horizontal;
         }
@@ -133,6 +138,14 @@ class Branding extends Model
         if ((isset($stored['browse_vertical']) || isset($stored['browse_horizontal'])) && !isset($stored['browse'])) {
             $out['browse'] = $stored['browse_horizontal'] ?? $stored['browse_vertical'] ?? $defaults['browse'];
         }
+        // Hero carousel + Recent prefer portrait cards (01–10).
+        foreach (['home_hero', 'recently_viewed'] as $portraitKey) {
+            $card = $out[$portraitKey] ?? $defaults[$portraitKey];
+            $num = (int) str_replace('card_', '', (string) $card);
+            if ($num < 1 || $num > 10) {
+                $out[$portraitKey] = $defaults[$portraitKey];
+            }
+        }
         return $out;
     }
 
@@ -148,12 +161,89 @@ class Branding extends Model
         if (isset($stored['vertical']) || isset($stored['horizontal'])) {
             $converted = [];
             foreach (self::gridColumnSectionKeys() as $key) {
-                $useVertical = in_array($key, ['home_latest', 'home_weekly_highlights'], true);
+                $useVertical = in_array($key, ['home_latest', 'home_weekly_highlights', 'recently_viewed'], true);
                 $converted[$key] = $stored[$useVertical ? 'vertical' : 'horizontal'] ?? $defaults[$key];
             }
             return array_merge($defaults, $converted);
         }
         return array_merge($defaults, $stored);
+    }
+
+    public static function normalizeHeroSeriesIds(mixed $stored): array
+    {
+        if (is_string($stored)) {
+            $decoded = json_decode($stored, true);
+            $stored = is_array($decoded) ? $decoded : [];
+        }
+        if (!is_array($stored)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($stored as $id) {
+            $n = (int) $id;
+            if ($n > 0 && !in_array($n, $ids, true)) {
+                $ids[] = $n;
+            }
+        }
+
+        return array_slice($ids, 0, 20);
+    }
+
+    /**
+     * Ordered series payloads for the home hero carousel.
+     */
+    public static function heroSeriesPayload(?array $ids): array
+    {
+        $ids = self::normalizeHeroSeriesIds($ids);
+        if ($ids === []) {
+            return [];
+        }
+
+        $series = Series::query()
+            ->active()
+            ->whereIn('id', $ids)
+            ->with(SeriesCardFormatter::relations())
+            ->get()
+            ->keyBy('id');
+
+        $out = [];
+        foreach ($ids as $id) {
+            $s = $series->get($id);
+            if (!$s) {
+                continue;
+            }
+            $out[] = array_merge([
+                'id' => $s->id,
+                'title' => $s->title,
+                'slug' => $s->slug,
+                'cover_url' => $s->cover_url,
+                'thumbnail_url' => $s->thumbnail_url,
+                'status' => $s->status,
+                'rating' => $s->rating,
+                'average_rating' => $s->rating,
+                'rating_count' => $s->rating_count,
+                'total_chapters' => $s->total_chapters,
+                'categories' => $s->categories,
+            ], SeriesCardFormatter::metaFields($s));
+        }
+
+        return $out;
+    }
+
+    public static function publicPayload(self $branding): array
+    {
+        $heroIds = self::normalizeHeroSeriesIds($branding->hero_series_ids);
+
+        return array_merge([
+            'logo_url' => $branding->logo_url,
+            'hero_background_url' => $branding->hero_background_url,
+            'hero_image_url' => $branding->hero_image_url,
+            'hero_series_ids' => $heroIds,
+            'hero_series' => self::heroSeriesPayload($heroIds),
+            'card_layout' => self::normalizeCardLayout($branding->card_layout),
+            'grid_columns' => self::normalizeGridColumns($branding->grid_columns),
+        ], self::appDownloadPayload($branding));
     }
 
     /**
@@ -169,6 +259,7 @@ class Branding extends Model
             'logo_url' => null,
             'hero_background_url' => null,
             'hero_image_url' => null,
+            'hero_series_ids' => [],
         ]);
     }
 

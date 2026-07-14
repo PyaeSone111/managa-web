@@ -1,4 +1,4 @@
-import { EXPO_PUBLIC_SKIP_FORCE_UPDATE } from '@env';
+import { SKIP_FORCE_UPDATE } from '@env';
 import { LOCAL_APP_VERSION } from '../config/localAppVersion';
 
 /** Installed version on this device (local build). Compared against branding API app_version. */
@@ -29,7 +29,7 @@ export function compareVersions(left, right) {
 }
 
 export function isUpdateRequired(installedVersion, latestVersion) {
-  if (EXPO_PUBLIC_SKIP_FORCE_UPDATE === 'true') return false;
+  if (SKIP_FORCE_UPDATE === 'true') return false;
   if (!latestVersion) return false;
   return compareVersions(installedVersion, latestVersion) < 0;
 }

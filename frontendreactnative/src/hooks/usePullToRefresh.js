@@ -1,23 +1,23 @@
 import { useCallback, useState } from 'react';
 import { RefreshControl } from 'react-native';
-import { useBranding } from '../context/BrandingContext';
 import colors from '../theme/colors';
 
+/**
+ * Pull-to-refresh for the current screen only.
+ * Does not refetch global branding (that remounts the app shell).
+ */
 export function usePullToRefresh(pageRefetch, { isFetching, isLoading } = {}) {
-  const { refetchBranding } = useBranding();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
+    if (typeof pageRefetch !== 'function') return;
     setIsRefreshing(true);
     try {
-      await refetchBranding();
-      if (typeof pageRefetch === 'function') {
-        await pageRefetch();
-      }
+      await pageRefetch();
     } finally {
       setIsRefreshing(false);
     }
-  }, [pageRefetch, refetchBranding]);
+  }, [pageRefetch]);
 
   const refreshing = isRefreshing || Boolean(isFetching && !isLoading);
 

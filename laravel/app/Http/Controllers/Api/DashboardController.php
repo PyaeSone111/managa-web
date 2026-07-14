@@ -274,15 +274,17 @@ class DashboardController extends Controller
     private function getBranding(): array
     {
         $branding = Branding::current();
-        $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
-        $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
+        $payload = Branding::publicPayload($branding);
 
+        // Dashboard branding block stays lean (no app download noise).
         return [
-            'logo_url' => $branding->logo_url,
-            'hero_background_url' => $branding->hero_background_url,
-            'hero_image_url' => $branding->hero_image_url,
-            'card_layout' => $cardLayout,
-            'grid_columns' => $gridColumns,
+            'logo_url' => $payload['logo_url'],
+            'hero_background_url' => $payload['hero_background_url'],
+            'hero_image_url' => $payload['hero_image_url'],
+            'hero_series_ids' => $payload['hero_series_ids'],
+            'hero_series' => $payload['hero_series'],
+            'card_layout' => $payload['card_layout'],
+            'grid_columns' => $payload['grid_columns'],
         ];
     }
 }

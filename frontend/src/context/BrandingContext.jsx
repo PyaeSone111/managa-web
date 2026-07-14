@@ -39,6 +39,7 @@ function setLocalStorageCache(data) {
 }
 
 const DEFAULT_CARD_LAYOUT = {
+  home_hero: 'card_01',
   home_latest: 'card_01',
   home_popular: 'card_11',
   home_weekly_highlights: 'card_03',
@@ -62,6 +63,7 @@ const BrandingContext = createContext({
   logoUrl: null,
   heroBackgroundUrl: null,
   heroImageUrl: null,
+  heroSeries: [],
   appDownload: DEFAULT_APP_DOWNLOAD,
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
@@ -77,6 +79,7 @@ function buildBrandingValue(branding) {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
+    heroSeries: Array.isArray(branding.hero_series) ? branding.hero_series : [],
     appDownload: {
       url: branding.app_download_url || DEFAULT_APP_DOWNLOAD.url,
       fileName: branding.app_download_filename || DEFAULT_APP_DOWNLOAD.fileName,

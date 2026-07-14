@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -9,27 +9,33 @@ import {
 import { toAbsoluteImageUrl } from '../../utils/helpers';
 import colors from '../../theme/colors';
 
+const DOUBLE_TAP_MS = 280;
+
 /**
- * Single page image with optional double-tap zoom bump and measured aspect ratio.
+ * Full-bleed page image. Double-tap toggles fullscreen.
+ * Keep loaded state across width/zoom changes — only reload when URI changes.
  */
 export default function ReaderPageImage({
   uri,
   width,
-  scale = 1,
-  onPress,
+  onDoubleTap,
   style,
 }) {
   const [aspectRatio, setAspectRatio] = useState(2 / 3);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-  const displayWidth = Math.max(1, width * scale);
+  const lastTapRef = useRef(0);
+  const measuredUriRef = useRef(null);
+  const displayWidth = Math.max(1, width);
 
   useEffect(() => {
+    if (!uri) return undefined;
+    if (measuredUriRef.current === uri) return undefined;
+
     let cancelled = false;
+    measuredUriRef.current = uri;
     setLoaded(false);
     setFailed(false);
-
-    if (!uri) return undefined;
 
     Image.getSize(
       uri,
@@ -48,11 +54,19 @@ export default function ReaderPageImage({
     };
   }, [uri]);
 
+  const handlePress = () => {
+    if (!onDoubleTap) return;
+    const now = Date.now();
+    if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+      lastTapRef.current = 0;
+      onDoubleTap();
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.wrap, { width: displayWidth }, style]}
-    >
+    <Pressable onPress={handlePress} style={[styles.wrap, { width: displayWidth }, style]}>
       {!loaded && !failed ? (
         <View style={[styles.placeholder, { width: displayWidth, aspectRatio }]}>
           <ActivityIndicator color={colors.navy} size="large" />
@@ -79,13 +93,11 @@ export function pageUri(page) {
 
 const styles = StyleSheet.create({
   wrap: {
-    alignSelf: 'center',
-    backgroundColor: colors.white,
+    alignSelf: 'stretch',
+    backgroundColor: '#000',
   },
   placeholder: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.almondBorder,
+    backgroundColor: '#111',
     alignItems: 'center',
     justifyContent: 'center',
   },

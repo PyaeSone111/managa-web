@@ -177,7 +177,7 @@ export function Card05Badges({ manga }: { manga: MangaSeries }) {
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           <StatusBadge status={manga.status} />
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-delta/15 text-delta border border-delta/30">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-delta/15 text-white border border-delta/30">
             <Flame size={9} />
             HOT
           </span>

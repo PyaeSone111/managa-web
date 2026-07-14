@@ -137,12 +137,16 @@ export default function BrowseScreen({ navigation, route }) {
       contentContainerStyle={styles.content}
       refreshControl={refreshControl}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{query ? `Search: "${query}"` : null}</Text>
-        {pagination.total > 0 && (
-          <Text style={styles.count}>{pagination.total} series found</Text>
-        )}
-      </View>
+      {(query || pagination.total > 0) && (
+        <View style={styles.header}>
+          {query ? (
+            <Text style={styles.title}>{`Search: "${query}"`}</Text>
+          ) : null}
+          {pagination.total > 0 ? (
+            <Text style={styles.count}>{pagination.total} series found</Text>
+          ) : null}
+        </View>
+      )}
 
       <View style={styles.searchWrap}>
         <SearchBar onSearch={handleSearch} />

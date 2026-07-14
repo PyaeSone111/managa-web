@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
@@ -28,7 +28,13 @@ const CARD_OPTIONS = [
   { value: 'card_20', label: '20 Trending' },
 ];
 
+const PORTRAIT_CARD_OPTIONS = CARD_OPTIONS.filter((opt) => {
+  const n = Number(opt.value.replace('card_', ''));
+  return n >= 1 && n <= 10;
+});
+
 const SECTION_LABELS = {
+  home_hero: 'Home – Hero carousel (portrait)',
   home_latest: 'Home – Latest Release',
   home_popular: 'Home – Popular',
   home_weekly_highlights: 'Home – Weekly Highlights',
@@ -37,11 +43,12 @@ const SECTION_LABELS = {
   rankings_top: 'Rankings – Top Manga',
   rankings_most_read: 'Rankings – Most Read',
   rankings_trending: 'Rankings – Trending',
-  recently_viewed: 'Recently Viewed (sidebar carousel)',
+  recently_viewed: 'Recent / Recently Viewed (portrait)',
   favorites: 'Favorites',
 };
 
 const DEFAULT_CARD_LAYOUT = {
+  home_hero: 'card_01',
   home_latest: 'card_01',
   home_popular: 'card_11',
   home_weekly_highlights: 'card_03',
@@ -56,7 +63,8 @@ const DEFAULT_CARD_LAYOUT = {
 
 const GRID_SECTION_KEYS = [
   'home_latest', 'home_popular', 'home_weekly_highlights', 'home_recently_added',
-  'browse', 'rankings_top', 'rankings_most_read', 'rankings_trending', 'favorites',
+  'browse', 'rankings_top', 'rankings_most_read', 'rankings_trending',
+  'recently_viewed', 'favorites',
 ];
 
 const GRID_SECTION_LABELS = {
@@ -68,6 +76,7 @@ const GRID_SECTION_LABELS = {
   rankings_top: 'Rankings – Top Manga',
   rankings_most_read: 'Rankings – Most Read',
   rankings_trending: 'Rankings – Trending',
+  recently_viewed: 'Recent / Recently Viewed',
   favorites: 'Favorites',
 };
 
@@ -77,7 +86,9 @@ const defaultColsHorizontal = { default: 1, sm: 2, md: 3, lg: 4, xl: 5 };
 const DEFAULT_GRID_COLUMNS = Object.fromEntries(
   GRID_SECTION_KEYS.map((key) => [
     key,
-    ['home_latest', 'home_weekly_highlights'].includes(key) ? defaultColsVertical : defaultColsHorizontal,
+    ['home_latest', 'home_weekly_highlights', 'recently_viewed'].includes(key)
+      ? defaultColsVertical
+      : defaultColsHorizontal,
   ])
 );
 
@@ -119,11 +130,36 @@ function Branding() {
   const [heroImgBlobUrl, setHeroImgBlobUrl] = useState(null);
   const [cardLayout, setCardLayout] = useState({ ...DEFAULT_CARD_LAYOUT });
   const [gridColumns, setGridColumns] = useState(() => JSON.parse(JSON.stringify(DEFAULT_GRID_COLUMNS)));
+  const [heroSeries, setHeroSeries] = useState([]);
+  const [heroSearch, setHeroSearch] = useState('');
+  const [debouncedHeroSearch, setDebouncedHeroSearch] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'branding'],
     queryFn: () => adminApi.getBranding(),
   });
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedHeroSearch(heroSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [heroSearch]);
+
+  const { data: seriesSearchData, isFetching: searchingSeries } = useQuery({
+    queryKey: ['admin', 'branding', 'series-search', debouncedHeroSearch],
+    queryFn: () =>
+      adminApi.getSeries({
+        page: 1,
+        per_page: 12,
+        search: debouncedHeroSearch || undefined,
+      }),
+    enabled: debouncedHeroSearch.length >= 1,
+  });
+
+  const searchResults = useMemo(() => {
+    const list = seriesSearchData?.data || [];
+    const selectedIds = new Set(heroSeries.map((s) => Number(s.id)));
+    return list.filter((s) => !selectedIds.has(Number(s.id)));
+  }, [seriesSearchData, heroSeries]);
 
   useEffect(() => {
     if (data?.data) {
@@ -144,6 +180,7 @@ function Branding() {
         });
         setGridColumns(merged);
       }
+      setHeroSeries(Array.isArray(data.data.hero_series) ? data.data.hero_series : []);
     }
   }, [data]);
 
@@ -198,6 +235,10 @@ function Branding() {
     formData.append('app_size_mb', appSizeMb);
     formData.append('card_layout', JSON.stringify(cardLayout));
     formData.append('grid_columns', JSON.stringify(gridColumns));
+    formData.append(
+      'hero_series_ids',
+      JSON.stringify(heroSeries.map((s) => Number(s.id)).filter(Boolean))
+    );
 
     updateMutation.mutate(formData, {
       onSuccess: () => alert('Branding updated successfully. The frontend will reflect changes on next load.'),
@@ -215,6 +256,31 @@ function Branding() {
       ...prev,
       [sectionKey]: { ...(prev[sectionKey] || {}), [breakpoint]: n },
     }));
+  };
+
+  const addHeroSeries = (series) => {
+    if (!series?.id) return;
+    setHeroSeries((prev) => {
+      if (prev.some((s) => Number(s.id) === Number(series.id))) return prev;
+      if (prev.length >= 20) return prev;
+      return [...prev, series];
+    });
+  };
+
+  const removeHeroSeries = (id) => {
+    setHeroSeries((prev) => prev.filter((s) => Number(s.id) !== Number(id)));
+  };
+
+  const moveHeroSeries = (index, direction) => {
+    setHeroSeries((prev) => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      const tmp = next[index];
+      next[index] = next[target];
+      next[target] = tmp;
+      return next;
+    });
   };
 
   const logoPreview = logoBlobUrl || fullUrl(logoUrl);
@@ -247,7 +313,7 @@ function Branding() {
         <div>
           <h1 className="text-3xl font-bold text-torrefacto-roast">Branding</h1>
           <p className="text-stone-lion mt-1">
-            Update the main logo, hero section background, and hero image shown on the frontend.
+            Update the main logo, hero section, carousel series, and card layouts shown on the frontend.
           </p>
         </div>
 
@@ -354,6 +420,103 @@ function Branding() {
             </div>
           </div>
 
+          {/* Hero carousel series */}
+          <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">
+              Home hero carousel series
+            </h2>
+            <p className="text-sm text-stone-lion mb-4">
+              Pick up to 20 series for the React Native home hero 3D carousel. Order here is the
+              carousel order. Card style is set under Manga card layout → Home – Hero carousel.
+            </p>
+
+            <div className="space-y-3 mb-4">
+              {heroSeries.length === 0 ? (
+                <p className="text-sm text-stone-lion">No series selected yet.</p>
+              ) : (
+                heroSeries.map((series, index) => (
+                  <div
+                    key={series.id}
+                    className="flex items-center gap-3 p-2 border border-stone-lion/20 rounded-lg bg-white/50"
+                  >
+                    <img
+                      src={fullUrl(series.cover_url || series.thumbnail_url)}
+                      alt=""
+                      className="w-10 h-14 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-torrefacto-roast truncate">
+                        {index + 1}. {series.title}
+                      </p>
+                      <p className="text-xs text-stone-lion truncate">{series.slug}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveHeroSeries(index, -1)}
+                        disabled={index === 0}
+                        className="px-2 py-1 text-xs rounded border border-stone-lion/30 disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveHeroSeries(index, 1)}
+                        disabled={index === heroSeries.length - 1}
+                        className="px-2 py-1 text-xs rounded border border-stone-lion/30 disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeHeroSeries(series.id)}
+                        className="px-2 py-1 text-xs rounded bg-indiana-clay/10 text-indiana-clay"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <label className="block text-sm font-medium text-torrefacto-roast mb-1">
+              Search series to add
+            </label>
+            <input
+              type="search"
+              value={heroSearch}
+              onChange={(e) => setHeroSearch(e.target.value)}
+              placeholder="Type a title…"
+              className="block w-full px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast placeholder-stone-lion focus:ring-2 focus:ring-indiana-clay focus:border-transparent"
+            />
+            {debouncedHeroSearch.length >= 1 && (
+              <div className="mt-2 max-h-56 overflow-auto border border-stone-lion/20 rounded-lg divide-y divide-stone-lion/10">
+                {searchingSeries ? (
+                  <p className="p-3 text-sm text-stone-lion">Searching…</p>
+                ) : searchResults.length === 0 ? (
+                  <p className="p-3 text-sm text-stone-lion">No matches.</p>
+                ) : (
+                  searchResults.map((series) => (
+                    <button
+                      key={series.id}
+                      type="button"
+                      onClick={() => addHeroSeries(series)}
+                      className="w-full flex items-center gap-3 p-2 text-left hover:bg-indiana-clay/5"
+                    >
+                      <img
+                        src={fullUrl(series.cover_url || series.thumbnail_url)}
+                        alt=""
+                        className="w-8 h-11 object-cover rounded"
+                      />
+                      <span className="text-sm text-torrefacto-roast truncate">{series.title}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
           {/* App download */}
           <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">App download</h2>
@@ -406,35 +569,41 @@ function Branding() {
             </div>
           </div>
 
-          {/* Card layout: which manga card UI per section */}
+          {/* Card layout */}
           <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">Manga card layout</h2>
             <p className="text-sm text-stone-lion mb-4">
               Choose which of the 20 manga card designs (01–10 portrait, 11–20 landscape) to use in each section on the frontend.
             </p>
             <div className="space-y-3 max-w-xl">
-              {Object.entries(SECTION_LABELS).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between gap-4">
-                  <label className="text-sm font-medium text-torrefacto-roast shrink-0 w-56">{label}</label>
-                  <select
-                    value={cardLayout[key] || DEFAULT_CARD_LAYOUT[key] || 'card_01'}
-                    onChange={(e) => setSectionCard(key, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast focus:ring-2 focus:ring-indiana-clay focus:border-transparent text-sm"
-                  >
-                    {CARD_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+              {Object.entries(SECTION_LABELS).map(([key, label]) => {
+                const options =
+                  key === 'home_hero' || key === 'recently_viewed'
+                    ? PORTRAIT_CARD_OPTIONS
+                    : CARD_OPTIONS;
+                return (
+                  <div key={key} className="flex items-center justify-between gap-4">
+                    <label className="text-sm font-medium text-torrefacto-roast shrink-0 w-56">{label}</label>
+                    <select
+                      value={cardLayout[key] || DEFAULT_CARD_LAYOUT[key] || 'card_01'}
+                      onChange={(e) => setSectionCard(key, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-stone-lion/30 rounded-lg bg-bonaire text-torrefacto-roast focus:ring-2 focus:ring-indiana-clay focus:border-transparent text-sm"
+                    >
+                      {options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Grid columns: per-section cards per row */}
+          {/* Grid columns */}
           <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">Grid columns (cards per row)</h2>
             <p className="text-sm text-stone-lion mb-4">
-              Set how many cards per row for each view. Browse has one view; Rankings has separate Top, Most Read, and Trending.
+              Set how many cards per row for each view. Recent / Recently Viewed and Favorites are included.
             </p>
             <div className="space-y-4 max-w-4xl">
               {GRID_SECTION_KEYS.map((sectionKey) => (

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branding;
+use App\Models\Series;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,18 +19,9 @@ class AdminBrandingController extends Controller
     public function show(): JsonResponse
     {
         $branding = Branding::current();
-        $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
-        $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
-        $appDownload = Branding::appDownloadPayload($branding);
 
         return response()->json([
-            'data' => array_merge([
-                'logo_url' => $branding->logo_url,
-                'hero_background_url' => $branding->hero_background_url,
-                'hero_image_url' => $branding->hero_image_url,
-                'card_layout' => $cardLayout,
-                'grid_columns' => $gridColumns,
-            ], $appDownload),
+            'data' => Branding::publicPayload($branding),
         ]);
     }
 
@@ -72,7 +64,19 @@ class AdminBrandingController extends Controller
             $branding->hero_image_url = $disk->url($path);
         }
 
-        if ($request->isJson() || $request->has('logo_url') || $request->has('hero_background_url') || $request->has('hero_image_url') || $request->has('card_layout') || $request->has('grid_columns') || $request->has('app_download_url') || $request->has('app_download_filename') || $request->has('app_version') || $request->has('app_size_mb')) {
+        $hasTextFields = $request->isJson()
+            || $request->has('logo_url')
+            || $request->has('hero_background_url')
+            || $request->has('hero_image_url')
+            || $request->has('card_layout')
+            || $request->has('grid_columns')
+            || $request->has('hero_series_ids')
+            || $request->has('app_download_url')
+            || $request->has('app_download_filename')
+            || $request->has('app_version')
+            || $request->has('app_size_mb');
+
+        if ($hasTextFields) {
             $request->validate([
                 'logo_url' => 'nullable|string|max:500',
                 'hero_background_url' => 'nullable|string|max:500',
@@ -83,6 +87,7 @@ class AdminBrandingController extends Controller
                 'app_size_mb' => 'nullable|string|max:10',
                 'card_layout' => 'nullable',
                 'grid_columns' => 'nullable',
+                'hero_series_ids' => 'nullable',
             ]);
             if ($request->has('logo_url')) {
                 $branding->logo_url = $request->input('logo_url') ?: null;
@@ -115,24 +120,24 @@ class AdminBrandingController extends Controller
                 $decoded = is_string($v) ? json_decode($v, true) : $v;
                 $branding->grid_columns = is_array($decoded) ? $decoded : null;
             }
+            if ($request->has('hero_series_ids')) {
+                $v = $request->input('hero_series_ids');
+                $decoded = is_string($v) ? json_decode($v, true) : $v;
+                $ids = Branding::normalizeHeroSeriesIds($decoded);
+                if ($ids !== []) {
+                    $existing = Series::query()->whereIn('id', $ids)->pluck('id')->all();
+                    $ids = array_values(array_filter($ids, fn ($id) => in_array($id, $existing, true)));
+                }
+                $branding->hero_series_ids = $ids;
+            }
         }
 
         $branding->save();
 
         Branding::clearPublicCache();
 
-        $cardLayout = Branding::normalizeCardLayout($branding->card_layout);
-        $gridColumns = Branding::normalizeGridColumns($branding->grid_columns);
-        $appDownload = Branding::appDownloadPayload($branding);
-
         return response()->json([
-            'data' => array_merge([
-                'logo_url' => $branding->logo_url,
-                'hero_background_url' => $branding->hero_background_url,
-                'hero_image_url' => $branding->hero_image_url,
-                'card_layout' => $cardLayout,
-                'grid_columns' => $gridColumns,
-            ], $appDownload),
+            'data' => Branding::publicPayload($branding),
             'message' => 'Branding updated successfully',
         ]);
     }

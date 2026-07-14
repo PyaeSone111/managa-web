@@ -1,6 +1,7 @@
 import { FlatList, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useBranding } from '../context/BrandingContext';
 import MangaCard, { isPortraitCard, getCardKeyForSection } from './cards/MangaCard';
+import RecentMangaCard from './cards/RecentMangaCard';
 import { getGridColumnsForSection } from '../utils/gridColumns';
 import colors from '../theme/colors';
 
@@ -29,21 +30,27 @@ export default function SeriesGrid({
   series = [],
   loading = false,
   onSeriesPress,
+  onSeriesDelete,
+  deletingSeriesId = null,
   section,
   numColumns: numColumnsProp,
 }) {
   const { width } = useWindowDimensions();
   const { cardLayout, gridColumns, layoutVersion } = useBranding();
+  const isRecent = section === 'recently_viewed';
   const useDesignCards = Boolean(section);
-  const cardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
-  const portrait = useDesignCards ? isPortraitCard(cardKey) : true;
+  const rawCardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
+  // Recent always uses a portrait card UI (01–10).
+  const cardKey =
+    isRecent && !isPortraitCard(rawCardKey) ? 'card_01' : rawCardKey;
+  const portrait = useDesignCards ? isPortraitCard(cardKey) || isRecent : true;
   const numColumns =
     numColumnsProp ??
     (useDesignCards
       ? getGridColumnsForSection(section, width, gridColumns, cardLayout)
       : 2);
   const compact = numColumns >= 3;
-  const useListLayout = useDesignCards && !portrait && numColumns === 1;
+  const useListLayout = useDesignCards && !portrait && numColumns === 1 && !isRecent;
   const horizontalPad = compact ? 4 : 8;
 
   if (loading) {
@@ -64,6 +71,34 @@ export default function SeriesGrid({
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No series found.</Text>
       </View>
+    );
+  }
+
+  if (isRecent) {
+    return (
+      <FlatList
+        data={series}
+        key={`recent-${cardKey}-${numColumns}-${layoutVersion}`}
+        keyExtractor={(item) => String(item.id)}
+        numColumns={numColumns}
+        scrollEnabled={false}
+        extraData={`${cardKey}-${numColumns}-${layoutVersion}-${width}-${deletingSeriesId}`}
+        columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPad }]}
+        renderItem={({ item, index }) => (
+          <View style={{ flex: 1 / numColumns }}>
+            <RecentMangaCard
+              series={item}
+              rank={index + 1}
+              onContinue={onSeriesPress}
+              onDelete={onSeriesDelete}
+              deleting={deletingSeriesId === item.id}
+              numColumns={numColumns}
+              screenWidth={width}
+            />
+          </View>
+        )}
+      />
     );
   }
 

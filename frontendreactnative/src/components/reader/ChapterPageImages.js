@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import ReaderPageImage, { pageUri } from './ReaderPageImage';
+import { ChapterBreak } from './ReaderContinuousEnd';
 import { toAbsoluteImageUrl } from '../../utils/helpers';
 import { READER_MODE_PAGED } from '../../utils/constants';
 
@@ -42,22 +43,61 @@ async function prefetchPagesInParallel(pages, { concurrency, isCancelled }) {
 }
 
 /**
- * Continuous scroll stack (parent ScrollView owns scrolling).
+ * Continuous scroll stack — full width, no gaps between pages.
+ * `pageWidth` should already include zoom (viewport * scale).
+ *
+ * `segments`: [{ key, chapter, pages }]
+ * Layout callback receives flat page index + chapter/page meta.
  */
 export function ChapterScrollPages({
   pages,
-  imageWidth,
+  pageWidth,
   chapterKey,
-  scale = 1,
+  segments: segmentsProp,
   onPageLayout,
+  onDoubleTap,
+  footer = null,
 }) {
-  const safePages = useMemo(() => pages || [], [pages]);
+  const segments = useMemo(() => {
+    if (Array.isArray(segmentsProp) && segmentsProp.length) return segmentsProp;
+    return [
+      {
+        key: chapterKey || 'chapter',
+        chapter: null,
+        pages: pages || [],
+      },
+    ];
+  }, [segmentsProp, chapterKey, pages]);
+
+  const flatPages = useMemo(() => {
+    const items = [];
+    segments.forEach((seg, segmentIndex) => {
+      (seg.pages || []).forEach((page, pageIndexInSegment) => {
+        items.push({
+          page,
+          segmentIndex,
+          pageIndexInSegment,
+          chapter: seg.chapter,
+          chapterKey: seg.key,
+          flatIndex: items.length,
+          pageNumber: page.page_number ?? pageIndexInSegment + 1,
+          pageCount: (seg.pages || []).length,
+          chapterId: seg.chapter?.id,
+          chapterNumber: seg.chapter?.chapter_number,
+        });
+      });
+    });
+    return items;
+  }, [segments]);
+
+  const prefetchKey = segments.map((s) => s.key).join('|');
 
   useEffect(() => {
     let cancelled = false;
-    if (!safePages.length) return undefined;
+    const all = flatPages.map((item) => item.page);
+    if (!all.length) return undefined;
 
-    prefetchPagesInParallel(safePages, {
+    prefetchPagesInParallel(all, {
       concurrency: PREFETCH_CONCURRENCY,
       isCancelled: () => cancelled,
     });
@@ -65,38 +105,58 @@ export function ChapterScrollPages({
     return () => {
       cancelled = true;
     };
-  }, [chapterKey, safePages]);
+  }, [prefetchKey, flatPages]);
 
-  if (!safePages.length) return null;
+  if (!flatPages.length && !footer) return null;
 
   return (
-    <View style={{ width: Math.max(imageWidth, imageWidth * scale), alignSelf: 'center' }}>
-      {safePages.map((page, index) => {
-        const key = `${chapterKey}-${page.id ?? page.page_number ?? index}`;
-        return (
-          <View
-            key={key}
-            onLayout={(e) => onPageLayout?.(index, e.nativeEvent.layout)}
-            style={styles.pageSlot}
-          >
-            <ReaderPageImage uri={pageUri(page)} width={imageWidth} scale={scale} />
-          </View>
-        );
-      })}
+    <View style={{ width: pageWidth }}>
+      {segments.map((seg, segmentIndex) => (
+        <View key={seg.key || `seg-${segmentIndex}`}>
+          {segmentIndex > 0 && seg.chapter ? (
+            <ChapterBreak chapter={seg.chapter} />
+          ) : null}
+          {(seg.pages || []).map((page, pageIndexInSegment) => {
+            const flatIndex =
+              segments
+                .slice(0, segmentIndex)
+                .reduce((sum, s) => sum + (s.pages?.length || 0), 0) +
+              pageIndexInSegment;
+            const meta = flatPages[flatIndex];
+            const key = `${seg.key}-${page.id ?? page.page_number ?? pageIndexInSegment}`;
+            return (
+              <View
+                key={key}
+                onLayout={(e) =>
+                  onPageLayout?.(flatIndex, e.nativeEvent.layout, meta)
+                }
+                style={styles.pageSlot}
+              >
+                <ReaderPageImage
+                  uri={pageUri(page)}
+                  width={pageWidth}
+                  onDoubleTap={onDoubleTap}
+                />
+              </View>
+            );
+          })}
+        </View>
+      ))}
+      {footer}
     </View>
   );
 }
 
 /**
- * One page per swipe (horizontal FlatList).
+ * One page per swipe — full viewport width.
  */
 export function ChapterPagedPages({
   pages,
-  imageWidth,
+  pageWidth,
   chapterKey,
-  scale = 1,
   initialPageIndex = 0,
   onVisiblePageChange,
+  onDoubleTap,
 }) {
   const { height: windowHeight } = useWindowDimensions();
   const safePages = useMemo(() => pages || [], [pages]);
@@ -131,8 +191,6 @@ export function ChapterPagedPages({
 
   if (!safePages.length) return null;
 
-  const itemWidth = scale <= 1 ? imageWidth : Math.max(imageWidth, imageWidth * scale);
-
   return (
     <FlatList
       data={safePages}
@@ -140,25 +198,24 @@ export function ChapterPagedPages({
         `${chapterKey}-${item.id ?? item.page_number ?? index}`
       }
       horizontal
-      pagingEnabled={scale <= 1}
+      pagingEnabled
       showsHorizontalScrollIndicator={false}
       initialScrollIndex={Math.min(initialPageIndex, Math.max(0, safePages.length - 1))}
       getItemLayout={(_, index) => ({
-        length: itemWidth,
-        offset: itemWidth * index,
+        length: pageWidth,
+        offset: pageWidth * index,
         index,
       })}
       onScrollToIndexFailed={() => {}}
       onViewableItemsChanged={onViewableItemsChanged}
       viewabilityConfig={viewabilityConfig}
-      style={{ width: imageWidth, alignSelf: 'center' }}
+      style={{ flex: 1, width: pageWidth }}
       renderItem={({ item }) => (
-        <View style={{ width: itemWidth, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: pageWidth, minHeight: windowHeight * 0.7 }}>
           <ReaderPageImage
             uri={pageUri(item)}
-            width={imageWidth}
-            scale={scale}
-            style={{ maxHeight: windowHeight * 0.82 }}
+            width={pageWidth}
+            onDoubleTap={onDoubleTap}
           />
         </View>
       )}
@@ -166,7 +223,6 @@ export function ChapterPagedPages({
   );
 }
 
-/** Back-compat default export (scroll strip). */
 export default function ChapterPageImages(props) {
   if (props.mode === READER_MODE_PAGED) {
     return <ChapterPagedPages {...props} />;
@@ -176,7 +232,7 @@ export default function ChapterPageImages(props) {
 
 const styles = StyleSheet.create({
   pageSlot: {
-    marginBottom: 8,
-    alignItems: 'center',
+    marginBottom: 0,
+    width: '100%',
   },
 });

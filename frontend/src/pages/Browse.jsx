@@ -141,19 +141,24 @@ function Browse() {
         <meta name="description" content="Browse and discover manga, manhwa, and manhua series." />
       </Helmet>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Mobile Filter Toggle */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="lg:hidden flex items-center justify-center gap-2 px-4 py-2 bg-delta-green text-white rounded-lg hover:bg-ruskin-blue transition-all duration-200"
-        >
-          <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
-          {hasActiveFilters && (
-            <span className="bg-white text-delta-green rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
-              {selectedCategories.length + selectedTypes.length + selectedAuthors.length + (status ? 1 : 0)}
-            </span>
-          )}
-        </button>
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-start">
+        {/* Mobile Filter Toggle + title row */}
+        <div className="lg:hidden flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold text-black-feather min-w-0 truncate">
+            {query ? `Search: "${query}"` : 'Browse Series'}
+          </h1>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-1.5 bg-delta-green text-white rounded-lg hover:bg-ruskin-blue transition-all duration-200 text-sm"
+          >
+            <span>{showFilters ? 'Hide' : 'Filters'}</span>
+            {hasActiveFilters && (
+              <span className="bg-white text-delta-green rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                {selectedCategories.length + selectedTypes.length + selectedAuthors.length + (status ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* Sidebar Filters */}
         <aside className={`${showFilters ? 'block' : 'hidden'} lg:block lg:w-64 xl:w-72 flex-shrink-0`}>
@@ -262,9 +267,9 @@ function Browse() {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-black-feather">
+        <div className="flex-1 space-y-3 sm:space-y-4 min-w-0">
+          <div className="hidden lg:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+            <h1 className="text-2xl font-bold text-black-feather">
               {query ? `Search Results for "${query}"` : 'Browse Series'}
             </h1>
             {total > 0 && (
@@ -274,6 +279,13 @@ function Browse() {
               </span>
             )}
           </div>
+
+          {total > 0 && (
+            <p className="lg:hidden text-xs text-sidewalk-grey -mt-1">
+              {total} series found
+              {lastPage > 1 && ` · page ${currentPage} of ${lastPage}`}
+            </p>
+          )}
 
           {/* Active Filters Pills */}
           {hasActiveFilters && (

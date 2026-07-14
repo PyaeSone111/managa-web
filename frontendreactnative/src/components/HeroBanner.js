@@ -1,11 +1,19 @@
-import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useBranding } from '../context/BrandingContext';
+import HeroSeriesCarousel from './HeroSeriesCarousel';
 import colors from '../theme/colors';
 
-export default function HeroBanner({ onBrowsePress }) {
-  const { heroBackgroundUrl, heroImageUrl } = useBranding();
-  const hasBg = Boolean(heroBackgroundUrl);
+export default function HeroBanner({ onBrowsePress, onSeriesPress }) {
+  const { heroBackgroundUrl, heroSeries } = useBranding();
+  const series = Array.isArray(heroSeries) ? heroSeries : [];
 
+  if (series.length > 0) {
+    return (
+      <HeroSeriesCarousel series={series} onSeriesPress={onSeriesPress} />
+    );
+  }
+
+  const hasBg = Boolean(heroBackgroundUrl);
   const content = (
     <View style={styles.overlay}>
       <View style={styles.textBlock}>
@@ -17,9 +25,6 @@ export default function HeroBanner({ onBrowsePress }) {
           <Text style={styles.buttonText}>Browse All</Text>
         </Pressable>
       </View>
-      {/* {heroImageUrl ? (
-        <Image source={{ uri: heroImageUrl }} style={styles.heroImage} resizeMode="cover" />
-      ) : null} */}
     </View>
   );
 
@@ -85,12 +90,5 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
     fontSize: 14,
-  },
-  heroImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
 });
