@@ -15,33 +15,49 @@ export default function ProfileAvatar({
   const radius = size / 2;
   const isHeader = variant === 'header';
 
+  const badgeSize = Math.max(22, Math.round(size * 0.29));
+  const badgeIconSize = Math.round(badgeSize * 0.5);
+
   const content = (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius,
-        },
-        isHeader && styles.headerAvatar,
-        !imageUri && styles.fallbackAvatar,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={colors.white} size="small" />
-      ) : imageUri ? (
-        <Image
-          source={{ uri: imageUri }}
-          style={[styles.image, { width: size, height: size, borderRadius: radius }]}
-          resizeMode="cover"
-        />
-      ) : (
-        <Text style={[styles.initial, { fontSize: size * 0.38 }]}>{initial}</Text>
-      )}
+    <View style={[styles.wrapper, { width: size, height: size }]}>
+      <View
+        style={[
+          styles.avatar,
+          {
+            width: size,
+            height: size,
+            borderRadius: radius,
+          },
+          isHeader && styles.headerAvatar,
+          !imageUri && styles.fallbackAvatar,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} size="small" />
+        ) : imageUri ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={[styles.image, { width: size, height: size, borderRadius: radius }]}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={[styles.initial, { fontSize: size * 0.38 }]}>{initial}</Text>
+        )}
+      </View>
       {showEditBadge ? (
-        <View style={[styles.badge, { right: 0, bottom: 0 }]}>
-          <Ionicons name="camera" size={14} color={colors.white} />
+        <View
+          style={[
+            styles.badge,
+            {
+              width: badgeSize,
+              height: badgeSize,
+              borderRadius: badgeSize / 2,
+              right: 0,
+              bottom: 0,
+            },
+          ]}
+        >
+          <Ionicons name="camera" size={badgeIconSize} color={colors.white} />
         </View>
       ) : null}
     </View>
@@ -64,6 +80,9 @@ export default function ProfileAvatar({
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: 'relative',
+  },
   avatar: {
     overflow: 'hidden',
     alignItems: 'center',
@@ -86,9 +105,6 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     backgroundColor: colors.navy,
     alignItems: 'center',
     justifyContent: 'center',

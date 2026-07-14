@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,14 +9,38 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { AuthCardLogo } from '../components/navigation/HeaderBrandLogo';
+import AuthCardTitle from '../components/auth/AuthCardTitle';
+import PasswordInput from '../components/auth/PasswordInput';
 import { useAuth } from '../context/AuthContext';
+import {
+  clearRememberedLogin,
+  getRememberedLogin,
+  saveRememberedLogin,
+} from '../services/rememberLoginStorage';
 import colors from '../theme/colors';
 
 export default function LoginScreen({ navigation }) {
   const { login, isAuthenticated } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const saved = await getRememberedLogin();
+      if (mounted && saved) {
+        setForm({ email: saved.email, password: saved.password });
+        setRememberMe(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (isAuthenticated) {
     navigation.replace('Main');
@@ -28,6 +52,11 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await login(form);
+      if (rememberMe) {
+        await saveRememberedLogin(form);
+      } else {
+        await clearRememberedLogin();
+      }
       navigation.replace('Main');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
@@ -43,7 +72,8 @@ export default function LoginScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>Sign In</Text>
+          <AuthCardLogo />
+          <AuthCardTitle variant="login" />
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Text style={styles.label}>Email</Text>
@@ -52,20 +82,38 @@ export default function LoginScreen({ navigation }) {
             onChangeText={(email) => setForm({ ...form, email })}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            importantForAutofill="yes"
             placeholder="you@example.com"
             placeholderTextColor={colors.muted}
             style={styles.input}
           />
 
           <Text style={styles.label}>Password</Text>
-          <TextInput
+          <PasswordInput
             value={form.password}
             onChangeText={(password) => setForm({ ...form, password })}
-            secureTextEntry
+            autoComplete="password"
+            textContentType="password"
+            importantForAutofill="yes"
             placeholder="Your password"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
           />
+
+          <Pressable
+            style={styles.rememberRow}
+            onPress={() => setRememberMe((value) => !value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: rememberMe }}
+            accessibilityLabel="Remember me"
+          >
+            <Ionicons
+              name={rememberMe ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={rememberMe ? colors.redOrange : colors.muted}
+            />
+            <Text style={styles.rememberLabel}>Remember me</Text>
+          </Pressable>
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -96,7 +144,6 @@ const styles = StyleSheet.create({
     borderColor: colors.almondBorder,
     padding: 24,
   },
-  title: { fontSize: 24, fontWeight: '700', color: colors.navy, marginBottom: 20, textAlign: 'center' },
   label: { fontSize: 14, fontWeight: '600', color: colors.navy, marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -108,12 +155,23 @@ const styles = StyleSheet.create({
     color: colors.navy,
     backgroundColor: colors.white,
   },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  rememberLabel: {
+    fontSize: 14,
+    color: colors.navy,
+    fontWeight: '500',
+  },
   button: {
     backgroundColor: colors.redOrange,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: colors.white, fontWeight: '700', fontSize: 16 },

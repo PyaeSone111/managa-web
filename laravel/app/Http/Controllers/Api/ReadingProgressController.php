@@ -14,6 +14,54 @@ use Illuminate\Http\Request;
 class ReadingProgressController extends Controller
 {
     /**
+     * Get continue-reading list (latest chapter per series).
+     *
+     * GET /api/v1/reading/continue
+     */
+    public function continueReading(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $limit = min($request->input('limit', 20), 50);
+
+        $progress = UserReadingProgress::where('user_id', $user->id)
+            ->with(['series', 'chapter'])
+            ->orderByDesc('updated_at')
+            ->get()
+            ->unique('series_id')
+            ->take($limit)
+            ->values();
+
+        return response()->json([
+            'data' => $progress->map(fn (UserReadingProgress $p) => [
+                'id' => $p->id,
+                'series_id' => $p->series_id,
+                'chapter_id' => $p->chapter_id,
+                'last_page' => $p->last_page,
+                'completed' => $p->completed,
+                'updated_at' => $p->updated_at,
+                'series' => $p->series ? [
+                    'id' => $p->series->id,
+                    'title' => $p->series->title,
+                    'slug' => $p->series->slug,
+                    'cover_url' => $p->series->cover_url,
+                    'thumbnail_url' => $p->series->thumbnail_url,
+                ] : null,
+                'chapter' => $p->chapter ? [
+                    'id' => $p->chapter->id,
+                    'chapter_number' => $p->chapter->chapter_number,
+                    'title' => $p->chapter->title,
+                    'page_count' => $p->chapter->page_count,
+                ] : null,
+            ]),
+        ]);
+    }
+
+    /**
      * Get user's reading history.
      *
      * GET /api/v1/reading/history
@@ -219,6 +267,10 @@ class ReadingProgressController extends Controller
         $user = $request->user();
         $chapter = Chapter::findOrFail($id);
 
+        $existing = UserReadingProgress::where('user_id', $user->id)
+            ->where('chapter_id', $id)
+            ->first();
+
         $progress = UserReadingProgress::updateOrCreate(
             [
                 'user_id' => $user->id,
@@ -228,6 +280,7 @@ class ReadingProgressController extends Controller
                 'series_id' => $chapter->series_id,
                 'last_page' => $chapter->page_count,
                 'completed' => true,
+                'started_at' => $existing?->started_at ?? now(),
                 'completed_at' => now(),
             ]
         );

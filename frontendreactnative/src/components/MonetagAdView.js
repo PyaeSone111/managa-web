@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Linking,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { WebView } from 'react-native-webview';
-import LoadingSpinner from './LoadingSpinner';
+import AdCountdownRing from './ads/AdCountdownRing';
+import {
+  AD_CLOSE_DELAY_SEC,
+  adWebViewProps,
+  createAdNavigationHandler,
+  isUnknownSchemeError,
+} from '../utils/adWebViewUtils';
 import { MONETAG_SMART_LINK } from '../utils/constants';
 import colors from '../theme/colors';
-
-const CLOSE_DELAY_SEC = 15;
-const WEBVIEW_USER_AGENT =
-  'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
 function getAdUrl() {
   const url = MONETAG_SMART_LINK?.trim();
@@ -25,120 +26,55 @@ function getAdUrl() {
   return url;
 }
 
-function isWebUrl(url) {
-  return /^https?:\/\//i.test(url) || url === 'about:blank';
-}
-
-function getIntentFallbackUrl(intentUrl) {
-  const match = intentUrl.match(/S\.browser_fallback_url=([^;]+)/i);
-  if (!match?.[1]) {
-    return null;
-  }
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return null;
-  }
-}
-
 export default function MonetagAdView({ visible = true, onClose }) {
-  const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SEC);
+  const [canClose, setCanClose] = useState(false);
+  const [countdownKey, setCountdownKey] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
   const [pageLoaded, setPageLoaded] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(null);
 
   const adUrl = useMemo(() => getAdUrl(), []);
-  const canClose = secondsLeft <= 0;
-  const showSpinner = Boolean(adUrl) && !pageLoaded;
+  const showLoadingOverlay = Boolean(currentUrl) && !pageLoaded;
 
   useEffect(() => {
     if (!visible) {
-      setSecondsLeft(CLOSE_DELAY_SEC);
+      setCanClose(false);
       setPageLoaded(false);
       setCurrentUrl(null);
       return undefined;
     }
 
     setSessionKey((key) => key + 1);
+    setCountdownKey((key) => key + 1);
     setPageLoaded(false);
     setCurrentUrl(adUrl);
-    setSecondsLeft(CLOSE_DELAY_SEC);
+    setCanClose(false);
 
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const timer = setTimeout(() => setCanClose(true), AD_CLOSE_DELAY_SEC * 1000);
+    return () => clearTimeout(timer);
   }, [visible, adUrl]);
 
   const finishLoading = useCallback(() => setPageLoaded(true), []);
 
-  const openExternalUrl = useCallback(
-    async (url) => {
-      if (!url) {
-        return;
-      }
-
-      if (Platform.OS === 'android' && url.startsWith('intent://')) {
-        try {
-          await Linking.openURL(url);
-        } catch {
-          // Ad intent redirects are optional; keep the current WebView page.
-        }
-        finishLoading();
-        return;
-      }
-
-      try {
-        await Linking.openURL(url);
-      } catch {
-        // Ignore unsupported custom schemes from ad redirects.
-      }
-
-      finishLoading();
-    },
-    [finishLoading],
-  );
-
-  const handleShouldStartLoadWithRequest = useCallback(
-    (request) => {
-      const { url } = request;
-      if (!url || isWebUrl(url)) {
-        return true;
-      }
-
-      if (Platform.OS === 'android' && url.startsWith('intent://')) {
-        const fallback = getIntentFallbackUrl(url);
-        if (fallback && isWebUrl(fallback)) {
+  const handleNavigation = useMemo(
+    () =>
+      createAdNavigationHandler({
+        onFallbackUrl: (fallback) => {
           setCurrentUrl(fallback);
-          return false;
-        }
-      }
-
-      openExternalUrl(url);
-      return false;
-    },
-    [openExternalUrl],
+          setPageLoaded(false);
+        },
+        onBlocked: finishLoading,
+      }),
+    [finishLoading],
   );
 
   const handleWebViewError = useCallback(
     (event) => {
       const { description, code } = event.nativeEvent;
-      const isUnknownScheme =
-        code === -10 ||
-        String(description || '').includes('ERR_UNKNOWN_URL_SCHEME');
-
-      if (isUnknownScheme) {
+      if (isUnknownSchemeError(code, description)) {
         finishLoading();
         return;
       }
-
       finishLoading();
     },
     [finishLoading],
@@ -173,38 +109,41 @@ export default function MonetagAdView({ visible = true, onClose }) {
             {canClose ? (
               <Pressable
                 onPress={handleClose}
-                style={styles.closeBtn}
+                style={styles.closeIconBtn}
                 accessibilityRole="button"
                 accessibilityLabel="Close advertisement"
               >
-                <Text style={styles.closeBtnText}>Close Ad ✕</Text>
+                <Ionicons name="close" size={16} color={colors.white} />
               </Pressable>
             ) : (
-              <View style={styles.timerBadge}>
-                <Text style={styles.timerText}>{secondsLeft}s</Text>
-              </View>
+              <AdCountdownRing
+                durationSeconds={AD_CLOSE_DELAY_SEC}
+                active={!canClose}
+                resetKey={countdownKey}
+                size={34}
+              />
             )}
           </View>
 
           <View style={styles.webviewWrap}>
-            {showSpinner ? (
+            {showLoadingOverlay ? (
               <View style={styles.loadingOverlay}>
-                <LoadingSpinner style={styles.loadingSpinner} />
+                <AdCountdownRing
+                  durationSeconds={AD_CLOSE_DELAY_SEC}
+                  active={!canClose}
+                  resetKey={countdownKey}
+                  size={64}
+                />
+                <Text style={styles.loadingHint}>Loading advertisement…</Text>
               </View>
             ) : null}
             {webViewSource ? (
               <WebView
                 key={sessionKey}
                 source={webViewSource}
-                style={[styles.webview, showSpinner && styles.webviewHidden]}
-                userAgent={WEBVIEW_USER_AGENT}
-                javaScriptEnabled
-                domStorageEnabled
-                thirdPartyCookiesEnabled
-                sharedCookiesEnabled
-                originWhitelist={['http://*', 'https://*']}
-                setSupportMultipleWindows={false}
-                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+                style={[styles.webview, showLoadingOverlay && styles.webviewHidden]}
+                {...adWebViewProps}
+                onShouldStartLoadWithRequest={handleNavigation}
                 onLoadStart={() => setPageLoaded(false)}
                 onLoadEnd={finishLoading}
                 onError={handleWebViewError}
@@ -252,37 +191,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.almondBorder,
     backgroundColor: colors.navy,
-    minHeight: 48,
+    minHeight: 52,
   },
   headerTitle: {
     color: colors.almond,
     fontWeight: '600',
     fontSize: 14,
   },
-  closeBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+  closeIconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.redOrange,
-  },
-  closeBtnText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  timerBadge: {
-    minWidth: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
-  },
-  timerText: {
-    color: colors.almond,
-    fontWeight: '700',
-    fontSize: 14,
-    fontVariant: ['tabular-nums'],
+    justifyContent: 'center',
   },
   webviewWrap: {
     flex: 1,
@@ -299,9 +221,14 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 2,
     backgroundColor: colors.almond,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 24,
   },
-  loadingSpinner: {
-    flex: 1,
-    backgroundColor: colors.almond,
+  loadingHint: {
+    color: colors.muted,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

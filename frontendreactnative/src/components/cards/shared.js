@@ -2,29 +2,37 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import colors from '../../theme/colors';
 import StarRating from '../StarRating';
 
-export function StatusBadge({ status }) {
+export function StatusBadge({ status, scale }) {
+  const tight = scale?.compactCard;
   return (
-    <View style={styles.statusBadge}>
-      <Text style={styles.statusText}>{status}</Text>
+    <View style={[styles.statusBadge, tight && styles.statusBadgeTight]}>
+      <Text style={[styles.statusText, tight && styles.statusTextTight]}>{status}</Text>
     </View>
   );
 }
 
-export function GenreBadge({ label }) {
+export function GenreBadge({ label, scale }) {
+  const tight = scale?.compactCard;
   return (
-    <View style={styles.genreBadge}>
-      <Text style={styles.genreText}>{label}</Text>
+    <View style={[styles.genreBadge, tight && styles.genreBadgeTight]}>
+      <Text style={[styles.genreText, tight && styles.genreTextTight]}>{label}</Text>
     </View>
   );
 }
 
-export function RatingRow({ rating, ratingCount, size = 12, showValue = true }) {
+export function RatingRow({ rating, ratingCount, size = 12, showValue = true, scale }) {
+  const starSize = scale?.ratingSize ?? size;
+  const showCount = showValue && (!scale || scale.showRatingCount !== false);
   return (
     <View style={styles.ratingRow}>
-      <StarRating rating={Math.round(rating)} size={size} />
-      {showValue ? <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text> : null}
-      {ratingCount != null && ratingCount > 0 ? (
-        <Text style={styles.ratingCount}>({ratingCount.toLocaleString()})</Text>
+      <StarRating rating={Math.round(rating)} size={starSize} />
+      {showCount ? (
+        <Text style={[styles.ratingValue, scale && { fontSize: scale.metaSize }]}>{rating.toFixed(1)}</Text>
+      ) : null}
+      {ratingCount != null && ratingCount > 0 && showCount ? (
+        <Text style={[styles.ratingCount, scale && { fontSize: scale.metaSize }]}>
+          ({ratingCount.toLocaleString()})
+        </Text>
       ) : null}
     </View>
   );
@@ -35,6 +43,17 @@ export function CoverImage({ uri, style, imageStyle, children }) {
     <View style={[styles.coverWrap, style]}>
       <Image source={{ uri: uri || undefined }} style={[styles.coverImage, imageStyle]} resizeMode="cover" />
       {children}
+    </View>
+  );
+}
+
+/** Tri-color vertical accent (navy → mango → red-orange) for card left edge. */
+export function ThemeLeftBorder({ width = 4, style }) {
+  return (
+    <View style={[styles.themeLeftBorder, { width }, style]}>
+      <View style={[styles.themeLeftSeg, styles.themeLeftNavy]} />
+      <View style={[styles.themeLeftSeg, styles.themeLeftMango]} />
+      <View style={[styles.themeLeftSeg, styles.themeLeftOrange]} />
     </View>
   );
 }
@@ -104,6 +123,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
+  statusBadgeTight: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  statusTextTight: {
+    fontSize: 7,
+  },
   genreBadge: {
     alignSelf: 'flex-start',
     backgroundColor: `${colors.redOrange}18`,
@@ -117,6 +143,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.redOrange,
     fontWeight: '500',
+  },
+  genreBadgeTight: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  genreTextTight: {
+    fontSize: 7,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -139,5 +173,24 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: '100%',
+  },
+  themeLeftBorder: {
+    alignSelf: 'stretch',
+    flexDirection: 'column',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    overflow: 'hidden',
+  },
+  themeLeftSeg: {
+    flex: 1,
+  },
+  themeLeftNavy: {
+    backgroundColor: colors.navy,
+  },
+  themeLeftMango: {
+    backgroundColor: colors.mango,
+  },
+  themeLeftOrange: {
+    backgroundColor: colors.redOrange,
   },
 });

@@ -349,7 +349,7 @@ class AdminSeriesController extends Controller
                 }
             }],
             'rows.*.mediafire_folder_url' => 'required|url',
-            'rows.*.pages_per_chapter' => 'required|integer|min:1|max:500',
+            'rows.*.pages_per_chapter' => 'nullable|integer|min:1|max:500',
             'rows.*.type_ids' => 'required|array|min:1',
             'rows.*.type_ids.*' => 'integer|exists:manga_types,id',
             'rows.*.type' => 'nullable|string|in:manga,manhwa,manhua',

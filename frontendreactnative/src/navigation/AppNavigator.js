@@ -1,13 +1,14 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { PlatformPressable } from '@react-navigation/elements';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 import AuthHeaderButtons from '../components/navigation/AuthHeaderButtons';
 import GradientHeaderBackground from '../components/navigation/GradientHeaderBackground';
+import HeaderBrandLogo, { HEADER_HORIZONTAL_PADDING } from '../components/navigation/HeaderBrandLogo';
+// import BottomAdBanner from '../components/ads/BottomAdBanner';
 import HomeScreen from '../screens/HomeScreen';
 import BrowseScreen from '../screens/BrowseScreen';
 import RankingsScreen from '../screens/RankingsScreen';
@@ -37,19 +38,38 @@ const navTheme = {
   },
 };
 
-function buildHeaderOptions(navigation, title, { showAuth = true } = {}) {
+function buildHeaderOptions(navigation, subtitle, { showAuth = true, showBack = false } = {}) {
   return {
-    title,
+    title: '',
+    headerTitle: '',
+    headerLeft: () => (
+      <View style={styles.headerLeftRow}>
+        {showBack ? (
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.white} />
+          </Pressable>
+        ) : null}
+        <HeaderBrandLogo subtitle={subtitle} />
+      </View>
+    ),
+    headerLeftContainerStyle: styles.headerLeftContainer,
     headerBackground: () => <GradientHeaderBackground />,
     headerStyle: {
       backgroundColor: 'transparent',
+      minHeight: 56,
     },
     headerTintColor: colors.white,
-    headerTitleStyle: { fontWeight: '700' },
     headerShadowVisible: false,
+    headerBackVisible: false,
     headerRight: showAuth
       ? () => <AuthHeaderButtons navigation={navigation} />
       : undefined,
+    headerRightContainerStyle: styles.headerSide,
   };
 }
 
@@ -57,10 +77,11 @@ const stackScreenOptions = {
   headerBackground: () => <GradientHeaderBackground />,
   headerStyle: {
     backgroundColor: 'transparent',
+    minHeight: 56,
   },
   headerTintColor: colors.white,
-  headerTitleStyle: { fontWeight: '700' },
   headerShadowVisible: false,
+  headerBackVisible: false,
   contentStyle: { backgroundColor: colors.almond },
 };
 
@@ -71,6 +92,23 @@ const TAB_ICONS = {
   Favorites: { focused: 'heart', unfocused: 'heart-outline' },
 };
 
+const TAB_LABELS = {
+  Home: 'Home',
+  Browse: 'Browse',
+  Rankings: 'Rankings',
+  Favorites: 'Favorites',
+};
+
+function ThemeTabUnderline() {
+  return (
+    <View style={styles.themeUnderline}>
+      <View style={[styles.themeSeg, styles.segNavy]} />
+      <View style={[styles.themeSeg, styles.segMango]} />
+      <View style={[styles.themeSeg, styles.segOrange]} />
+    </View>
+  );
+}
+
 function tabBarIcon(routeName) {
   return ({ focused, color, size }) => {
     const icons = TAB_ICONS[routeName];
@@ -80,45 +118,13 @@ function tabBarIcon(routeName) {
 }
 
 function MainTabs() {
-  const insets = useSafeAreaInsets();
-
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: colors.redOrange,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.almondBorder,
-          borderTopWidth: 1,
-          height: 52 + insets.bottom,
-        },
-        tabBarItemStyle: {
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        tabBarButton: (props) => (
-          <PlatformPressable
-            {...props}
-            style={[props.style, styles.tabBarButton]}
-          />
-        ),
-        tabBarIconStyle: {
-          marginTop: 0,
-          marginBottom: 0,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          marginTop: 0,
-          marginBottom: 0,
-        },
-      }}
-    >
+    <Tab.Navigator tabBar={(props) => <TabBarWithAd {...props} />}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={({ navigation }) => ({
-          ...buildHeaderOptions(navigation, 'Myangar'),
+          ...buildHeaderOptions(navigation, 'Home'),
           tabBarIcon: tabBarIcon('Home'),
         })}
       />
@@ -150,10 +156,155 @@ function MainTabs() {
   );
 }
 
+function TabBarWithAd({ state, descriptors, navigation }) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View>
+      {/* <BottomAdBanner /> */}
+      <View
+        style={[
+          styles.tabBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 6),
+            height: 58 + Math.max(insets.bottom, 6),
+          },
+        ]}
+      >
+        {state.routes.map((route, index) => {
+          const focused = state.index === index;
+          const { options } = descriptors[route.key];
+          const label =
+            options.tabBarLabel ??
+            TAB_LABELS[route.name] ??
+            options.title ??
+            route.name;
+          const tint = focused ? colors.redOrange : colors.muted;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
+
+          const icon = options.tabBarIcon?.({
+            focused,
+            color: tint,
+            size: 22,
+          });
+
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              accessibilityLabel={options.tabBarAccessibilityLabel ?? String(label)}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={({ pressed }) => [styles.tabItem, pressed && styles.tabItemPressed]}
+            >
+              {icon}
+              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>
+                {label}
+              </Text>
+              {focused ? <ThemeTabUnderline /> : <View style={styles.themeUnderlineSpacer} />}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  tabBarButton: {
-    justifyContent: 'center',
+  headerLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    alignSelf: 'flex-end',
+    paddingLeft: HEADER_HORIZONTAL_PADDING,
+    paddingBottom: 4,
+    gap: 2,
+  },
+  headerLeftContainer: {
+    flexGrow: 1,
+    flexShrink: 1,
+    maxWidth: '72%',
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+    marginBottom: 2,
+  },
+  backBtnPressed: {
+    opacity: 0.75,
+  },
+  headerSide: {
+    minWidth: 48,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.almondBorder,
+    paddingTop: 4,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 2,
+    gap: 2,
+  },
+  tabItemPressed: {
+    opacity: 0.78,
+  },
+  themeUnderline: {
+    flexDirection: 'row',
+    height: 3,
+    width: '72%',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginTop: 3,
+  },
+  themeUnderlineSpacer: {
+    height: 3,
+    marginTop: 3,
+  },
+  themeSeg: {
+    flex: 1,
+  },
+  segNavy: {
+    backgroundColor: colors.navy,
+  },
+  segMango: {
+    backgroundColor: colors.mango,
+  },
+  segOrange: {
+    backgroundColor: colors.redOrange,
+  },
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.muted,
+  },
+  tabLabelActive: {
+    color: colors.redOrange,
+    fontWeight: '700',
   },
 });
 
@@ -178,21 +329,21 @@ export default function AppNavigator() {
           name="SeriesDetail"
           component={SeriesDetailScreen}
           options={({ navigation, route }) => ({
-            ...buildHeaderOptions(navigation, route.params?.title || 'Series'),
+            ...buildHeaderOptions(navigation, route.params?.title || 'Series', { showBack: true }),
           })}
         />
         <Stack.Screen
           name="Reader"
           component={ReaderScreen}
           options={({ navigation, route }) => ({
-            ...buildHeaderOptions(navigation, route.params?.title || 'Reader'),
+            ...buildHeaderOptions(navigation, route.params?.title || 'Reader', { showBack: true }),
           })}
         />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
           options={({ navigation }) => ({
-            ...buildHeaderOptions(navigation, 'Sign In', { showAuth: false }),
+            ...buildHeaderOptions(navigation, 'Sign In', { showAuth: false, showBack: true }),
             presentation: 'modal',
           })}
         />
@@ -200,7 +351,7 @@ export default function AppNavigator() {
           name="Register"
           component={RegisterScreen}
           options={({ navigation }) => ({
-            ...buildHeaderOptions(navigation, 'Register', { showAuth: false }),
+            ...buildHeaderOptions(navigation, 'Register', { showAuth: false, showBack: true }),
             presentation: 'modal',
           })}
         />
@@ -208,18 +359,22 @@ export default function AppNavigator() {
           name="Profile"
           component={ProfileScreen}
           options={({ navigation }) => ({
-            ...buildHeaderOptions(navigation, 'Profile', { showAuth: false }),
+            ...buildHeaderOptions(navigation, 'Profile', { showAuth: false, showBack: true }),
           })}
         />
         <Stack.Screen
           name="PrivacyPolicy"
           component={PrivacyPolicyScreen}
-          options={({ navigation }) => buildHeaderOptions(navigation, 'Privacy Policy')}
+          options={({ navigation }) =>
+            buildHeaderOptions(navigation, 'Privacy Policy', { showBack: true })
+          }
         />
         <Stack.Screen
           name="ContactUs"
           component={ContactUsScreen}
-          options={({ navigation }) => buildHeaderOptions(navigation, 'Contact Us')}
+          options={({ navigation }) =>
+            buildHeaderOptions(navigation, 'Contact Us', { showBack: true })
+          }
         />
       </Stack.Navigator>
     </NavigationContainer>

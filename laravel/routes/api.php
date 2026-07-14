@@ -168,6 +168,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ======================================================================
     // Reading Progress
     // ======================================================================
+    Route::get('/reading/continue', [ReadingProgressController::class, 'continueReading']);
     Route::get('/reading/history', [ReadingProgressController::class, 'history']);
     Route::get('/manga/{id}/progress', [ReadingProgressController::class, 'getSeriesProgress']);
     Route::post('/reading/progress', [ReadingProgressController::class, 'update']);
@@ -232,6 +233,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // Author Management
     // ======================================================================
     Route::get('/authors', [AdminAuthorController::class, 'index']);
+    Route::post('/authors/bulk-import', [AdminAuthorController::class, 'bulkImport']);
     Route::post('/authors', [AdminAuthorController::class, 'store']);
     Route::get('/authors/{id}', [AdminAuthorController::class, 'show']);
     Route::put('/authors/{id}', [AdminAuthorController::class, 'update']);

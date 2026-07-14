@@ -23,7 +23,7 @@ export const READING_MODES = {
 
 export const APP_DOWNLOAD = {
   fileName: 'myangarread00121v01.apk',
-  url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  url: 'https://myangar.fatelight.org/download',
   version: '1.0',
   sizeMB: '29',
 };

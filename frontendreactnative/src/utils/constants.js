@@ -12,10 +12,31 @@ export const CONTACT_EMAIL =
 export const ITEMS_PER_PAGE = 20;
 export const CHAPTERS_PER_PAGE = 50;
 export const AUTH_TOKEN_KEY = 'auth_token';
+export const REMEMBER_LOGIN_KEY = 'remember_login_credentials';
 export const RECENTLY_VIEWED_KEY = 'manga-web-recently-viewed';
 export const BRANDING_CACHE_KEY = 'branding_cache';
+export const READER_SETTINGS_KEY = 'reader_settings';
+
+/** Website download page — opens in browser; user downloads APK manually. */
+export const APP_DOWNLOAD_PAGE_URL = 'https://myangar.fatelight.org/download';
 
 export const MONETAG_SMART_LINK = 'https://omg10.com/4/11203049';
+export const AD_BANNER_URL = 'https://omg10.com/4/11239729';
+
+/** Reader page view mode */
+export const READER_MODE_SCROLL = 'scroll';
+export const READER_MODE_PAGED = 'paged';
+
+/** Reader orientation preference */
+export const READER_ORIENTATION_PORTRAIT = 'portrait';
+export const READER_ORIENTATION_LANDSCAPE = 'landscape';
+export const READER_ORIENTATION_AUTO = 'auto';
+
+export const DEFAULT_READER_SETTINGS = {
+  mode: READER_MODE_SCROLL,
+  orientation: READER_ORIENTATION_AUTO,
+  scale: 1,
+};
 
 export const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },

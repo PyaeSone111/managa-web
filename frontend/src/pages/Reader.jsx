@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { chapterApi, seriesApi } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { loadInPagePushAd } from '../components/ads/loadInPagePushAd';
+// import { loadInPagePushAd } from '../components/ads/loadInPagePushAd';
 import { formatChapterLabel, formatChapterNumber, toAbsoluteImageUrl } from '../utils/helpers';
 
 function Reader() {
@@ -20,13 +20,6 @@ function Reader() {
     queryFn: () => chapterApi.getBySeriesAndNumber(seriesSlug, chapterNumber),
     enabled: !!seriesSlug && !!chapterNumber,
   });
-
-  const chapterId = chapter?.data?.id;
-
-  useEffect(() => {
-    if (!chapterId) return;
-    loadInPagePushAd();
-  }, [seriesSlug, chapterNumber, chapterId]);
 
   const { data: chaptersRes } = useQuery({
     queryKey: ['series', seriesSlug, 'chapters'],

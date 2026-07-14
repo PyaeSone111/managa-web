@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -18,6 +18,7 @@ import {
 import { ITEMS_PER_PAGE, SORT_OPTIONS, STATUS_OPTIONS } from '../utils/constants';
 import SeriesGrid from '../components/SeriesGrid';
 import SearchBar from '../components/SearchBar';
+import Pagination from '../components/Pagination';
 import colors from '../theme/colors';
 
 export default function BrowseScreen({ navigation, route }) {
@@ -32,6 +33,7 @@ export default function BrowseScreen({ navigation, route }) {
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     if (route.params?.q) setQuery(route.params.q);
@@ -77,7 +79,8 @@ export default function BrowseScreen({ navigation, route }) {
   const categories = categoriesData?.data || [];
   const types = typesData?.data || [];
   const authors = authorsData?.data || [];
-  const pagination = data?.meta || {};
+  const pagination = data?.pagination || data?.meta || {};
+  const lastPage = pagination.last_page ?? pagination.total_pages ?? 1;
   const hasActiveFilters =
     selectedCategories.length > 0 ||
     selectedTypes.length > 0 ||
@@ -117,10 +120,19 @@ export default function BrowseScreen({ navigation, route }) {
     [selectedCategories, selectedTypes, selectedAuthors, status]
   );
 
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [page]);
+
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+  };
+
   const refreshControl = useRefreshControl(refetch, { isFetching, isLoading });
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.screen}
       contentContainerStyle={styles.content}
       refreshControl={refreshControl}
@@ -153,27 +165,13 @@ export default function BrowseScreen({ navigation, route }) {
             section="browse"
           />
 
-          {pagination.last_page > 1 && (
-            <View style={styles.pagination}>
-              <Pressable
-                disabled={page <= 1}
-                onPress={() => setPage((p) => p - 1)}
-                style={[styles.pageBtn, page <= 1 && styles.pageBtnDisabled]}
-              >
-                <Text style={styles.pageBtnText}>Previous</Text>
-              </Pressable>
-              <Text style={styles.pageInfo}>
-                Page {page} of {pagination.last_page}
-              </Text>
-              <Pressable
-                disabled={page >= pagination.last_page}
-                onPress={() => setPage((p) => p + 1)}
-                style={[styles.pageBtn, page >= pagination.last_page && styles.pageBtnDisabled]}
-              >
-                <Text style={styles.pageBtnText}>Next</Text>
-              </Pressable>
-            </View>
-          )}
+          <Pagination
+            page={page}
+            lastPage={lastPage}
+            total={pagination.total ?? 0}
+            perPage={pagination.per_page ?? ITEMS_PER_PAGE}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
 
@@ -320,24 +318,6 @@ const styles = StyleSheet.create({
   },
   filterToggleText: { color: colors.white, fontWeight: '600' },
   error: { textAlign: 'center', color: colors.muted, padding: 24 },
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    padding: 16,
-  },
-  pageBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.almondBorder,
-  },
-  pageBtnDisabled: { opacity: 0.5 },
-  pageBtnText: { color: colors.navy, fontWeight: '600' },
-  pageInfo: { color: colors.muted, fontSize: 13 },
   modal: { flex: 1, backgroundColor: colors.almond },
   modalHeader: {
     flexDirection: 'row',

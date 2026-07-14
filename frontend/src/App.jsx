@@ -19,8 +19,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import ContactUs from './pages/ContactUs';
 import DownloadApp from './pages/DownloadApp';
 import NotFound from './pages/NotFound';
-import AdScripts from './components/ads/AdScripts';
-import FooterAdStrip from './components/ads/FooterAdStrip';
+// import AdScripts from './components/ads/AdScripts';
+// import FooterAdStrip from './components/ads/FooterAdStrip';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -36,8 +36,8 @@ const queryClient = new QueryClient({
 function AppContent() {
   const location = useLocation();
   const isDownloadPage = location.pathname === '/download';
-  const isReaderPage = location.pathname.startsWith('/read/');
-  const showBannerAd = !isDownloadPage && !isReaderPage;
+  // const isReaderPage = location.pathname.startsWith('/read/');
+  // const showBannerAd = !isDownloadPage && !isReaderPage;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,7 +46,7 @@ function AppContent() {
             <ErrorBoundary>
               <ThemeLoader>
                 <BrandingProvider>
-                  <AdScripts />
+                  {/* <AdScripts /> */}
                   <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)]">
                     <Navbar />
                     <div className="flex flex-1 w-full">
@@ -73,7 +73,7 @@ function AppContent() {
                         </Routes>
                       </main>
                     </div>
-                    {showBannerAd && <FooterAdStrip />}
+                    {/* {showBannerAd && <FooterAdStrip />} */}
                     <Footer />
                   </div>
                 </BrandingProvider>

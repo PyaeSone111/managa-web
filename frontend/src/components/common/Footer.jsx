@@ -7,7 +7,7 @@ const EXPLORE_LINKS = [
   { to: '/browse', label: 'Browse' },
   { to: '/browse?sort=latest', label: 'Latest Updates' },
   { to: '/rankings', label: 'Rankings' },
-  { to: '/download', label: 'Mobile App (Coming soon)' },
+  { to: '/download', label: 'Mobile App' },
 ];
 
 const LEGAL_LINKS = [

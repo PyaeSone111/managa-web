@@ -1,18 +1,18 @@
-import { useEffect } from 'react';
-import {
-  loadMonetagVignetteTag,
-  loadMonetagInPagePushTag,
-} from './monetagTags';
+// import { useEffect } from 'react';
+// import {
+//   loadMonetagVignetteTag,
+//   loadMonetagInPagePushTag,
+// } from './monetagTags';
 
 /**
- * Fallback for Monetag zone tags when index.html tags are missing (dev HMR).
- * Push tag lives only in index.html — do not inject via React.
+ * Ad scripts — Google AdSense loader lives in index.html.
+ * Monetag zone tags (vignette, in-page push) are commented out.
  */
 function AdScripts() {
-  useEffect(() => {
-    loadMonetagVignetteTag();
-    loadMonetagInPagePushTag();
-  }, []);
+  // useEffect(() => {
+  //   loadMonetagVignetteTag();
+  //   loadMonetagInPagePushTag();
+  // }, []);
 
   return null;
 }

@@ -112,6 +112,7 @@ export const adminApi = {
   createAuthor: (data) => api.post('/admin/authors', data),
   updateAuthor: (id, data) => api.put(`/admin/authors/${id}`, data),
   deleteAuthor: (id) => api.delete(`/admin/authors/${id}`),
+  bulkImportAuthors: (data) => api.post('/admin/authors/bulk-import', data),
 
   // Manga Types
   getMangaTypes: () => api.get('/admin/manga-types'),

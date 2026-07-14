@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { favoriteApi, ratingApi, seriesApi } from '../services/api';
+import { favoriteApi, ratingApi, readingProgressApi, seriesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useRefreshControl } from '../hooks/usePullToRefresh';
 import { addRecentlyViewed } from '../hooks/useRecentlyViewed';
-import { toAbsoluteImageUrl } from '../utils/helpers';
+import { formatChapterLabel, toAbsoluteImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
-import MonetagAdView from '../components/MonetagAdView';
 import ChapterList from '../components/ChapterList';
 import StarRating from '../components/StarRating';
 import colors from '../theme/colors';
@@ -101,8 +100,7 @@ function UserRating({ seriesId, slug }) {
 
 export default function SeriesDetailScreen({ route, navigation }) {
   const { slug } = route.params;
-  const [adVisible, setAdVisible] = useState(false);
-  const [pendingChapter, setPendingChapter] = useState(null);
+  const { isAuthenticated } = useAuth();
 
   const { data: series, isLoading, refetch: refetchSeries, isFetching: seriesFetching } = useQuery({
     queryKey: ['series', slug],
@@ -113,6 +111,14 @@ export default function SeriesDetailScreen({ route, navigation }) {
     queryKey: ['series', slug, 'chapters'],
     queryFn: () => seriesApi.getChapters(slug),
     enabled: Boolean(slug),
+  });
+
+  const seriesId = series?.data?.id;
+
+  const { data: progressData } = useQuery({
+    queryKey: ['reading', 'series', seriesId],
+    queryFn: () => readingProgressApi.getSeries(seriesId),
+    enabled: isAuthenticated && Boolean(seriesId),
   });
 
   const refetchAll = useCallback(
@@ -148,26 +154,14 @@ export default function SeriesDetailScreen({ route, navigation }) {
     rating1to10 != null && rating1to10 > 0 ? Number(rating1to10) / 2 : null;
   const starRating = rating1to5 != null ? Math.round(rating1to5) : 0;
 
+  const lastRead = progressData?.data?.last_read_chapter;
+
   const openChapter = (chapter) => {
     navigation.navigate('Reader', {
       seriesSlug: s.slug,
       chapterNumber: chapter.chapter_number,
       title: chapter.title,
     });
-  };
-
-  const openChapterWithAd = (chapter) => {
-    setPendingChapter(chapter);
-    setAdVisible(true);
-  };
-
-  const handleAdClose = () => {
-    setAdVisible(false);
-    const target = pendingChapter;
-    setPendingChapter(null);
-    if (target) {
-      openChapter(target);
-    }
   };
 
   return (
@@ -200,6 +194,23 @@ export default function SeriesDetailScreen({ route, navigation }) {
         </View>
 
         <FavoriteButton seriesId={s.id} navigation={navigation} />
+
+        {lastRead?.chapter_number != null ? (
+          <Pressable
+            style={styles.continueBtn}
+            onPress={() =>
+              openChapter({
+                chapter_number: lastRead.chapter_number,
+                title: formatChapterLabel(lastRead.chapter_number),
+              })
+            }
+          >
+            <Text style={styles.continueBtnText}>
+              Continue {formatChapterLabel(lastRead.chapter_number)} · p.
+              {lastRead.last_page}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {s.description ? (
           <Text style={styles.description}>{s.description}</Text>
@@ -252,9 +263,8 @@ export default function SeriesDetailScreen({ route, navigation }) {
       </View>
 
       <Text style={styles.sectionTitle}>Chapters</Text>
-      <ChapterList chapters={chapters?.data || []} onChapterPress={openChapterWithAd} />
+      <ChapterList chapters={chapters?.data || []} onChapterPress={openChapter} />
     </ScrollView>
-    <MonetagAdView visible={adVisible} onClose={handleAdClose} />
     </>
   );
 }
@@ -313,6 +323,20 @@ const styles = StyleSheet.create({
   favBtnActive: { backgroundColor: colors.redOrange, borderColor: colors.redOrange },
   favBtnText: { color: colors.navy, fontWeight: '600' },
   favBtnTextActive: { color: colors.white },
+  continueBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.navy,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  continueBtnText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textAlign: 'center',
+  },
   description: {
     fontSize: 14,
     color: `${colors.navy}CC`,

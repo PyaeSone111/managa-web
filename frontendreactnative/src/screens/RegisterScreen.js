@@ -10,6 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { AuthCardLogo } from '../components/navigation/HeaderBrandLogo';
+import AuthCardTitle from '../components/auth/AuthCardTitle';
+import PasswordInput from '../components/auth/PasswordInput';
 import colors from '../theme/colors';
 
 export default function RegisterScreen({ navigation }) {
@@ -52,7 +55,8 @@ export default function RegisterScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>Create Account</Text>
+          <AuthCardLogo />
+          <AuthCardTitle variant="register" />
           {errors.general && <Text style={styles.error}>{errors.general[0]}</Text>}
 
           <Text style={styles.label}>Name</Text>
@@ -71,6 +75,9 @@ export default function RegisterScreen({ navigation }) {
             onChangeText={(email) => setForm({ ...form, email })}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            importantForAutofill="yes"
             style={styles.input}
             placeholder="you@example.com"
             placeholderTextColor={colors.muted}
@@ -78,24 +85,24 @@ export default function RegisterScreen({ navigation }) {
           {errors.email && <Text style={styles.fieldError}>{errors.email[0]}</Text>}
 
           <Text style={styles.label}>Password</Text>
-          <TextInput
+          <PasswordInput
             value={form.password}
             onChangeText={(password) => setForm({ ...form, password })}
-            secureTextEntry
-            style={styles.input}
+            autoComplete="password-new"
+            textContentType="newPassword"
             placeholder="Min 8 characters"
-            placeholderTextColor={colors.muted}
+            containerStyle={styles.passwordField}
           />
           {errors.password && <Text style={styles.fieldError}>{errors.password[0]}</Text>}
 
           <Text style={styles.label}>Confirm Password</Text>
-          <TextInput
+          <PasswordInput
             value={form.password_confirmation}
             onChangeText={(password_confirmation) => setForm({ ...form, password_confirmation })}
-            secureTextEntry
-            style={styles.input}
+            autoComplete="password-new"
+            textContentType="newPassword"
             placeholder="Repeat your password"
-            placeholderTextColor={colors.muted}
+            containerStyle={styles.passwordField}
           />
 
           <Pressable
@@ -129,7 +136,6 @@ const styles = StyleSheet.create({
     borderColor: colors.almondBorder,
     padding: 24,
   },
-  title: { fontSize: 24, fontWeight: '700', color: colors.navy, marginBottom: 20, textAlign: 'center' },
   label: { fontSize: 14, fontWeight: '600', color: colors.navy, marginBottom: 6, marginTop: 4 },
   input: {
     borderWidth: 1,
@@ -139,6 +145,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 4,
     color: colors.navy,
+  },
+  passwordField: {
+    marginBottom: 4,
   },
   button: {
     backgroundColor: colors.redOrange,

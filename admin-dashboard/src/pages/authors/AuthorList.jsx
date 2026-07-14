@@ -1,16 +1,48 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
+import AuthorBulkImport from '../../components/authors/AuthorBulkImport';
+import { colors } from '../../theme/colors';
 
 function AuthorList() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['authors', search],
-    queryFn: () => adminApi.getAuthors({ search: search || undefined }),
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['authors', page, rowsPerPage, search],
+    queryFn: () =>
+      adminApi.getAuthors({
+        page: page + 1,
+        per_page: rowsPerPage,
+        search: search || undefined,
+      }),
   });
 
   const deleteMutation = useMutation({
@@ -25,105 +57,203 @@ function AuthorList() {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
         await deleteMutation.mutateAsync(id);
-      } catch (error) {
-        alert('Error: ' + (error.message || 'Failed to delete author'));
+      } catch (err) {
+        alert('Error: ' + (err.message || 'Failed to delete author'));
       }
     }
   };
 
+  const handleChangePage = (_event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+    setPage(0);
+  };
+
   const authors = data?.data || [];
+  const meta = data?.meta || {};
+  const total = meta.total ?? 0;
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Authors</h1>
-          <Link
+      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Typography variant="h4" fontWeight={700} sx={{ color: colors.navy }}>
+            Authors
+          </Typography>
+          <Button
+            component={Link}
             to="/dashboard/authors/create"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
           >
             Add Author
-          </Link>
-        </div>
+          </Button>
+        </Box>
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
-            <input
-              type="text"
-              placeholder="Search authors..."
+        <AuthorBulkImport />
+
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            border: '1px solid',
+            borderColor: colors.almondBorder,
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid',
+              borderColor: colors.almondBorder,
+              bgcolor: 'rgba(30, 61, 89, 0.04)',
+            }}
+          >
+            <TextField
+              size="small"
+              label="Search authors"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-orange focus:border-transparent"
+              onChange={handleSearchChange}
+              placeholder="Filter by name..."
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{ width: { xs: '100%', sm: 320 }, bgcolor: '#fff', borderRadius: 1 }}
             />
-          </div>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading authors: {error.message}
+            </Alert>
+          )}
 
           {isLoading ? (
-            <div className="p-8 text-center">Loading...</div>
-          ) : authors.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No authors found</div>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress sx={{ color: colors.redOrange }} />
+            </Box>
           ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Slug
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Series Count
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {authors.map((author) => (
-                  <tr key={author.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        {author.image_url ? (
-                          <img
-                            src={author.image_url}
-                            alt={author.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500 text-lg">
-                              {author.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <span className="font-medium text-gray-900">{author.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">{author.slug}</td>
-                    <td className="px-6 py-4 text-gray-500">{author.series_count || 0}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <Link
-                        to={`/dashboard/authors/${author.id}/edit`}
-                        className="text-red-orange hover:text-blue-800"
+            <>
+              <TableContainer sx={{ width: '100%' }}>
+                <Table sx={{ minWidth: 640 }}>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'rgba(30, 61, 89, 0.06)' }}>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy }}>Name</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: colors.navy, width: 200 }}>
+                        Slug
+                      </TableCell>
+                      <TableCell
+                        sx={{ fontWeight: 600, color: colors.navy, width: 120 }}
+                        align="center"
                       >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(author.id, author.name)}
-                        className="text-red-600 hover:text-red-800"
-                        disabled={deleteMutation.isLoading}
+                        Series
+                      </TableCell>
+                      <TableCell
+                        sx={{ fontWeight: 600, color: colors.navy, width: 100 }}
+                        align="center"
                       >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        Actions
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {authors.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 6, color: colors.muted }}>
+                          No authors found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      authors.map((author) => (
+                        <TableRow key={author.id} hover>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar
+                                src={author.image_url || undefined}
+                                alt={author.name}
+                                sx={{ width: 40, height: 40, bgcolor: colors.almond }}
+                              >
+                                {author.name?.charAt(0)?.toUpperCase()}
+                              </Avatar>
+                              <Typography variant="body2" fontWeight={600} sx={{ color: colors.navy }}>
+                                {author.name}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ color: colors.muted }}>
+                              {author.slug}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="body2" sx={{ color: colors.muted }}>
+                              {author.series_count || 0}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              component={Link}
+                              to={`/dashboard/authors/${author.id}/edit`}
+                              size="small"
+                              aria-label={`Edit ${author.name}`}
+                            >
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              aria-label={`Delete ${author.name}`}
+                              onClick={() => handleDelete(author.id, author.name)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <DeleteOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TablePagination
+                component="div"
+                count={total}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50]}
+              />
+            </>
           )}
-        </div>
-      </div>
+        </Paper>
+      </Box>
     </Layout>
   );
 }

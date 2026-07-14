@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import MonetagAdView from './src/components/MonetagAdView';
+// import MonetagAdView from './src/components/MonetagAdView';
+import ForceUpdateGate from './src/components/ForceUpdateGate';
 import SplashScreen from './src/components/SplashScreen';
 import { AuthProvider } from './src/context/AuthContext';
 import { ProfileImageProvider } from './src/context/ProfileImageContext';
@@ -22,11 +23,11 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [showLaunchAd, setShowLaunchAd] = useState(false);
+  // const [showLaunchAd, setShowLaunchAd] = useState(false);
 
   const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
-    setShowLaunchAd(true);
+    // setShowLaunchAd(true);
   }, []);
 
   return (
@@ -42,13 +43,13 @@ export default function App() {
             {showSplash ? (
               <SplashScreen onFinish={handleSplashFinish} />
             ) : (
-              <>
+              <ForceUpdateGate>
                 <AppNavigator />
-                <MonetagAdView
+                {/* <MonetagAdView
                   visible={showLaunchAd}
                   onClose={() => setShowLaunchAd(false)}
-                />
-              </>
+                /> */}
+              </ForceUpdateGate>
             )}
             </BrandingProvider>
           </ProfileImageProvider>

@@ -110,11 +110,14 @@ export const ratingApi = {
 };
 
 export const readingProgressApi = {
-  getAll: (params) => api.get('/reading-progress', { params }),
-  get: (seriesId) => api.get(`/reading-progress/${seriesId}`),
-  update: (seriesId, data) => api.post(`/reading-progress/${seriesId}`, data),
-  markComplete: (seriesId, chapterId) =>
-    api.post(`/reading-progress/${seriesId}/complete`, { chapter_id: chapterId }),
+  continueReading: (params) => api.get('/reading/continue', { params }),
+  history: (params) => api.get('/reading/history', { params }),
+  getSeries: (seriesId) => api.get(`/manga/${seriesId}/progress`),
+  update: (data) => api.post('/reading/progress', data),
+  markComplete: (chapterId) => api.post(`/chapters/${chapterId}/complete`),
+  clearSeries: (seriesId) => api.delete(`/manga/${seriesId}/progress`),
+  startSession: (data) => api.post('/reading/session/start', data),
+  endSession: (data) => api.post('/reading/session/end', data),
 };
 
 export const authApi = {

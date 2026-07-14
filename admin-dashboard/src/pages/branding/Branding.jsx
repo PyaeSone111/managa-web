@@ -96,7 +96,7 @@ function fullUrl(url) {
 }
 
 const DEFAULT_APP_DOWNLOAD = {
-  app_download_url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  app_download_url: 'https://myangar.fatelight.org/download',
   app_download_filename: 'myangarread00121v01.apk',
   app_version: '1.0',
   app_size_mb: '29',

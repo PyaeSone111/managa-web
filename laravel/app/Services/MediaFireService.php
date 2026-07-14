@@ -138,6 +138,69 @@ class MediaFireService
     }
 
     /**
+     * Pick pages-per-chapter near $preferred so the last chapter is not a tiny leftover.
+     *
+     * Example: 100 → 20 (exact). 101 with 20 leaves 1 page — prefer 21 (last gets 17).
+     */
+    public function calculateOptimalPagesPerChapter(int $totalImages, int $preferred = 20): int
+    {
+        if ($totalImages < 1) {
+            throw new \RuntimeException('No images to split into chapters');
+        }
+
+        if ($totalImages <= $preferred) {
+            return $totalImages;
+        }
+
+        $best = null;
+        $bestScore = null;
+        $maxDelta = max($preferred, 40);
+
+        for ($delta = 0; $delta <= $maxDelta; $delta++) {
+            $candidates = $delta === 0 ? [0] : [$delta, -$delta];
+
+            foreach ($candidates as $offset) {
+                $pagesPerChapter = $preferred + $offset;
+                if ($pagesPerChapter < 1 || $pagesPerChapter > $totalImages) {
+                    continue;
+                }
+
+                $remainder = $totalImages % $pagesPerChapter;
+                $lastChapterPages = $remainder === 0 ? $pagesPerChapter : $remainder;
+                $minAcceptableLast = max(1, (int) ceil($pagesPerChapter / 2));
+
+                // Exact multiples at/near preferred win immediately.
+                if ($remainder === 0) {
+                    return $pagesPerChapter;
+                }
+
+                // Skip sizes that leave a tiny last chapter (e.g. 101÷20 → 1).
+                if ($lastChapterPages < $minAcceptableLast) {
+                    continue;
+                }
+
+                // Prefer larger last chapters and sizes closer to preferred.
+                $score = ($lastChapterPages * 1000) - ($delta * 10) + $pagesPerChapter;
+
+                if ($bestScore === null || $score > $bestScore) {
+                    $bestScore = $score;
+                    $best = $pagesPerChapter;
+                }
+            }
+
+            // First acceptable ring (closest to preferred) is good enough.
+            if ($best !== null) {
+                return $best;
+            }
+        }
+
+        // Fallback: even chapter count around the preferred size.
+        $chapterCount = max(1, (int) round($totalImages / $preferred));
+
+        return max(1, (int) ceil($totalImages / $chapterCount));
+    }
+
+    /**
      * Split sorted page images into chapters by page count.
      *
      * @param  array<int, array{image_url: string, original_filename: string}>  $images

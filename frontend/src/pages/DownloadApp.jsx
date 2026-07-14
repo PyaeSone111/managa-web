@@ -1,7 +1,11 @@
 import { Helmet } from 'react-helmet-async';
-import { FaBook, FaMobileAlt, FaStar, FaBookmark } from 'react-icons/fa';
+import { useEffect } from 'react';
+import { FaBook, FaDownload, FaStar, FaBookmark } from 'react-icons/fa';
 import GetAppButton from '../components/common/GetAppButton';
 import { AnimatedHomePhone, AnimatedBrowsePhone } from '../components/download/AnimatedPhoneMockups';
+import { useBranding } from '../context/BrandingContext';
+import { downloadApk } from '../utils/downloadApk';
+import { getApkDownloadUrl } from '../utils/appDownload';
 
 function FloatingIcon({ icon: Icon, color, className }) {
   return (
@@ -15,18 +19,32 @@ function FloatingIcon({ icon: Icon, color, className }) {
 }
 
 export default function DownloadApp() {
+  const { appDownload, brandingReady, isFetching, refetchBranding } = useBranding();
+  const { fileName, version, sizeMB } = appDownload;
+  const apkUrl = getApkDownloadUrl(appDownload);
+
+  useEffect(() => {
+    refetchBranding();
+  }, [refetchBranding]);
+
+  const handleDownload = () => {
+    if (!apkUrl) return;
+    downloadApk(apkUrl, fileName);
+  };
+
+  const showLoading = isFetching || !brandingReady;
+
   return (
     <>
       <Helmet>
-        <title>Mobile App — Coming Soon - Myangar</title>
+        <title>Get the App - Myangar</title>
         <meta
           name="description"
-          content="The Myangar mobile app is coming soon. Read manga, manhwa, and manhua on the website for now."
+          content="Download the Myangar Android app. Read manga, manhwa, and manhua on your phone."
         />
       </Helmet>
 
       <div className="relative overflow-hidden bg-almond min-h-[calc(100vh-4rem)]">
-        {/* Wavy background shapes */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <svg
             className="absolute -top-24 -left-32 w-[520px] h-[520px] text-navy/[0.06]"
@@ -56,7 +74,6 @@ export default function DownloadApp() {
 
         <div className="relative container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-20">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            {/* Left — phone visuals */}
             <div className="relative flex justify-center items-center min-h-[340px] sm:min-h-[400px] lg:min-h-[480px]">
               <FloatingIcon icon={FaBook} color="#ff6e40" className="top-[8%] left-[12%] sm:left-[18%] animate-pulse" />
               <FloatingIcon icon={FaStar} color="#ffc13b" className="top-[22%] right-[8%] sm:right-[16%]" />
@@ -95,15 +112,14 @@ export default function DownloadApp() {
               </div>
 
               <div className="absolute bottom-[6%] sm:bottom-[10%] right-[4%] sm:right-[12%] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-navy text-white text-[10px] sm:text-xs font-medium shadow-lg">
-                <FaMobileAlt className="w-3 h-3 text-mango" />
-                Coming soon
+                <FaDownload className="w-3 h-3 text-mango" />
+                Downloaded 1000+ times
               </div>
             </div>
 
-            {/* Right — copy & CTA */}
             <div className="text-center lg:text-left max-w-xl mx-auto lg:mx-0">
               <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-red-orange uppercase mb-3">
-                Android · Coming soon
+                Android · {fileName.replace('.apk', '')} · v{version}
               </p>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy leading-tight tracking-tight mb-3">
                 MYANGAR
@@ -111,28 +127,67 @@ export default function DownloadApp() {
                 <span className="text-red-orange">MOBILE APP</span>
               </h1>
               <p className="text-sm sm:text-base font-bold text-navy/80 tracking-wide uppercase mb-4">
-                On the way — stay tuned
+                Download and read manga for free
               </p>
               <p className="text-sm sm:text-base text-sidewalk-grey leading-relaxed mb-8">
-                We&apos;re building the Myangar Android app so you can browse manga, save favorites,
-                and keep reading on the go. For now, enjoy the full library right here on the website.
+                Take your library anywhere. Browse thousands of manga, manhwa, and manhua,
+                save favorites, and pick up right where you left off — all from your Android phone.
               </p>
 
-              <GetAppButton size="lg" tone="light" className="uppercase tracking-wide shadow-xl" />
+              <GetAppButton
+                as="button"
+                onClick={handleDownload}
+                size="lg"
+                icon={FaDownload}
+                className="uppercase tracking-wide shadow-xl"
+              >
+                {showLoading ? 'Loading…' : 'Download Now'}
+              </GetAppButton>
 
-              <p className="mt-4 text-xs text-sidewalk-grey">
-                iOS is not available yet — use the website on iPhone or iPad in the meantime.
-              </p>
+              {showLoading ? (
+                <p className="mt-4 text-xs text-sidewalk-grey">Loading download info…</p>
+              ) : !apkUrl ? (
+                <p className="mt-4 text-xs text-red-orange">
+                  APK download link is not configured yet. Please check back later.
+                </p>
+              ) : (
+                <p className="mt-4 text-xs text-sidewalk-grey">
+                  ~{sizeMB} MB · Android 7.0+ ·{' '}
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className="text-ruskin-blue hover:text-delta-green underline"
+                  >
+                    Direct download link
+                  </button>
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Install steps */}
           <div className="mt-14 sm:mt-20 max-w-3xl mx-auto">
-            <div className="glass rounded-2xl p-6 sm:p-8 text-center">
-              <h2 className="text-lg font-bold text-navy mb-3">Coming soon</h2>
-              <p className="text-sm text-navy/85 leading-relaxed max-w-md mx-auto">
-                The Android app isn&apos;t ready for download yet. Check back later — we&apos;ll announce
-                here when it&apos;s available.
+            <div className="glass rounded-2xl p-6 sm:p-8">
+              <h2 className="text-lg font-bold text-navy mb-4">How to install</h2>
+              <ol className="grid sm:grid-cols-2 gap-3 text-sm text-navy/85">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">1</span>
+                  Download the APK using the button above.
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">2</span>
+                  Open the file on your Android device.
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">3</span>
+                  Allow installation from unknown sources if prompted.
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-red-orange to-mango text-white text-xs font-bold flex items-center justify-center">4</span>
+                  Follow the on-screen steps to finish setup.
+                </li>
+              </ol>
+              <p className="text-xs text-sidewalk-grey mt-5 text-center">
+                iOS is not available yet — use the website on iPhone or iPad in the meantime.
               </p>
             </div>
           </div>

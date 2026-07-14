@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Author;
+use App\Support\ImportUrlValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -118,6 +119,117 @@ class AdminAuthorController extends Controller
         return response()->json([
             'message' => 'Author updated successfully',
             'data' => $author,
+        ]);
+    }
+
+    /**
+     * Bulk import authors from Excel rows (sync).
+     */
+    public function bulkImport(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'rows' => 'required|array|min:1|max:500',
+            'rows.*.name' => 'required|string|max:255',
+            'rows.*.slug' => 'nullable|string|max:255',
+            'rows.*.bio' => 'nullable|string',
+            'rows.*.image_url' => 'nullable|string|max:1000',
+            'rows.*.row_number' => 'nullable|integer',
+        ]);
+
+        $imported = 0;
+        $skipped = 0;
+        $failed = 0;
+        $results = [];
+
+        foreach ($validated['rows'] as $index => $row) {
+            $rowNumber = $row['row_number'] ?? ($index + 1);
+            $name = trim((string) ($row['name'] ?? ''));
+
+            if ($name === '') {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNumber,
+                    'status' => 'failed',
+                    'message' => 'Name is required',
+                ];
+                continue;
+            }
+
+            $imageUrl = isset($row['image_url']) ? trim((string) $row['image_url']) : '';
+            if ($imageUrl !== '' && ! ImportUrlValidator::isValidImageUrl($imageUrl)) {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNumber,
+                    'status' => 'failed',
+                    'message' => 'Invalid image URL',
+                ];
+                continue;
+            }
+
+            $existing = Author::where('name', $name)->first();
+            if ($existing) {
+                $skipped++;
+                $results[] = [
+                    'row' => $rowNumber,
+                    'status' => 'skipped',
+                    'message' => "Author already exists (ID {$existing->id})",
+                    'author_id' => $existing->id,
+                ];
+                continue;
+            }
+
+            $slugInput = isset($row['slug']) ? trim((string) $row['slug']) : '';
+            $slug = $slugInput !== '' ? Str::slug($slugInput) : Str::slug($name);
+            if ($slug === '') {
+                $slug = 'author-' . substr(md5($name), 0, 12);
+            }
+
+            if (Author::where('slug', $slug)->exists()) {
+                $baseSlug = $slug;
+                $counter = 1;
+                while (Author::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+
+            try {
+                $author = Author::create([
+                    'name' => $name,
+                    'slug' => $slug,
+                    'bio' => isset($row['bio']) ? trim((string) $row['bio']) ?: null : null,
+                    'image_url' => $imageUrl !== '' ? $imageUrl : null,
+                ]);
+
+                $imported++;
+                $results[] = [
+                    'row' => $rowNumber,
+                    'status' => 'success',
+                    'message' => "Created author \"{$author->name}\"",
+                    'author_id' => $author->id,
+                ];
+            } catch (\Throwable $e) {
+                $failed++;
+                $results[] = [
+                    'row' => $rowNumber,
+                    'status' => 'failed',
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        if ($imported > 0) {
+            self::clearAuthorsListCache();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'failed' => $failed,
+                'results' => $results,
+            ],
         ]);
     }
 

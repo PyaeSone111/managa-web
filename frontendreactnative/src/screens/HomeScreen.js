@@ -4,7 +4,7 @@ import { dashboardApi } from '../services/api';
 import { useRefreshControl } from '../hooks/usePullToRefresh';
 import HeroBanner from '../components/HeroBanner';
 import SeriesGrid from '../components/SeriesGrid';
-import RecentlyViewedCarousel from '../components/RecentlyViewedCarousel';
+import ContinueReadingCarousel from '../components/ContinueReadingCarousel';
 import colors from '../theme/colors';
 
 function SectionHeader({ title, onViewAll }) {
@@ -45,7 +45,7 @@ export default function HomeScreen({ navigation }) {
       refreshControl={refreshControl}
     >
       <HeroBanner onBrowsePress={() => navigation.navigate('Browse')} />
-      {/* <RecentlyViewedCarousel onSeriesPress={openSeries} /> */}
+      <ContinueReadingCarousel navigation={navigation} />
 
       <SectionHeader title="Latest Release" onViewAll={() => navigation.navigate('Browse', { sort: 'latest' })} />
       <SeriesGrid series={latest} loading={isLoading} onSeriesPress={openSeries} section="home_latest" />

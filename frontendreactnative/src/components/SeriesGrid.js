@@ -1,12 +1,13 @@
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useBranding } from '../context/BrandingContext';
-import MangaCard, { getNumColumnsForSection, isPortraitCard, getCardKeyForSection } from './cards/MangaCard';
+import MangaCard, { isPortraitCard, getCardKeyForSection } from './cards/MangaCard';
+import { getGridColumnsForSection } from '../utils/gridColumns';
 import colors from '../theme/colors';
 
-function SkeletonCard({ portrait }) {
-  if (portrait) {
+function SkeletonCard({ portrait, compact }) {
+  if (portrait || compact) {
     return (
-      <View style={styles.skeletonPortrait}>
+      <View style={[styles.skeletonPortrait, compact && styles.skeletonCompact]}>
         <View style={styles.skeletonImage} />
         <View style={styles.skeletonLine} />
         <View style={styles.skeletonLineShort} />
@@ -31,20 +32,27 @@ export default function SeriesGrid({
   section,
   numColumns: numColumnsProp,
 }) {
+  const { width } = useWindowDimensions();
   const { cardLayout, gridColumns, layoutVersion } = useBranding();
   const useDesignCards = Boolean(section);
   const cardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
   const portrait = useDesignCards ? isPortraitCard(cardKey) : true;
   const numColumns =
     numColumnsProp ??
-    (useDesignCards ? getNumColumnsForSection(section, cardLayout, gridColumns) : 2);
+    (useDesignCards
+      ? getGridColumnsForSection(section, width, gridColumns, cardLayout)
+      : 2);
+  const compact = numColumns >= 3;
+  const useListLayout = useDesignCards && !portrait && numColumns === 1;
+  const horizontalPad = compact ? 4 : 8;
 
   if (loading) {
+    const skeletonCount = portrait || compact ? numColumns * 3 : 4;
     return (
-      <View key={`skeleton-${section}-${layoutVersion}`} style={styles.grid}>
-        {[...Array(portrait ? 6 : 4)].map((_, i) => (
-          <View key={i} style={{ width: `${100 / numColumns}%`, padding: 6 }}>
-            <SkeletonCard portrait={portrait} />
+      <View key={`skeleton-${section}-${layoutVersion}-${numColumns}`} style={[styles.grid, { paddingHorizontal: horizontalPad }]}>
+        {[...Array(skeletonCount)].map((_, i) => (
+          <View key={i} style={{ width: `${100 / numColumns}%`, padding: compact ? 2 : 6 }}>
+            <SkeletonCard portrait={portrait || compact} compact={compact} />
           </View>
         ))}
       </View>
@@ -59,7 +67,7 @@ export default function SeriesGrid({
     );
   }
 
-  if (useDesignCards && !portrait) {
+  if (useListLayout) {
     return (
       <View style={styles.list} key={`${section}-${cardKey}-${layoutVersion}`}>
         {series.map((item, index) => (
@@ -70,6 +78,7 @@ export default function SeriesGrid({
             cardKey={cardKey}
             rank={index + 1}
             onPress={onSeriesPress}
+            screenWidth={width}
             style={{ marginHorizontal: 10, marginVertical: 6 }}
           />
         ))}
@@ -84,9 +93,9 @@ export default function SeriesGrid({
       keyExtractor={(item) => String(item.id)}
       numColumns={numColumns}
       scrollEnabled={false}
-      extraData={`${cardKey}-${numColumns}-${layoutVersion}`}
+      extraData={`${cardKey}-${numColumns}-${layoutVersion}-${width}`}
       columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
-      contentContainerStyle={styles.listContent}
+      contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPad }]}
       renderItem={({ item, index }) =>
         useDesignCards ? (
           <View style={{ flex: 1 / numColumns }}>
@@ -96,11 +105,19 @@ export default function SeriesGrid({
               cardKey={cardKey}
               rank={index + 1}
               onPress={onSeriesPress}
+              numColumns={numColumns}
+              screenWidth={width}
             />
           </View>
         ) : (
           <View style={{ flex: 1 / numColumns }}>
-            <MangaCard series={item} section="home_latest" onPress={onSeriesPress} />
+            <MangaCard
+              series={item}
+              section="home_latest"
+              onPress={onSeriesPress}
+              numColumns={numColumns}
+              screenWidth={width}
+            />
           </View>
         )
       }
@@ -112,7 +129,6 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 10,
   },
   list: {
     paddingBottom: 8,
@@ -137,6 +153,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.almondBorder,
     padding: 10,
+  },
+  skeletonCompact: {
+    padding: 4,
+    borderRadius: 8,
   },
   skeletonImage: {
     aspectRatio: 2 / 3,

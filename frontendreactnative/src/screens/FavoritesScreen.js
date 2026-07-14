@@ -3,9 +3,28 @@ import { useQuery } from '@tanstack/react-query';
 import { favoriteApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useRefreshControl } from '../hooks/usePullToRefresh';
+import AuthPromptCard from '../components/auth/AuthPromptCard';
 import SeriesGrid from '../components/SeriesGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import colors from '../theme/colors';
+
+function navigateToLogin(navigation) {
+  const parent = navigation.getParent();
+  if (parent) {
+    parent.navigate('Login');
+    return;
+  }
+  navigation.navigate('Login');
+}
+
+function navigateToRegister(navigation) {
+  const parent = navigation.getParent();
+  if (parent) {
+    parent.navigate('Register');
+    return;
+  }
+  navigation.navigate('Register');
+}
 
 export default function FavoritesScreen({ navigation }) {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -27,12 +46,14 @@ export default function FavoritesScreen({ navigation }) {
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>Sign in to view your favorites.</Text>
-        <Pressable style={styles.button} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </Pressable>
-      </View>
+      <AuthPromptCard
+        variant="favorites"
+        message="Sign in to save and view your favorite manga in one place."
+        onPrimaryPress={() => navigateToLogin(navigation)}
+        secondaryPrefix="Don't have an account?"
+        secondaryActionLabel="Sign Up"
+        onSecondaryPress={() => navigateToRegister(navigation)}
+      />
     );
   }
 
@@ -49,7 +70,6 @@ export default function FavoritesScreen({ navigation }) {
       contentContainerStyle={styles.content}
       refreshControl={refreshControl}
     >
-      {/* <Text style={styles.title}>My Favorites</Text> */}
       {!isLoading && series.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.message}>You haven't favorited any manga yet.</Text>
@@ -67,27 +87,7 @@ export default function FavoritesScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.almond },
   content: { paddingBottom: 24 },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.almond,
-    padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.navy,
-    padding: 16,
-  },
   empty: { alignItems: 'center', padding: 32 },
   message: { color: colors.muted, textAlign: 'center', marginBottom: 12 },
   link: { color: colors.redOrange, fontWeight: '600' },
-  button: {
-    backgroundColor: colors.redOrange,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  buttonText: { color: colors.white, fontWeight: '600' },
 });

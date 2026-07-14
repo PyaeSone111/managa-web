@@ -20,8 +20,8 @@ class SeriesImportService
     /**
      * Import one series row: create series, authors, and chapters from a MediaFire folder.
      *
-     * @param  array{title: string, description?: string, authors?: string, image_url?: string, mediafire_folder_url: string, pages_per_chapter: int, type?: string, type_ids?: int[], status?: string, row_number?: int}  $row
-     * @return array{status: string, message?: string, series_id?: int, chapters_created?: int, total_pages?: int}
+     * @param  array{title: string, description?: string, authors?: string, image_url?: string, mediafire_folder_url: string, pages_per_chapter?: int|null, type?: string, type_ids?: int[], status?: string, row_number?: int}  $row
+     * @return array{status: string, message?: string, series_id?: int, chapters_created?: int, total_pages?: int, pages_per_chapter?: int}
      */
     public function importRow(array $row, bool $isPublished = true): array
     {
@@ -34,8 +34,11 @@ class SeriesImportService
             return ['status' => 'failed', 'message' => 'Invalid MediaFire folder URL'];
         }
 
-        $pagesPerChapter = (int) ($row['pages_per_chapter'] ?? 0);
-        if ($pagesPerChapter < 1) {
+        $requestedPagesPerChapter = isset($row['pages_per_chapter']) && $row['pages_per_chapter'] !== '' && $row['pages_per_chapter'] !== null
+            ? (int) $row['pages_per_chapter']
+            : null;
+
+        if ($requestedPagesPerChapter !== null && $requestedPagesPerChapter < 1) {
             return ['status' => 'failed', 'message' => 'Pages per chapter must be at least 1'];
         }
 
@@ -53,6 +56,8 @@ class SeriesImportService
 
         try {
             $images = $this->mediaFireService->getFolderImages($row['mediafire_folder_url']);
+            $pagesPerChapter = $requestedPagesPerChapter
+                ?? $this->mediaFireService->calculateOptimalPagesPerChapter(count($images));
             $chapterPlans = $this->mediaFireService->splitImagesIntoChapters($images, $pagesPerChapter);
         } catch (\Exception $e) {
             return ['status' => 'failed', 'message' => $e->getMessage()];
@@ -108,6 +113,7 @@ class SeriesImportService
                 'series_id' => $series->id,
                 'chapters_created' => $chaptersCreated,
                 'total_pages' => $totalPages,
+                'pages_per_chapter' => $pagesPerChapter,
             ];
         } catch (\Exception $e) {
             DB::rollBack();

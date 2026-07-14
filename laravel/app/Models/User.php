@@ -147,13 +147,16 @@ class User extends Authenticatable
      */
     public function updateReadingProgress(int $seriesId, int $chapterId, int $lastPage, bool $completed = false): UserReadingProgress
     {
+        $existing = $this->readingProgress()->where('chapter_id', $chapterId)->first();
+
         return $this->readingProgress()->updateOrCreate(
             ['chapter_id' => $chapterId],
             [
                 'series_id' => $seriesId,
                 'last_page' => $lastPage,
                 'completed' => $completed,
-                'completed_at' => $completed ? now() : null,
+                'started_at' => $existing?->started_at ?? now(),
+                'completed_at' => $completed ? now() : ($existing?->completed_at),
             ]
         );
     }

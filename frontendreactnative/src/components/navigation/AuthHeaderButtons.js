@@ -3,6 +3,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { useProfileImage } from '../../context/ProfileImageContext';
 import ProfileAvatar from '../ProfileAvatar';
+import { HEADER_HORIZONTAL_PADDING } from './HeaderBrandLogo';
 import colors from '../../theme/colors';
 
 function navigateToStackScreen(navigation, screen) {
@@ -63,7 +64,7 @@ export default function AuthHeaderButtons({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingRight: 14,
+    paddingRight: HEADER_HORIZONTAL_PADDING,
   },
   row: {
     flexDirection: 'row',

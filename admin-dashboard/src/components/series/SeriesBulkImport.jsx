@@ -235,11 +235,11 @@ function parseExcelRows(workbook) {
     }
   });
 
-  const required = ['title', 'mediafire_folder_url', 'pages_per_chapter'];
+  const required = ['title', 'mediafire_folder_url'];
   const missing = required.filter((field) => columnMap[field] === undefined);
   if (missing.length > 0) {
     throw new Error(
-      'Missing required columns. Expected at least: Title | MediaFire Folder URL | Pages Per Chapter'
+      'Missing required columns. Expected at least: Title | MediaFire Folder URL'
     );
   }
 
@@ -251,7 +251,12 @@ function parseExcelRows(workbook) {
       columnMap.mediafire_folder_url !== undefined
         ? readSheetCell(sheet, i, columnMap.mediafire_folder_url)
         : '';
-    const pagesPerChapter = row[columnMap.pages_per_chapter];
+    const pagesRaw =
+      columnMap.pages_per_chapter !== undefined ? row[columnMap.pages_per_chapter] : '';
+    const pagesPerChapter =
+      pagesRaw === '' || pagesRaw === null || pagesRaw === undefined
+        ? null
+        : parseInt(pagesRaw, 10);
 
     if (!title && !folderUrl) {
       continue;
@@ -274,7 +279,7 @@ function parseExcelRows(workbook) {
           ? normalizeImageUrl(readSheetCell(sheet, i, columnMap.image_url))
           : '',
       mediafire_folder_url: folderUrl,
-      pages_per_chapter: parseInt(pagesPerChapter, 10),
+      pages_per_chapter: pagesPerChapter,
       ...typeField,
       ...statusField,
     });
@@ -295,7 +300,7 @@ function toApiRow(row) {
     authors: row.authors || '',
     image_url: row.image_url ? normalizeImageUrl(row.image_url) : '',
     mediafire_folder_url: row.mediafire_folder_url,
-    pages_per_chapter: row.pages_per_chapter,
+    pages_per_chapter: row.pages_per_chapter || null,
     type_ids: row.type_id ? [row.type_id] : [],
     type: row.type || 'manga',
     status: row.status,
@@ -529,7 +534,7 @@ function SeriesBulkImport() {
         'Chugong, Dubu',
         'https://www.mediafire.com/view/bya154gqmz2iod9/cover.jpg/file',
         'https://www.mediafire.com/folder/xxxxx/solo-leveling',
-        20,
+        '',
         'manhwa',
         'ongoing',
       ],
@@ -562,14 +567,14 @@ function SeriesBulkImport() {
         (row) =>
           !row.title ||
           !row.mediafire_folder_url.includes('mediafire.com') ||
-          Number.isNaN(row.pages_per_chapter) ||
-          row.pages_per_chapter < 1
+          (row.pages_per_chapter !== null &&
+            (Number.isNaN(row.pages_per_chapter) || row.pages_per_chapter < 1))
       );
 
       if (invalidRows.length > 0) {
         throw new Error(
           `Invalid data on row(s): ${invalidRows.map((r) => r.row_number).join(', ')}. ` +
-            'Each row needs Title, a valid MediaFire folder URL, and Pages Per Chapter (≥ 1).'
+            'Each row needs Title and a valid MediaFire folder URL. Pages Per Chapter is optional (≥ 1 if set).'
         );
       }
 
@@ -619,9 +624,10 @@ function SeriesBulkImport() {
         <div>
           <h2 className="text-lg font-semibold text-torrefacto-roast">Bulk Import Series</h2>
           <p className="text-sm text-stone-lion mt-1">
-            Import series with chapters from a MediaFire folder. Imports run in the background
-            (queue jobs) so large MediaFire folders won&apos;t hit the 60s timeout. Review and fix{' '}
-            <strong>Series Type</strong> and <strong>Authors</strong> bindings before importing.
+            Import series with chapters from a MediaFire folder. Leave{' '}
+            <strong>Pages Per Chapter</strong> empty to auto-pick a balanced size (~20 pages,
+            avoiding tiny last chapters). Imports run in the background (queue jobs). Review and
+            fix <strong>Series Type</strong> and <strong>Authors</strong> bindings before importing.
           </p>
         </div>
         <button
@@ -793,7 +799,13 @@ function SeriesBulkImport() {
                         </p>
                       )}
                     </td>
-                    <td className="px-3 py-2 align-top">{row.pages_per_chapter}</td>
+                    <td className="px-3 py-2 align-top">
+                      {row.pages_per_chapter || (
+                        <span className="text-stone-lion italic" title="Will auto-calculate (~20 pages, balanced last chapter)">
+                          Auto
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -868,6 +880,7 @@ function SeriesBulkImport() {
                 {result.message ? ` — ${result.message}` : ''}
                 {result.series_id ? ` (Series ID: ${result.series_id})` : ''}
                 {result.chapters_created ? ` — ${result.chapters_created} chapters` : ''}
+                {result.pages_per_chapter ? ` × ${result.pages_per_chapter} pages/ch` : ''}
                 {result.total_pages ? `, ${result.total_pages} pages` : ''}
               </p>
             ))}

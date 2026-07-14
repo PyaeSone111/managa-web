@@ -1,7 +1,8 @@
-import IframeBanner from './IframeBanner';
+// import IframeBanner from './IframeBanner';
 
 /**
  * Ad strip shown above the site footer (not under the navbar).
+ * Monetag iframe banner commented out — add AdSense ad units when ready.
  */
 function FooterAdStrip({ className = '' }) {
   return (
@@ -13,7 +14,7 @@ function FooterAdStrip({ className = '' }) {
         <p className="text-[10px] uppercase tracking-widest text-sidewalk-grey text-center mb-3">
           Advertisement
         </p>
-        <IframeBanner className="mx-auto" tall />
+        {/* <IframeBanner className="mx-auto" tall /> */}
       </div>
     </aside>
   );

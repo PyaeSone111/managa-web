@@ -7,6 +7,9 @@ import SeriesGrid from '../components/SeriesGrid';
 import ProfileAvatar from '../components/ProfileAvatar';
 import StarRating from '../components/StarRating';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AuthPromptCard from '../components/auth/AuthPromptCard';
+import AppDownloadInfo from '../components/profile/AppDownloadInfo';
+import { ProfilePageLogo } from '../components/navigation/HeaderBrandLogo';
 import colors from '../theme/colors';
 
 function navigateToSeries(navigation, slug) {
@@ -25,6 +28,15 @@ function navigateToLogin(navigation) {
     return;
   }
   navigation.navigate('Login');
+}
+
+function navigateToRegister(navigation) {
+  const parent = navigation.getParent();
+  if (parent) {
+    parent.navigate('Register');
+    return;
+  }
+  navigation.navigate('Register');
 }
 
 export default function ProfileScreen({ navigation }) {
@@ -49,12 +61,15 @@ export default function ProfileScreen({ navigation }) {
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>Sign in to view your profile.</Text>
-        <Pressable style={styles.button} onPress={() => navigateToLogin(navigation)}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </Pressable>
-      </View>
+      <AuthPromptCard
+        variant="profile"
+        message="Sign in to manage your profile, favorites, and ratings."
+        onPrimaryPress={() => navigateToLogin(navigation)}
+        secondaryPrefix="Don't have an account?"
+        secondaryActionLabel="Sign Up"
+        onSecondaryPress={() => navigateToRegister(navigation)}
+        footer={<AppDownloadInfo embedded />}
+      />
     );
   }
 
@@ -67,6 +82,7 @@ export default function ProfileScreen({ navigation }) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.profileCard}>
+        <ProfilePageLogo />
         <ProfileAvatar
           name={user?.name}
           imageUri={profileImageUri}
@@ -82,6 +98,8 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
+
+      <AppDownloadInfo />
 
       <Text style={styles.sectionTitle}>Favorite Manga</Text>
       {!favoritesLoading && favoriteSeries.length === 0 ? (
@@ -133,13 +151,6 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.almond },
   content: { paddingBottom: 32 },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.almond,
-    padding: 24,
-  },
   profileCard: {
     margin: 16,
     marginBottom: 8,
@@ -225,12 +236,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.muted,
   },
-  message: { color: colors.muted, textAlign: 'center', marginBottom: 12 },
-  button: {
-    backgroundColor: colors.redOrange,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  buttonText: { color: colors.white, fontWeight: '600' },
 });

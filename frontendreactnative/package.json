@@ -1,10 +1,11 @@
 {
   "name": "myangar-mobile",
-  "version": "1.0.0",
+  "version": "2.0.015",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
     "android:build": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1",
+    "android:build:release": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Release",
     "ios": "react-native run-ios",
     "start": "react-native start",
     "lint": "eslint .",
@@ -20,6 +21,7 @@
     "@tanstack/react-query": "^5.101.1",
     "axios": "^1.18.1",
     "expo-font": "^56.0.7",
+    "expo-screen-orientation": "^57.0.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-native": "0.86.0",
@@ -28,6 +30,7 @@
     "react-native-reanimated": "^4.5.0",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.25.2",
+    "react-native-svg": "^15.15.5",
     "react-native-vector-icons": "^10.3.0",
     "react-native-webview": "^14.0.1",
     "react-native-worklets": "^0.10.0"

@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { brandingApi } from '../services/api';
 
 const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1').replace(/\/api\/v1\/?$/, '');
 const BRANDING_CACHE_KEY = 'branding_cache';
-const BRANDING_CACHE_TTL = 30 * 60 * 1000; // 30 minutes in localStorage
+const BRANDING_QUERY_KEY = ['branding'];
 
 function toAbsoluteUrl(url) {
   if (!url || typeof url !== 'string') return null;
@@ -17,7 +17,7 @@ function getLocalStorageCache() {
     const cached = localStorage.getItem(BRANDING_CACHE_KEY);
     if (!cached) return null;
     const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > BRANDING_CACHE_TTL) {
+    if (Date.now() - timestamp > 30 * 60 * 1000) {
       localStorage.removeItem(BRANDING_CACHE_KEY);
       return null;
     }
@@ -52,7 +52,7 @@ const DEFAULT_CARD_LAYOUT = {
 };
 
 const DEFAULT_APP_DOWNLOAD = {
-  url: 'https://www.mediafire.com/file_premium/aatmz2r3salyyei/myangarread00121v01.apk/file',
+  url: 'https://myangar.fatelight.org/download',
   fileName: 'myangarread00121v01.apk',
   version: '1.0',
   sizeMB: '29',
@@ -66,39 +66,14 @@ const BrandingContext = createContext({
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
   isLoading: false,
+  isFetching: false,
+  brandingReady: false,
   updateBranding: () => {},
+  refetchBranding: async () => {},
 });
 
-export function BrandingProvider({ children }) {
-  // Initialize from localStorage cache for instant load
-  const [initialData] = useState(() => getLocalStorageCache());
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['branding'],
-    queryFn: () => brandingApi.getBranding(),
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour
-    retry: 2,
-    initialData: initialData ? { data: initialData } : undefined,
-  });
-
-  // Update localStorage when data changes
-  useEffect(() => {
-    if (data?.data) {
-      setLocalStorageCache(data.data);
-    }
-  }, [data]);
-
-  const branding = data?.data ?? initialData ?? {};
-
-  // Allow updating branding from dashboard response
-  const updateBranding = (newBranding) => {
-    if (newBranding) {
-      setLocalStorageCache(newBranding);
-    }
-  };
-
-  const value = {
+function buildBrandingValue(branding) {
+  return {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
@@ -110,9 +85,56 @@ export function BrandingProvider({ children }) {
     },
     cardLayout: { ...DEFAULT_CARD_LAYOUT, ...(branding.card_layout || {}) },
     gridColumns: branding.grid_columns || null,
-    isLoading: isLoading && !initialData,
-    updateBranding,
   };
+}
+
+export function BrandingProvider({ children }) {
+  const queryClient = useQueryClient();
+  const [cachedBranding] = useState(() => getLocalStorageCache());
+
+  const { data, isLoading, isFetching, isFetched, refetch } = useQuery({
+    queryKey: BRANDING_QUERY_KEY,
+    queryFn: () => brandingApi.getBranding(),
+    staleTime: 0,
+    gcTime: 60 * 60 * 1000,
+    retry: 2,
+    placeholderData: cachedBranding ? { data: cachedBranding } : undefined,
+  });
+
+  useEffect(() => {
+    if (data?.data) {
+      setLocalStorageCache(data.data);
+    }
+  }, [data]);
+
+  const updateBranding = useCallback(
+    (newBranding) => {
+      if (!newBranding) return;
+      queryClient.setQueryData(BRANDING_QUERY_KEY, { data: newBranding });
+      setLocalStorageCache(newBranding);
+    },
+    [queryClient],
+  );
+
+  const refetchBranding = useCallback(async () => {
+    const result = await refetch();
+    if (result.data?.data) {
+      setLocalStorageCache(result.data.data);
+    }
+    return result;
+  }, [refetch]);
+
+  const value = useMemo(() => {
+    const branding = data?.data ?? {};
+    return {
+      ...buildBrandingValue(branding),
+      isLoading,
+      isFetching,
+      brandingReady: isFetched && !isFetching,
+      updateBranding,
+      refetchBranding,
+    };
+  }, [data, isLoading, isFetching, isFetched, updateBranding, refetchBranding]);
 
   return (
     <BrandingContext.Provider value={value}>

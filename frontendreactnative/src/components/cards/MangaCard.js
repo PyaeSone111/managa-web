@@ -1,6 +1,9 @@
 import { Pressable } from 'react-native';
 import { useBranding } from '../../context/BrandingContext';
 import { seriesToManga } from '../../lib/seriesToManga';
+import { getCardGridScale } from '../../utils/cardGridScale';
+import { getGridColumnsForSection } from '../../utils/gridColumns';
+import { getCardKeyForSection, isPortraitCard } from '../../utils/cardLayout';
 import * as Portrait from './portrait-cards';
 import * as Landscape from './landscape-cards';
 
@@ -29,38 +32,32 @@ const CARD_MAP = {
 
 const RANK_CARDS = new Set(['card_10', 'card_15']);
 
-export function getCardKeyForSection(section, cardLayout) {
-  if (section && cardLayout?.[section]) {
-    return cardLayout[section];
-  }
-  return 'card_01';
+export { getCardKeyForSection, isPortraitCard } from '../../utils/cardLayout';
+
+export function getNumColumnsForSection(section, cardLayout, gridColumns, width) {
+  return getGridColumnsForSection(section, width, gridColumns, cardLayout);
 }
 
-export function isPortraitCard(cardKey) {
-  const num = Number(String(cardKey || 'card_01').replace('card_', ''));
-  return !Number.isNaN(num) && num <= 10;
-}
-
-export function getNumColumnsForSection(section, cardLayout, gridColumns) {
-  const cardKey = getCardKeyForSection(section, cardLayout);
-  const portrait = isPortraitCard(cardKey);
-  const defaults = portrait
-    ? { default: 2, sm: 3, md: 4 }
-    : { default: 1, sm: 1, md: 1 };
-  const config = gridColumns?.[section] || defaults;
-  const value = config.default ?? (portrait ? 2 : 1);
-  return Math.min(3, Math.max(1, Number(value) || (portrait ? 2 : 1)));
-}
-
-export default function MangaCard({ series, section, cardKey: cardKeyOverride, rank, onPress, style }) {
+export default function MangaCard({
+  series,
+  section,
+  cardKey: cardKeyOverride,
+  rank,
+  onPress,
+  style,
+  numColumns,
+  screenWidth,
+}) {
   const { cardLayout } = useBranding();
   const cardKey = cardKeyOverride ?? getCardKeyForSection(section, cardLayout);
   const CardComponent = CARD_MAP[cardKey] || CARD_MAP.card_01;
   const manga = seriesToManga(series);
+  const scale = numColumns ? getCardGridScale(numColumns, screenWidth) : null;
+  const margin = scale?.margin ?? 6;
 
   if (!manga) return null;
 
-  const cardProps = { manga };
+  const cardProps = { manga, numColumns, screenWidth };
   if (RANK_CARDS.has(cardKey) && rank != null) {
     cardProps.rank = rank;
   }
@@ -69,7 +66,7 @@ export default function MangaCard({ series, section, cardKey: cardKeyOverride, r
     <Pressable
       key={cardKey}
       onPress={() => onPress?.(series)}
-      style={[{ flex: 1, margin: 6 }, style]}
+      style={[{ flex: 1, margin }, style]}
     >
       <CardComponent {...cardProps} />
     </Pressable>

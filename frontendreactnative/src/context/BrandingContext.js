@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { brandingApi } from '../services/api';
-import { API_BASE_URL, BRANDING_CACHE_KEY } from '../utils/constants';
+import { API_BASE_URL, BRANDING_CACHE_KEY, APP_DOWNLOAD_PAGE_URL } from '../utils/constants';
 import { getJson, removeItem, setJson } from '../services/storage';
 
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
@@ -34,15 +34,25 @@ const DEFAULT_CARD_LAYOUT = {
   favorites: 'card_11',
 };
 
+const DEFAULT_APP_DOWNLOAD = {
+  url: APP_DOWNLOAD_PAGE_URL,
+  fileName: 'myangarread00121v01.apk',
+  version: '1.0',
+  sizeMB: '29',
+};
+
 const BrandingContext = createContext({
   logoUrl: null,
   heroBackgroundUrl: null,
   heroImageUrl: null,
+  appDownload: DEFAULT_APP_DOWNLOAD,
   cardLayout: DEFAULT_CARD_LAYOUT,
   gridColumns: null,
   layoutVersion: '0',
   revision: 0,
   isLoading: false,
+  isFetching: false,
+  brandingReady: false,
   updateBranding: () => {},
   refetchBranding: async () => {},
 });
@@ -54,6 +64,12 @@ function buildBrandingValue(branding, revision) {
     logoUrl: toAbsoluteUrl(branding.logo_url) ?? null,
     heroBackgroundUrl: toAbsoluteUrl(branding.hero_background_url) ?? null,
     heroImageUrl: toAbsoluteUrl(branding.hero_image_url) ?? null,
+    appDownload: {
+      url: APP_DOWNLOAD_PAGE_URL,
+      fileName: branding.app_download_filename || DEFAULT_APP_DOWNLOAD.fileName,
+      version: branding.app_version || DEFAULT_APP_DOWNLOAD.version,
+      sizeMB: branding.app_size_mb || DEFAULT_APP_DOWNLOAD.sizeMB,
+    },
     cardLayout,
     gridColumns,
     layoutVersion: `${revision}:${JSON.stringify(cardLayout)}:${JSON.stringify(gridColumns)}`,
@@ -80,7 +96,7 @@ export function BrandingProvider({ children }) {
     };
   }, [queryClient]);
 
-  const { data, isLoading, dataUpdatedAt } = useQuery({
+  const { data, isLoading, isFetching, isFetched, dataUpdatedAt } = useQuery({
     queryKey: BRANDING_QUERY_KEY,
     queryFn: () => brandingApi.getBranding(),
     staleTime: 0,
@@ -122,13 +138,16 @@ export function BrandingProvider({ children }) {
 
   const value = useMemo(() => {
     const branding = data?.data ?? {};
+    const brandingReady = ready && isFetched && !isFetching;
     return {
       ...buildBrandingValue(branding, revision),
       isLoading: !ready || isLoading,
+      isFetching,
+      brandingReady,
       updateBranding,
       refetchBranding,
     };
-  }, [data, dataUpdatedAt, revision, ready, isLoading, updateBranding, refetchBranding]);
+  }, [data, dataUpdatedAt, revision, ready, isLoading, isFetching, isFetched, updateBranding, refetchBranding]);
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
 }

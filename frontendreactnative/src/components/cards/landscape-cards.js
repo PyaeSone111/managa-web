@@ -6,6 +6,7 @@ import {
   GenreBadge,
   RatingRow,
   StatusBadge,
+  ThemeLeftBorder,
 } from './shared';
 
 export function Card11Classic({ manga }) {
@@ -100,6 +101,7 @@ export function Card14Action({ manga }) {
 export function Card15Compact({ manga, rank }) {
   return (
     <View style={[cardStyles.card, styles.compactCard]}>
+      <ThemeLeftBorder width={4} />
       <Text style={styles.rankNumber}>{rank ?? 0}</Text>
       <CoverImage uri={manga.coverUrl} style={styles.compactCover} />
       <View style={styles.compactBody}>
@@ -252,7 +254,16 @@ const styles = StyleSheet.create({
   actionButtonText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   saveButton: { backgroundColor: `${colors.almond}99`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: colors.almondBorder },
   saveButtonText: { color: colors.navy, fontSize: 11, fontWeight: '600' },
-  compactCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, backgroundColor: `${colors.almond}88` },
+  compactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingRight: 10,
+    paddingLeft: 0,
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
   rankNumber: { fontSize: 16, fontWeight: '900', color: colors.navy, minWidth: 24, textAlign: 'center' },
   compactCover: { width: 48, height: 64, borderRadius: 6 },
   compactBody: { flex: 1, minWidth: 0, gap: 2 },
