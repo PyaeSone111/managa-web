@@ -138,14 +138,23 @@ class Branding extends Model
         if ((isset($stored['browse_vertical']) || isset($stored['browse_horizontal'])) && !isset($stored['browse'])) {
             $out['browse'] = $stored['browse_horizontal'] ?? $stored['browse_vertical'] ?? $defaults['browse'];
         }
-        // Hero carousel + Recent prefer portrait cards (01–10).
-        foreach (['home_hero', 'recently_viewed'] as $portraitKey) {
-            $card = $out[$portraitKey] ?? $defaults[$portraitKey];
+        // Hero carousel is portrait-only (01–10). All other sections allow 01–20.
+        $hero = $out['home_hero'] ?? $defaults['home_hero'];
+        $heroNum = (int) str_replace('card_', '', (string) $hero);
+        if ($heroNum < 1 || $heroNum > 10) {
+            $out['home_hero'] = $defaults['home_hero'];
+        }
+
+        foreach ($out as $key => $card) {
+            if ($key === 'home_hero') {
+                continue;
+            }
             $num = (int) str_replace('card_', '', (string) $card);
-            if ($num < 1 || $num > 10) {
-                $out[$portraitKey] = $defaults[$portraitKey];
+            if ($num < 1 || $num > 20) {
+                $out[$key] = $defaults[$key] ?? 'card_01';
             }
         }
+
         return $out;
     }
 

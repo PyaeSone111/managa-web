@@ -1,23 +1,63 @@
 import { useCallback, useState } from 'react';
 import { RefreshControl } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useBranding } from '../context/BrandingContext';
 import colors from '../theme/colors';
 
 /**
- * Pull-to-refresh for the current screen only.
- * Does not refetch global branding (that remounts the app shell).
+ * Pull-to-refresh: refetch current screen data + branding (and related caches).
+ * Branding stays ready during refresh so the app shell does not blank.
  */
-export function usePullToRefresh(pageRefetch, { isFetching, isLoading } = {}) {
+export function usePullToRefresh(
+  pageRefetch,
+  { isFetching, isLoading, includeBranding = true } = {}
+) {
+  const queryClient = useQueryClient();
+  const { refetchBranding } = useBranding();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
-    if (typeof pageRefetch !== 'function') return;
     setIsRefreshing(true);
     try {
-      await pageRefetch();
+      const tasks = [];
+
+      if (includeBranding && typeof refetchBranding === 'function') {
+        tasks.push(refetchBranding());
+      }
+
+      if (typeof pageRefetch === 'function') {
+        tasks.push(pageRefetch());
+      }
+
+      // Refresh other active lists so Home/Browse/etc. pick up admin changes.
+      tasks.push(
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey?.[0];
+            return (
+              key === 'dashboard' ||
+              key === 'series' ||
+              key === 'reading' ||
+              key === 'favorites' ||
+              key === 'favorite' ||
+              key === 'rankings' ||
+              key === 'categories' ||
+              key === 'manga' ||
+              key === 'manga-types' ||
+              key === 'authors' ||
+              key === 'rating' ||
+              key === 'user-ratings' ||
+              key === 'chapter'
+            );
+          },
+        })
+      );
+
+      await Promise.all(tasks);
     } finally {
       setIsRefreshing(false);
     }
-  }, [pageRefetch]);
+  }, [includeBranding, pageRefetch, queryClient, refetchBranding]);
 
   const refreshing = isRefreshing || Boolean(isFetching && !isLoading);
 

@@ -19,9 +19,14 @@ class AdminBrandingController extends Controller
     public function show(): JsonResponse
     {
         $branding = Branding::current();
+        $payload = Branding::publicPayload($branding);
+        // Editor must show what is stored (01–20 for Recent). publicPayload uses the same rules.
+        $payload['card_layout'] = Branding::normalizeCardLayout(
+            is_array($branding->card_layout) ? $branding->card_layout : null
+        );
 
         return response()->json([
-            'data' => Branding::publicPayload($branding),
+            'data' => $payload,
         ]);
     }
 
@@ -113,7 +118,9 @@ class AdminBrandingController extends Controller
             if ($request->has('card_layout')) {
                 $v = $request->input('card_layout');
                 $decoded = is_string($v) ? json_decode($v, true) : $v;
-                $branding->card_layout = is_array($decoded) ? $decoded : null;
+                $branding->card_layout = is_array($decoded)
+                    ? Branding::normalizeCardLayout($decoded)
+                    : null;
             }
             if ($request->has('grid_columns')) {
                 $v = $request->input('grid_columns');
@@ -133,11 +140,17 @@ class AdminBrandingController extends Controller
         }
 
         $branding->save();
+        $branding->refresh();
 
         Branding::clearPublicCache();
 
+        $payload = Branding::publicPayload($branding);
+        $payload['card_layout'] = Branding::normalizeCardLayout(
+            is_array($branding->card_layout) ? $branding->card_layout : null
+        );
+
         return response()->json([
-            'data' => Branding::publicPayload($branding),
+            'data' => $payload,
             'message' => 'Branding updated successfully',
         ]);
     }

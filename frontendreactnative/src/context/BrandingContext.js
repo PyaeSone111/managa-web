@@ -107,7 +107,15 @@ export function BrandingProvider({ children }) {
     gcTime: 60 * 60 * 1000,
     retry: 2,
     enabled: ready,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
+
+  // When API branding payload changes, bump revision so card UIs remount.
+  useEffect(() => {
+    if (!data?.data || !dataUpdatedAt) return;
+    setRevision((n) => n + 1);
+  }, [dataUpdatedAt]);
 
   useEffect(() => {
     if (data?.data) {

@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../../theme/colors';
 import {
   cardStyles,
@@ -8,6 +10,33 @@ import {
   StatusBadge,
   ThemeLeftBorder,
 } from './shared';
+
+/** Soft card lift — outer shell only (overflow:hidden kills shadow). */
+const bannerShadow = Platform.select({
+  ios: {
+    shadowColor: '#0D211F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+  },
+  android: {
+    elevation: 10,
+  },
+  default: {},
+});
+
+const thumbShadow = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+  },
+  android: {
+    elevation: 14,
+  },
+  default: {},
+});
 
 export function Card11Classic({ manga }) {
   return (
@@ -35,21 +64,58 @@ export function Card11Classic({ manga }) {
 export function Card12Cinematic({ manga }) {
   const uri = manga.coverImageUrl || manga.coverUrl;
   return (
-    <View style={[cardStyles.card, styles.bannerCard]}>
-      <CoverImage uri={uri} style={StyleSheet.absoluteFill} />
-      <View style={styles.bannerOverlay} />
-      <View style={styles.bannerContent}>
-        <View style={styles.inlineRow}>
-          <StatusBadge status={manga.status} />
-          <Text style={styles.bannerGenre}>{manga.genre}</Text>
-        </View>
-        <Text numberOfLines={1} style={styles.bannerTitle}>{manga.title}</Text>
-        <Text numberOfLines={1} style={styles.bannerAuthor}>{manga.author}</Text>
-        <Text numberOfLines={2} style={styles.bannerDesc}>{manga.description}</Text>
-        <View style={styles.inlineRow}>
-          <Text style={styles.bannerRating}>★ {manga.rating.toFixed(1)}</Text>
-          <Text style={styles.bannerMeta}>{manga.views} views</Text>
-          <Text style={styles.bannerMeta}>{manga.chapters} Ch.</Text>
+    <View style={[styles.shadowShell, bannerShadow]}>
+      <View style={styles.bannerInner}>
+        <CoverImage
+          uri={uri}
+          style={StyleSheet.absoluteFill}
+          imageStyle={{ opacity: 0.88 }}
+        />
+        {/* Frontend: from-black/75 via-black/40 to-transparent */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.78)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.08)', 'transparent']}
+          locations={[0, 0.35, 0.65, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View style={styles.bannerContent}>
+          <View style={styles.bannerTextCol}>
+            <View style={styles.inlineRow}>
+              <StatusBadge status={manga.status} />
+              {manga.genre ? (
+                <Text numberOfLines={1} style={styles.bannerGenre}>
+                  {manga.genre}
+                </Text>
+              ) : null}
+            </View>
+            <Text numberOfLines={1} style={styles.bannerTitle}>
+              {manga.title}
+            </Text>
+            <Text numberOfLines={1} style={styles.bannerAuthor}>
+              {manga.author}
+            </Text>
+            {manga.description ? (
+              <Text numberOfLines={2} style={styles.bannerDesc}>
+                {manga.description}
+              </Text>
+            ) : null}
+            <View style={[styles.inlineRow, styles.bannerMetaRow]}>
+              <View style={styles.metaChip}>
+                <Ionicons name="star" size={12} color={colors.almond} />
+                <Text style={styles.bannerRating}>{manga.rating.toFixed(1)}</Text>
+              </View>
+              <View style={styles.metaChip}>
+                <Ionicons name="eye-outline" size={12} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.bannerMeta}>{manga.views}</Text>
+              </View>
+              <View style={styles.metaChip}>
+                <Ionicons name="book-outline" size={12} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.bannerMeta}>{manga.chapters}</Text>
+              </View>
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -163,23 +229,62 @@ export function Card17Dense({ manga }) {
 export function Card18Banner({ manga }) {
   const uri = manga.coverImageUrl || manga.coverUrl;
   return (
-    <View style={[cardStyles.card, styles.featureBanner]}>
-      <CoverImage uri={uri} style={StyleSheet.absoluteFill} />
-      <View style={styles.featureOverlay} />
-      <View style={styles.featureContent}>
-        <CoverImage uri={uri} style={styles.featureThumb} />
-        <View style={styles.featureText}>
-          <View style={styles.inlineRow}>
-            <View style={styles.featuredBadge}><Text style={styles.featuredText}>FEATURED</Text></View>
-            <StatusBadge status={manga.status} />
+    <View style={[styles.shadowShell, styles.featureShadowShell, bannerShadow]}>
+      <View style={styles.featureFrame}>
+        {/* Image + transparent orange gradient (no solid fill) */}
+        <View style={styles.featureBgClip} pointerEvents="none">
+          <CoverImage
+            uri={uri}
+            style={StyleSheet.absoluteFill}
+            imageStyle={styles.featureBgImage}
+          />
+          <LinearGradient
+            colors={[
+              'rgba(255,110,64,0.88)',
+              'rgba(255,110,64,0.62)',
+              'rgba(255,110,64,0.38)',
+              'rgba(255,110,64,0.18)',
+            ]}
+            locations={[0, 0.4, 0.72, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        <View style={styles.featureContent}>
+          <View style={[styles.featureThumbShell, thumbShadow]}>
+            <CoverImage
+              uri={uri}
+              style={styles.featureThumb}
+              imageStyle={styles.featureThumbImage}
+            />
           </View>
-          <Text numberOfLines={1} style={styles.featureTitle}>{manga.title}</Text>
-          <Text numberOfLines={1} style={styles.featureAuthor}>{manga.author}</Text>
-          <Text numberOfLines={2} style={styles.featureDesc}>{manga.description}</Text>
-          <View style={styles.inlineRow}>
-            <RatingRow rating={manga.rating} size={10} showValue />
-            <Text style={styles.bannerMeta}>{manga.views}</Text>
-            <Text style={styles.bannerMeta}>{manga.chapters} chapters</Text>
+          <View style={styles.featureText}>
+            <View style={styles.inlineRow}>
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredText}>FEATURED</Text>
+              </View>
+              <View style={styles.featureStatusTag}>
+                <Text style={styles.featureStatusTagText}>{manga.status}</Text>
+              </View>
+            </View>
+            <Text numberOfLines={1} style={styles.featureTitle}>
+              {manga.title}
+            </Text>
+            <Text numberOfLines={1} style={styles.featureAuthor}>
+              {manga.author}
+            </Text>
+            <View style={[styles.inlineRow, styles.featureMetaRow]}>
+              <View style={styles.metaChip}>
+                <Ionicons name="star" size={11} color={colors.almond} />
+                <Text style={styles.bannerRating}>{manga.rating.toFixed(1)}</Text>
+              </View>
+              <View style={styles.metaChip}>
+                <Ionicons name="eye-outline" size={11} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.bannerMeta}>{manga.views}</Text>
+              </View>
+              <Text style={styles.bannerMeta}>{manga.chapters} ch.</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -239,15 +344,47 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 11, color: colors.redOrange, fontWeight: '600' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
-  bannerCard: { minHeight: 160, overflow: 'hidden' },
-  bannerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
-  bannerContent: { flex: 1, justifyContent: 'center', padding: 16, gap: 4 },
-  bannerGenre: { fontSize: 10, color: colors.almond, fontWeight: '500' },
-  bannerTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
+  shadowShell: {
+    borderRadius: 12,
+    backgroundColor: colors.navyDark,
+    marginVertical: 2,
+  },
+  bannerInner: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 152,
+    backgroundColor: colors.navyDark,
+  },
+  bannerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 152,
+  },
+  bannerTextCol: {
+    maxWidth: '72%',
+    gap: 5,
+  },
+  bannerGenre: {
+    flexShrink: 1,
+    fontSize: 10,
+    color: colors.almond,
+    fontWeight: '500',
+  },
+  bannerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.3,
+    lineHeight: 22,
+  },
   bannerAuthor: { fontSize: 11, color: colors.almond },
-  bannerDesc: { fontSize: 11, color: 'rgba(255,255,255,0.9)' },
+  bannerDesc: { fontSize: 11, color: 'rgba(255,255,255,0.9)', lineHeight: 15 },
   bannerRating: { fontSize: 12, color: colors.almond, fontWeight: '700' },
   bannerMeta: { fontSize: 11, color: 'rgba(255,255,255,0.85)' },
+  bannerMetaRow: { marginTop: 4, gap: 12 },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   glassCard: { backgroundColor: 'rgba(255,255,255,0.95)' },
   glassBody: { backgroundColor: 'rgba(255,255,255,0.92)' },
   actionButton: { backgroundColor: colors.redOrange, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
@@ -270,16 +407,85 @@ const styles = StyleSheet.create({
   compactRight: { alignItems: 'flex-end', gap: 6 },
   neonLandscape: { borderWidth: 2, borderColor: `${colors.redOrange}33` },
   neonLabel: { fontSize: 10, color: colors.redOrange, fontWeight: '700', textTransform: 'uppercase', marginBottom: 2 },
-  featureBanner: { minHeight: 180, overflow: 'hidden' },
-  featureOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: `${colors.redOrange}CC` },
-  featureContent: { flexDirection: 'row', padding: 16, gap: 12, alignItems: 'center' },
-  featureThumb: { width: 88, height: 120, borderRadius: 8, borderWidth: 2, borderColor: `${colors.almond}CC` },
-  featureText: { flex: 1, gap: 4 },
-  featuredBadge: { backgroundColor: colors.navy, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  featuredText: { color: colors.white, fontSize: 10, fontWeight: '700' },
-  featureTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
-  featureAuthor: { fontSize: 12, color: colors.almond },
-  featureDesc: { fontSize: 11, color: 'rgba(255,255,255,0.9)' },
+  featureShadowShell: {
+    // Opaque base for Android elevation; fully covered by image + gradient
+    backgroundColor: colors.redOrange,
+  },
+  featureFrame: {
+    borderRadius: 12,
+    minHeight: 118,
+    overflow: 'hidden',
+  },
+  featureBgClip: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  featureBgImage: {
+    width: '100%',
+    height: '100%',
+  },
+  featureContent: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+    alignItems: 'center',
+    minHeight: 118,
+  },
+  featureThumbShell: {
+    borderRadius: 8,
+    backgroundColor: colors.navyDark,
+  },
+  featureThumb: {
+    width: 64,
+    height: 88,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(245,240,225,0.9)',
+    overflow: 'hidden',
+  },
+  featureThumbImage: {
+    borderRadius: 6,
+  },
+  featureText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+    justifyContent: 'center',
+  },
+  featuredBadge: {
+    backgroundColor: colors.redOrange,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
+  },
+  featuredText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+  featureStatusTag: {
+    backgroundColor: colors.redOrange,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  featureStatusTagText: {
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  featureTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: -0.2,
+    lineHeight: 19,
+  },
+  featureAuthor: { fontSize: 11, color: colors.almond },
+  featureMetaRow: { marginTop: 2, gap: 10 },
   timelineCard: { minHeight: 120 },
   timelineAccent: { width: 4, backgroundColor: colors.redOrange },
   timelineUpdated: { fontSize: 10, color: colors.redOrange, fontWeight: '600', marginBottom: 2 },

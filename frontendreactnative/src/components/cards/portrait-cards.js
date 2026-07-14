@@ -422,27 +422,96 @@ export function Card09Cinematic({ manga, numColumns, screenWidth }) {
 
 export function Card10Rank({ manga, rank, numColumns, screenWidth }) {
   const scale = getScale(numColumns, screenWidth);
-  const rankFontSize = scale?.compactCard ? Math.max(16, scale.titleSize * 2.2) : 56;
+  const compact = Boolean(scale?.compactCard);
+  const rankLabel = String(rank ?? 0).padStart(2, '0');
+  const rankFontSize = compact ? Math.max(28, scale.titleSize * 3.2) : 64;
+  const stroke = compact ? 1.5 : 2.5;
+
   return (
-    <View style={cardShell(scale, styles.portrait)}>
-      <CoverImage uri={manga.coverUrl} style={coverStyle(scale, styles.coverPortrait)}>
-        <Text style={[styles.rankWatermark, { fontSize: rankFontSize, bottom: scale?.compactCard ? -2 : -8 }]}>
-          {String(rank ?? 0).padStart(2, '0')}
-        </Text>
-        <View style={[styles.badgeTopRight, { top: overlayInset(scale), right: overlayInset(scale) }]}>
+    <View
+      style={[
+        cardShell(scale, styles.portrait, styles.rankCard),
+        scale?.borderRadius != null && { borderRadius: scale.borderRadius },
+      ]}
+    >
+      <View style={[coverStyle(scale, styles.coverPortrait), styles.rankCover]}>
+        <CoverImage
+          uri={manga.coverUrl}
+          style={StyleSheet.absoluteFill}
+          imageStyle={StyleSheet.absoluteFill}
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.92)']}
+          locations={[0.4, 0.72, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View
+          style={[
+            styles.badgeTopRight,
+            { top: overlayInset(scale), right: overlayInset(scale) },
+          ]}
+        >
           <StatusBadge status={manga.status} scale={scale} />
         </View>
-      </CoverImage>
-      <View style={bodyStyle(scale)}>
+      </View>
+
+      {/* Overlaps cover → body like web Card10 */}
+      <View
+        style={[
+          styles.rankWatermarkWrap,
+          {
+            left: compact ? 2 : 4,
+            top: undefined,
+            bottom: undefined,
+            marginTop: compact ? -18 : -28,
+            marginBottom: compact ? -4 : -6,
+            zIndex: 3,
+          },
+        ]}
+        pointerEvents="none"
+      >
+        {[
+          [-stroke, 0],
+          [stroke, 0],
+          [0, -stroke],
+          [0, stroke],
+          [-stroke, -stroke],
+          [stroke, -stroke],
+          [-stroke, stroke],
+          [stroke, stroke],
+        ].map(([dx, dy], i) => (
+          <Text
+            key={i}
+            style={[
+              styles.rankWatermarkStroke,
+              { fontSize: rankFontSize, left: dx, top: dy },
+            ]}
+          >
+            {rankLabel}
+          </Text>
+        ))}
+        <Text style={[styles.rankWatermarkFill, { fontSize: rankFontSize }]}>
+          {rankLabel}
+        </Text>
+      </View>
+
+      <View style={[bodyStyle(scale), styles.rankBody]}>
         <Text numberOfLines={scale?.titleLines ?? 2} style={titleStyle(scale)}>
           {manga.title}
         </Text>
         <Text numberOfLines={scale?.authorLines ?? 1} style={authorStyle(scale)}>
           {manga.author}
         </Text>
-        <View style={styles.inlineRow}>
-          <Text style={[styles.minimalRating, metaStyle(scale)]}>★ {manga.rating.toFixed(1)}</Text>
-          {!scale?.compactCard && <Text style={metaStyle(scale)}>{manga.views} views</Text>}
+        <View style={[styles.inlineRow, styles.rankMetaRow]}>
+          <Text style={[styles.rankRating, metaStyle(scale)]}>
+            ★ {manga.rating.toFixed(1)}
+          </Text>
+          {!compact ? (
+            <Text style={metaStyle(scale)}>{manga.views} views</Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -528,11 +597,34 @@ const styles = StyleSheet.create({
   cinematicBody: { borderTopWidth: 1, borderTopColor: colors.almondBorder },
   uppercase: { textTransform: 'uppercase' },
   italic: { fontStyle: 'italic' },
-  rankWatermark: {
+  rankCard: {
+    borderColor: colors.navy,
+  },
+  rankCover: {
+    overflow: 'hidden',
+  },
+  rankBody: {
+    backgroundColor: colors.white,
+  },
+  rankMetaRow: {
+    marginTop: 'auto',
+    paddingTop: 4,
+  },
+  rankRating: {
+    color: colors.success,
+    fontWeight: '700',
+  },
+  rankWatermarkWrap: {
+    alignSelf: 'flex-start',
+    marginLeft: 0,
+  },
+  rankWatermarkStroke: {
     position: 'absolute',
-    left: 0,
+    fontWeight: '900',
+    color: colors.white,
+  },
+  rankWatermarkFill: {
     fontWeight: '900',
     color: colors.navy,
-    opacity: 0.85,
   },
 });

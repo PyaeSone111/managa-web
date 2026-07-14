@@ -9,12 +9,11 @@ import colors from '../../theme/colors';
 import { CARD_MAP } from './MangaCard';
 import * as Portrait from './portrait-cards';
 
-const PORTRAIT_FALLBACK = Portrait.Card01Classic;
-const RANK_CARDS = new Set(['card_10']);
+const FALLBACK = Portrait.Card01Classic;
+const RANK_CARDS = new Set(['card_10', 'card_15']);
 
 /**
- * Recent-only card: branding portrait UI (01–10) + chapter + Continue + delete.
- * Other screens keep plain MangaCard / SeriesGrid behavior.
+ * Recent-only wrapper: branding card UI (01–20) + chapter + Continue + delete.
  */
 export default function RecentMangaCard({
   series,
@@ -28,14 +27,11 @@ export default function RecentMangaCard({
 }) {
   const { width } = useWindowDimensions();
   const screenWidth = screenWidthProp ?? width;
-  const { cardLayout } = useBranding();
+  const { cardLayout, layoutVersion } = useBranding();
 
-  let cardKey = getCardKeyForSection('recently_viewed', cardLayout);
-  if (!isPortraitCard(cardKey)) {
-    cardKey = 'card_01';
-  }
-
-  const CardComponent = CARD_MAP[cardKey] || PORTRAIT_FALLBACK;
+  const cardKey = getCardKeyForSection('recently_viewed', cardLayout);
+  const isLandscape = !isPortraitCard(cardKey);
+  const CardComponent = CARD_MAP[cardKey] || FALLBACK;
   const manga = seriesToManga(series);
   const scale = numColumns ? getCardGridScale(numColumns, screenWidth) : null;
   const margin = scale?.margin ?? 6;
@@ -59,10 +55,12 @@ export default function RecentMangaCard({
   }
 
   return (
-    <View style={[{ flex: 1, margin }, style]}>
+    <View style={[{ margin }, !isLandscape && { flex: 1 }, isLandscape && styles.landscapeWrap, style]}>
       <View style={styles.cardWrap}>
         <Pressable onPress={() => onContinue?.(series)} style={styles.cardPress}>
-          <CardComponent {...cardProps} />
+          <View key={`recent-card-${cardKey}-${layoutVersion}-${series.id}`} style={isLandscape ? styles.landscapeCardHost : null}>
+            <CardComponent {...cardProps} />
+          </View>
         </Pressable>
 
         {onDelete ? (
@@ -106,6 +104,14 @@ export default function RecentMangaCard({
 }
 
 const styles = StyleSheet.create({
+  landscapeWrap: {
+    flex: 0,
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  landscapeCardHost: {
+    width: '100%',
+  },
   cardWrap: {
     position: 'relative',
   },

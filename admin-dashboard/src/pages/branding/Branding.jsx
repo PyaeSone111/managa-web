@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../services/api';
 import Layout from '../../components/common/Layout';
+import StatusModal from '../../components/common/StatusModal';
 
 const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1').replace(/\/api\/v1\/?$/, '');
 
@@ -43,7 +44,7 @@ const SECTION_LABELS = {
   rankings_top: 'Rankings – Top Manga',
   rankings_most_read: 'Rankings – Most Read',
   rankings_trending: 'Rankings – Trending',
-  recently_viewed: 'Recent / Recently Viewed (portrait)',
+  recently_viewed: 'Recent / Recently Viewed',
   favorites: 'Favorites',
 };
 
@@ -133,6 +134,16 @@ function Branding() {
   const [heroSeries, setHeroSeries] = useState([]);
   const [heroSearch, setHeroSearch] = useState('');
   const [debouncedHeroSearch, setDebouncedHeroSearch] = useState('');
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const closeStatusModal = useCallback(() => {
+    setStatusModal((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'branding'],
@@ -211,9 +222,28 @@ function Branding() {
 
   const updateMutation = useMutation({
     mutationFn: (formData) => adminApi.updateBranding(formData),
-    onSuccess: async () => {
+    onSuccess: async (res) => {
+      const payload = res?.data;
+      if (payload) {
+        queryClient.setQueryData(['admin', 'branding'], res);
+        if (payload.card_layout && typeof payload.card_layout === 'object') {
+          setCardLayout({ ...DEFAULT_CARD_LAYOUT, ...payload.card_layout });
+        }
+        if (payload.grid_columns && typeof payload.grid_columns === 'object') {
+          const merged = {};
+          GRID_SECTION_KEYS.forEach((key) => {
+            merged[key] = {
+              ...(DEFAULT_GRID_COLUMNS[key] || defaultColsHorizontal),
+              ...(payload.grid_columns[key] || {}),
+            };
+          });
+          setGridColumns(merged);
+        }
+        if (Array.isArray(payload.hero_series)) {
+          setHeroSeries(payload.hero_series);
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ['admin', 'branding'] });
-      queryClient.refetchQueries({ queryKey: ['admin', 'branding'] });
       setLogoFile(null);
       setHeroBackgroundFile(null);
       setHeroImageFile(null);
@@ -241,8 +271,20 @@ function Branding() {
     );
 
     updateMutation.mutate(formData, {
-      onSuccess: () => alert('Branding updated successfully. The frontend will reflect changes on next load.'),
-      onError: (err) => alert('Failed to update branding: ' + (err?.message || 'Unknown error')),
+      onSuccess: () =>
+        setStatusModal({
+          open: true,
+          type: 'success',
+          title: 'Branding updated',
+          message: 'Changes saved. The app and website will pick them up on the next load or pull-to-refresh.',
+        }),
+      onError: (err) =>
+        setStatusModal({
+          open: true,
+          type: 'error',
+          title: 'Failed to update branding',
+          message: err?.message || 'Unknown error. Please try again.',
+        }),
     });
   };
 
@@ -573,14 +615,13 @@ function Branding() {
           <div className="bg-bonaire rounded-lg border border-stone-lion/20 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-torrefacto-roast mb-2">Manga card layout</h2>
             <p className="text-sm text-stone-lion mb-4">
-              Choose which of the 20 manga card designs (01–10 portrait, 11–20 landscape) to use in each section on the frontend.
+              Choose which of the 20 manga card designs (01–10 portrait, 11–20 landscape) to use in each section.
+              Recent / Recently Viewed and Favorites support any card 01–20. Home hero is portrait-only (01–10).
+              Save branding, then refresh to confirm the selection sticks.
             </p>
             <div className="space-y-3 max-w-xl">
               {Object.entries(SECTION_LABELS).map(([key, label]) => {
-                const options =
-                  key === 'home_hero' || key === 'recently_viewed'
-                    ? PORTRAIT_CARD_OPTIONS
-                    : CARD_OPTIONS;
+                const options = key === 'home_hero' ? PORTRAIT_CARD_OPTIONS : CARD_OPTIONS;
                 return (
                   <div key={key} className="flex items-center justify-between gap-4">
                     <label className="text-sm font-medium text-torrefacto-roast shrink-0 w-56">{label}</label>
@@ -642,6 +683,14 @@ function Branding() {
           </div>
         </form>
       </div>
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+      />
     </Layout>
   );
 }

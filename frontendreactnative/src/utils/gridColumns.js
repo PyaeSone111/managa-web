@@ -48,14 +48,30 @@ export function getGridColumnsForSection(section, width, gridColumns, cardLayout
   const portrait = isPortraitCard(getCardKeyForSection(section, cardLayout));
   const maxCols = portrait ? 6 : 5;
   const defaults = defaultColumnsForSection(section, cardLayout);
-  const config =
-    section && gridColumns?.[section]
-      ? { ...defaults, ...gridColumns[section] }
-      : defaults;
+  const stored = section && gridColumns?.[section] ? gridColumns[section] : null;
+
+  // Admin often saved portrait column maps for recently_viewed (default: 2).
+  // Landscape cards need landscape column defaults on phones.
+  let config = defaults;
+  if (stored) {
+    const looksLikePortraitCols = (stored.default ?? 0) >= 2;
+    if (!portrait && looksLikePortraitCols && width < GRID_BREAKPOINTS.sm) {
+      config = defaults;
+    } else {
+      config = { ...defaults, ...stored };
+    }
+  }
 
   const raw = resolveColumnsAtWidth(width, config);
   const fallback = defaults.default ?? (portrait ? 2 : 1);
-  return Math.min(maxCols, Math.max(1, Number(raw) || fallback));
+  let cols = Math.min(maxCols, Math.max(1, Number(raw) || fallback));
+
+  // Landscape cards are horizontal rows — never squeeze into multi-col on phone.
+  if (!portrait && width < GRID_BREAKPOINTS.sm) {
+    cols = 1;
+  }
+
+  return cols;
 }
 
 export function useGridColumnsForSection(section, gridColumns, cardLayout) {

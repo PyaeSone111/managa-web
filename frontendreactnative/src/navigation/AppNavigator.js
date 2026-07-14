@@ -122,29 +122,16 @@ function tabBarIcon(routeName) {
 
 function MainTabs() {
   return (
-    <Tab.Navigator tabBar={(props) => <TabBarWithAd {...props} />}>
+    <Tab.Navigator
+      initialRouteName="Home"
+      tabBar={(props) => <TabBarWithAd {...props} />}
+    >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={({ navigation }) => ({
           ...buildHeaderOptions(navigation, 'Home'),
           tabBarIcon: tabBarIcon('Home'),
-        })}
-      />
-      <Tab.Screen
-        name="Browse"
-        component={BrowseScreen}
-        options={({ navigation }) => ({
-          ...buildHeaderOptions(navigation, 'Browse'),
-          tabBarIcon: tabBarIcon('Browse'),
-        })}
-      />
-      <Tab.Screen
-        name="Recent"
-        component={RecentScreen}
-        options={({ navigation }) => ({
-          ...buildHeaderOptions(navigation, 'Recent'),
-          tabBarIcon: tabBarIcon('Recent'),
         })}
       />
       <Tab.Screen
@@ -156,11 +143,28 @@ function MainTabs() {
         })}
       />
       <Tab.Screen
+        name="Browse"
+        component={BrowseScreen}
+        options={({ navigation }) => ({
+          ...buildHeaderOptions(navigation, 'Browse'),
+          tabBarIcon: tabBarIcon('Browse'),
+        })}
+      />
+    
+      <Tab.Screen
         name="Favorites"
         component={FavoritesScreen}
         options={({ navigation }) => ({
           ...buildHeaderOptions(navigation, 'Favorites'),
           tabBarIcon: tabBarIcon('Favorites'),
+        })}
+      />
+      <Tab.Screen
+        name="Recent"
+        component={RecentScreen}
+        options={({ navigation }) => ({
+          ...buildHeaderOptions(navigation, 'Recent'),
+          tabBarIcon: tabBarIcon('Recent'),
         })}
       />
     </Tab.Navigator>

@@ -39,17 +39,15 @@ export default function SeriesGrid({
   const { cardLayout, gridColumns, layoutVersion } = useBranding();
   const isRecent = section === 'recently_viewed';
   const useDesignCards = Boolean(section);
-  const rawCardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
-  // Recent always uses a portrait card UI (01–10).
-  const cardKey =
-    isRecent && !isPortraitCard(rawCardKey) ? 'card_01' : rawCardKey;
-  const portrait = useDesignCards ? isPortraitCard(cardKey) || isRecent : true;
+  const cardKey = useDesignCards ? getCardKeyForSection(section, cardLayout) : 'card_01';
+  const portrait = useDesignCards ? isPortraitCard(cardKey) : true;
   const numColumns =
     numColumnsProp ??
     (useDesignCards
       ? getGridColumnsForSection(section, width, gridColumns, cardLayout)
       : 2);
   const compact = numColumns >= 3;
+  // Recent with landscape cards can use list/grid like other sections.
   const useListLayout = useDesignCards && !portrait && numColumns === 1 && !isRecent;
   const horizontalPad = compact ? 4 : 8;
 
@@ -75,6 +73,27 @@ export default function SeriesGrid({
   }
 
   if (isRecent) {
+    // Landscape (11–20) must be a full-width vertical list — multi-col squeezes them.
+    if (!portrait) {
+      return (
+        <View style={styles.list} key={`recent-landscape-${cardKey}-${layoutVersion}`}>
+          {series.map((item, index) => (
+            <RecentMangaCard
+              key={`${item.id}-${cardKey}-${layoutVersion}`}
+              series={item}
+              rank={index + 1}
+              onContinue={onSeriesPress}
+              onDelete={onSeriesDelete}
+              deleting={deletingSeriesId === item.id}
+              numColumns={1}
+              screenWidth={width}
+              style={styles.recentLandscapeItem}
+            />
+          ))}
+        </View>
+      );
+    }
+
     return (
       <FlatList
         data={series}
@@ -86,7 +105,7 @@ export default function SeriesGrid({
         columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
         contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPad }]}
         renderItem={({ item, index }) => (
-          <View style={{ flex: 1 / numColumns }}>
+          <View style={{ flex: 1 / numColumns }} key={`${item.id}-${cardKey}-${layoutVersion}`}>
             <RecentMangaCard
               series={item}
               rank={index + 1}
@@ -167,6 +186,13 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 8,
+  },
+  recentLandscapeItem: {
+    marginHorizontal: 12,
+    marginVertical: 6,
+    flex: 0,
+    width: undefined,
+    alignSelf: 'stretch',
   },
   listContent: {
     paddingHorizontal: 4,
