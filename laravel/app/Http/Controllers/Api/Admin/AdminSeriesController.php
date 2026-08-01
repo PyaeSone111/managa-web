@@ -7,13 +7,13 @@ use App\Jobs\StartSeriesBulkImportJob;
 use App\Models\MangaType;
 use App\Models\Series;
 use App\Models\SeriesImportBatch;
+use App\Services\CacheInvalidator;
 use App\Services\SeriesImportService;
 use App\Support\ImportUrlValidator;
 use App\Support\QueueGuard;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -75,16 +75,11 @@ class AdminSeriesController extends Controller
     }
 
     /**
-     * Clear public API caches for a series (by id and slug).
+     * Clear public API caches for a series (show + every list/dashboard/ranking group).
      */
     protected function clearSeriesCache(Series $series, ?string $previousSlug = null): void
     {
-        Cache::forget("series:show:{$series->id}");
-        Cache::forget("series:show:{$series->slug}");
-
-        if ($previousSlug && $previousSlug !== $series->slug) {
-            Cache::forget("series:show:{$previousSlug}");
-        }
+        app(CacheInvalidator::class)->invalidateSeries($series, $previousSlug);
     }
 
     /**

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { chapterApi, seriesApi } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -10,6 +10,8 @@ import { formatChapterLabel, formatChapterNumber, toAbsoluteImageUrl } from '../
 function Reader() {
   const { seriesSlug, chapterNumber } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const bottomSentinelRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -27,11 +29,45 @@ function Reader() {
     enabled: !!seriesSlug && !!chapter?.data,
   });
 
+  const chapterData = chapter?.data;
+  const chaptersList = chaptersRes?.data ?? [];
+  const sortedChapters = [...chaptersList].sort(
+    (a, b) => (Number(a.chapter_number) ?? 0) - (Number(b.chapter_number) ?? 0)
+  );
+  const currentIndex = sortedChapters.findIndex(
+    (ch) => Number(ch.chapter_number) === Number(chapterData?.chapter_number)
+  );
+  const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
+  const nextChapter = currentIndex >= 0 && currentIndex < sortedChapters.length - 1
+    ? sortedChapters[currentIndex + 1]
+    : null;
+  const nextChapterNumber = nextChapter ? formatChapterNumber(nextChapter.chapter_number) : null;
+
+  // Prefetch the next chapter once the reader nears the bottom of this one.
+  useEffect(() => {
+    if (!nextChapterNumber || !bottomSentinelRef.current) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          queryClient.prefetchQuery({
+            queryKey: ['chapter', seriesSlug, nextChapterNumber],
+            queryFn: () => chapterApi.getBySeriesAndNumber(seriesSlug, nextChapterNumber),
+          });
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' }
+    );
+    observer.observe(bottomSentinelRef.current);
+    return () => observer.disconnect();
+  }, [nextChapterNumber, queryClient, seriesSlug]);
+
   if (isLoading) {
     return <LoadingSpinner size="lg" />;
   }
 
-  if (!chapter?.data) {
+  if (!chapterData) {
     return (
       <div className="text-center py-12">
         <p className="text-sidewalk-grey">Chapter not found.</p>
@@ -39,19 +75,8 @@ function Reader() {
     );
   }
 
-  const chapterData = chapter.data;
-  const chaptersList = chaptersRes?.data ?? [];
-  const sortedChapters = [...chaptersList].sort(
-    (a, b) => (Number(a.chapter_number) ?? 0) - (Number(b.chapter_number) ?? 0)
-  );
-  const currentIndex = sortedChapters.findIndex(
-    (ch) => Number(ch.chapter_number) === Number(chapterData.chapter_number)
-  );
-  const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
-  const nextChapter = currentIndex >= 0 && currentIndex < sortedChapters.length - 1
-    ? sortedChapters[currentIndex + 1]
-    : null;
   const seriesUrl = `/series/${seriesSlug}`;
+  const sortedPages = chapterData.pages?.slice().sort((a, b) => a.page_number - b.page_number) ?? [];
 
   const btnClass = "px-4 py-2 text-sm font-medium rounded-lg transition-all shadow-sm border border-ruskin-blue/40 text-ruskin-blue bg-ruskin-blue/10 hover:bg-ruskin-blue hover:text-white";
   const btnClassPrimary = "px-4 py-2 text-sm font-medium rounded-lg transition-all shadow-sm bg-delta-green text-white hover:bg-ruskin-blue border border-delta-green hover:border-ruskin-blue";
@@ -88,6 +113,9 @@ function Reader() {
         <title>
           {chapterData.title || formatChapterLabel(chapterData.chapter_number)} - Myangar
         </title>
+        {sortedPages[0]?.image_url ? (
+          <link rel="preload" as="image" href={toAbsoluteImageUrl(sortedPages[0].image_url)} />
+        ) : null}
       </Helmet>
 
       <div className="space-y-4">
@@ -106,16 +134,23 @@ function Reader() {
         <NavBlock />
 
         <div className="space-y-2 sm:space-y-4">
-          {(chapterData.pages?.sort((a, b) => a.page_number - b.page_number) ?? []).map((page) => (
+          {sortedPages.map((page) => (
             <img
               key={page.id || page.page_number}
               src={toAbsoluteImageUrl(page.image_url)}
               alt={`Page ${page.page_number}`}
+              width={page.width || undefined}
+              height={page.height || undefined}
               className="w-full h-auto rounded-lg shadow-sm mx-auto block border border-quarzo"
-              loading="lazy"
+              loading={page.page_number <= 2 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={page.page_number === 1 ? 'high' : 'auto'}
             />
           ))}
         </div>
+
+        {/* Invisible trigger — prefetches the next chapter before the user reaches the end. */}
+        <div ref={bottomSentinelRef} aria-hidden="true" />
 
         <NavBlock />
       </div>

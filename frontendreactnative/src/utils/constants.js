@@ -16,6 +16,7 @@ export const REMEMBER_LOGIN_KEY = 'remember_login_credentials';
 export const RECENTLY_VIEWED_KEY = 'manga-web-recently-viewed';
 export const BRANDING_CACHE_KEY = 'branding_cache';
 export const READER_SETTINGS_KEY = 'reader_settings';
+export const CHAPTER_CACHE_KEY_PREFIX = 'chapter_cache:';
 
 /** Website download page — opens in browser; user downloads APK manually. */
 export const APP_DOWNLOAD_PAGE_URL = 'https://myangar.fatelight.org/download';

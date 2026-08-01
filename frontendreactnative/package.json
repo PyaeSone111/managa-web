@@ -1,6 +1,6 @@
 {
   "name": "myangar-mobile",
-  "version": "2.0.015",
+  "version": "2.1.018",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -22,8 +22,12 @@
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-fast-image": "^8.6.3",
     "react-native-image-picker": "^8.2.1",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-mmkv": "^4.3.2",
+    "react-native-nitro-modules": "^0.36.1",
+    "react-native-pager-view": "^8.0.4",
     "react-native-reanimated": "^4.5.0",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.25.2",

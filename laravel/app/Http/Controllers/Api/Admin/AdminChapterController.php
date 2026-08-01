@@ -8,6 +8,7 @@ use App\Models\Chapter;
 use App\Models\ChapterImportBatch;
 use App\Models\ChapterPage;
 use App\Models\Series;
+use App\Services\CacheInvalidator;
 use App\Services\MediaFireService;
 use App\Support\QueueGuard;
 use Illuminate\Http\Request;
@@ -95,7 +96,7 @@ class AdminChapterController extends Controller
     /**
      * Create a new chapter
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         if ($request->has('pages') && is_array($request->pages)) {
             $request->merge(['pages' => $this->normalizePageImageUrls($request->pages)]);
@@ -170,6 +171,7 @@ class AdminChapterController extends Controller
             DB::commit();
 
             $chapter->load(['series', 'pages']);
+            $cacheInvalidator->invalidateChapter($chapter);
 
             return response()->json([
                 'success' => true,
@@ -188,9 +190,10 @@ class AdminChapterController extends Controller
     /**
      * Update a chapter
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(Request $request, $id, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $chapter = Chapter::findOrFail($id);
+        $previousChapterNumber = $chapter->chapter_number;
 
         if ($request->has('pages') && is_array($request->pages)) {
             $request->merge(['pages' => $this->normalizePageImageUrls($request->pages)]);
@@ -257,6 +260,7 @@ class AdminChapterController extends Controller
             DB::commit();
 
             $chapter->load(['series', 'pages']);
+            $cacheInvalidator->invalidateChapter($chapter, $previousChapterNumber);
 
             return response()->json([
                 'success' => true,
@@ -329,7 +333,7 @@ class AdminChapterController extends Controller
     /**
      * Delete a chapter
      */
-    public function destroy($id): JsonResponse
+    public function destroy($id, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $chapter = Chapter::findOrFail($id);
         $series = $chapter->series;
@@ -341,6 +345,8 @@ class AdminChapterController extends Controller
             $series->decrement('total_chapters');
 
             DB::commit();
+
+            $cacheInvalidator->invalidateChapter($chapter);
 
             return response()->json([
                 'success' => true,

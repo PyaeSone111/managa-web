@@ -1,4 +1,5 @@
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ImageBackground, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../../theme/colors';
@@ -226,32 +227,53 @@ export function Card17Dense({ manga }) {
   );
 }
 
-export function Card18Banner({ manga }) {
+export function Card18Banner({
+  manga,
+  chapterLabel,
+  onContinue,
+  continueLabel = 'Continue',
+}) {
   const uri = manga.coverImageUrl || manga.coverUrl;
+  const showRecentActions = chapterLabel != null || typeof onContinue === 'function';
+  const [cardWidth, setCardWidth] = useState(0);
+  const leftW = cardWidth > 0 ? cardWidth * 0.48 : 0;
+  const blendLeft = cardWidth > 0 ? cardWidth * 0.42 : 0;
+  const blendW = cardWidth > 0 ? cardWidth * 0.48 : 0;
+
   return (
     <View style={[styles.shadowShell, styles.featureShadowShell, bannerShadow]}>
-      <View style={styles.featureFrame}>
-        {/* Image + transparent orange gradient (no solid fill) */}
-        <View style={styles.featureBgClip} pointerEvents="none">
-          <CoverImage
-            uri={uri}
-            style={StyleSheet.absoluteFill}
-            imageStyle={styles.featureBgImage}
-          />
-          <LinearGradient
-            colors={[
-              'rgba(255,110,64,0.88)',
-              'rgba(255,110,64,0.62)',
-              'rgba(255,110,64,0.38)',
-              'rgba(255,110,64,0.18)',
-            ]}
-            locations={[0, 0.4, 0.72, 1]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-        <View style={styles.featureContent}>
+      <ImageBackground
+        source={uri ? { uri } : undefined}
+        style={[styles.featureFrame, showRecentActions && styles.featureFrameTall]}
+        imageStyle={styles.featureBgImageStyle}
+        resizeMode="cover"
+        onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
+      >
+        {/* Left solid navy · mid fade · right uncovered cover (pixel widths — % fails on Android) */}
+        {cardWidth > 0 ? (
+          <>
+            <View
+              pointerEvents="none"
+              style={[styles.featureBgLeftBlock, { width: leftW }]}
+            />
+            <LinearGradient
+              pointerEvents="none"
+              colors={[
+                colors.navyDark,
+                'rgba(22,46,68,0.95)',
+                'rgba(22,46,68,0.7)',
+                'rgba(22,46,68,0.35)',
+                'rgba(22,46,68,0)',
+              ]}
+              locations={[0, 0.25, 0.5, 0.75, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={[styles.featureBgBlend, { left: blendLeft, width: blendW }]}
+            />
+          </>
+        ) : null}
+
+        <View style={[styles.featureContent, showRecentActions && styles.featureContentTall]}>
           <View style={[styles.featureThumbShell, thumbShadow]}>
             <CoverImage
               uri={uri}
@@ -259,35 +281,60 @@ export function Card18Banner({ manga }) {
               imageStyle={styles.featureThumbImage}
             />
           </View>
+
           <View style={styles.featureText}>
-            <View style={styles.inlineRow}>
-              <View style={styles.featuredBadge}>
-                <Text style={styles.featuredText}>FEATURED</Text>
+            <View style={styles.featureTextTop}>
+              <View style={styles.featureTagRow}>
+                <View style={styles.featuredBadge}>
+                  <Text style={styles.featuredText}>FEATURED</Text>
+                </View>
+                <View style={styles.featureStatusTag}>
+                  <Text style={styles.featureStatusTagText}>{manga.status}</Text>
+                </View>
               </View>
-              <View style={styles.featureStatusTag}>
-                <Text style={styles.featureStatusTagText}>{manga.status}</Text>
+              <Text numberOfLines={2} style={styles.featureTitle}>
+                {manga.title}
+              </Text>
+              <View style={styles.featureMetaRow}>
+                <View style={styles.metaChip}>
+                  <Ionicons name="star" size={10} color={colors.almond} />
+                  <Text style={styles.featureRating}>{manga.rating.toFixed(1)}</Text>
+                </View>
+                <View style={styles.metaChip}>
+                  <Ionicons name="eye-outline" size={10} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.featureStat}>{manga.views}</Text>
+                </View>
+                <Text style={styles.featureStat}>{manga.chapters} ch.</Text>
               </View>
             </View>
-            <Text numberOfLines={1} style={styles.featureTitle}>
-              {manga.title}
-            </Text>
-            <Text numberOfLines={1} style={styles.featureAuthor}>
-              {manga.author}
-            </Text>
-            <View style={[styles.inlineRow, styles.featureMetaRow]}>
-              <View style={styles.metaChip}>
-                <Ionicons name="star" size={11} color={colors.almond} />
-                <Text style={styles.bannerRating}>{manga.rating.toFixed(1)}</Text>
+
+            {showRecentActions ? (
+              <View style={styles.featureRecentRow}>
+                <Text style={styles.featureChapter} numberOfLines={1}>
+                  {chapterLabel || 'In progress'}
+                </Text>
+                {typeof onContinue === 'function' ? (
+                  <Pressable
+                    onPress={onContinue}
+                    style={({ pressed }) => [
+                      styles.featureContinueBtn,
+                      pressed && styles.featureContinueBtnPressed,
+                    ]}
+                    hitSlop={6}
+                  >
+                    <Text style={styles.featureContinueText}>{continueLabel}</Text>
+                    <Ionicons name="play" size={10} color={colors.white} />
+                  </Pressable>
+                ) : null}
               </View>
-              <View style={styles.metaChip}>
-                <Ionicons name="eye-outline" size={11} color="rgba(255,255,255,0.85)" />
-                <Text style={styles.bannerMeta}>{manga.views}</Text>
-              </View>
-              <Text style={styles.bannerMeta}>{manga.chapters} ch.</Text>
-            </View>
+            ) : (
+              <Text numberOfLines={1} style={styles.featureAuthor}>
+                {manga.author}
+              </Text>
+            )}
           </View>
         </View>
-      </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -408,84 +455,159 @@ const styles = StyleSheet.create({
   neonLandscape: { borderWidth: 2, borderColor: `${colors.redOrange}33` },
   neonLabel: { fontSize: 10, color: colors.redOrange, fontWeight: '700', textTransform: 'uppercase', marginBottom: 2 },
   featureShadowShell: {
-    // Opaque base for Android elevation; fully covered by image + gradient
-    backgroundColor: colors.redOrange,
+    backgroundColor: colors.navy,
   },
   featureFrame: {
+    width: '100%',
     borderRadius: 12,
-    minHeight: 118,
-    overflow: 'hidden',
-  },
-  featureBgClip: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 12,
+    minHeight: 128,
     overflow: 'hidden',
     backgroundColor: 'transparent',
   },
-  featureBgImage: {
+  featureFrameTall: {
+    minHeight: 142,
+  },
+  featureBgImageStyle: {
     width: '100%',
     height: '100%',
+    borderRadius: 12,
   },
   featureContent: {
+    position: 'relative',
+    zIndex: 2,
+    elevation: 2,
     flexDirection: 'row',
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
+    paddingLeft: 10,
+    paddingRight: 12,
+    gap: 12,
     alignItems: 'center',
-    minHeight: 118,
+    minHeight: 128,
+  },
+  featureContentTall: {
+    minHeight: 142,
+    alignItems: 'stretch',
+  },
+  // Solid navy block on left; gradient only in the blend zone
+  featureBgLeftBlock: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    backgroundColor: colors.navyDark,
+    zIndex: 1,
+  },
+  featureBgBlend: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   featureThumbShell: {
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.navyDark,
+    alignSelf: 'center',
   },
   featureThumb: {
-    width: 64,
-    height: 88,
-    borderRadius: 8,
+    width: 84,
+    height: 118,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: 'rgba(245,240,225,0.9)',
+    borderColor: 'rgba(245,240,225,0.92)',
     overflow: 'hidden',
   },
   featureThumbImage: {
-    borderRadius: 6,
+    borderRadius: 8,
   },
   featureText: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
-    justifyContent: 'center',
+    paddingVertical: 2,
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  featureTextTop: {
+    gap: 4,
+  },
+  featureTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   featuredBadge: {
     backgroundColor: colors.redOrange,
     borderRadius: 999,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
   },
-  featuredText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+  featuredText: { color: colors.white, fontSize: 8, fontWeight: '700', letterSpacing: 0.3 },
   featureStatusTag: {
     backgroundColor: colors.redOrange,
     borderRadius: 999,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
   },
   featureStatusTagText: {
     color: colors.white,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
   },
   featureTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.white,
-    letterSpacing: -0.2,
-    lineHeight: 19,
+    letterSpacing: -0.15,
+    lineHeight: 17,
   },
-  featureAuthor: { fontSize: 11, color: colors.almond },
-  featureMetaRow: { marginTop: 2, gap: 10 },
+  featureAuthor: { fontSize: 10, color: colors.almond, marginTop: 2 },
+  featureMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 1,
+  },
+  featureRating: {
+    fontSize: 10,
+    color: colors.almond,
+    fontWeight: '700',
+  },
+  featureStat: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.82)',
+  },
+  featureRecentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  featureChapter: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(245,240,225,0.92)',
+  },
+  featureContinueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: colors.redOrange,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+  },
+  featureContinueBtnPressed: {
+    opacity: 0.88,
+  },
+  featureContinueText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   timelineCard: { minHeight: 120 },
   timelineAccent: { width: 4, backgroundColor: colors.redOrange },
   timelineUpdated: { fontSize: 10, color: colors.redOrange, fontWeight: '600', marginBottom: 2 },

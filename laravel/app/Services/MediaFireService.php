@@ -82,6 +82,30 @@ class MediaFireService
     }
 
     /**
+     * Read width/height from a remote image URL without downloading the whole file.
+     * Used at import time so the API can send dimensions and clients skip a
+     * separate probe request per page.
+     *
+     * @return array{width: int|null, height: int|null}
+     */
+    public function getImageDimensions(string $url): array
+    {
+        $previousTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', 10);
+
+        try {
+            $info = @getimagesize($url);
+        } finally {
+            ini_set('default_socket_timeout', $previousTimeout);
+        }
+
+        return [
+            'width' => $info[0] ?? null,
+            'height' => $info[1] ?? null,
+        ];
+    }
+
+    /**
      * Extract folder key from a MediaFire folder URL.
      */
     public function extractFolderKey(string $url): ?string

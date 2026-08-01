@@ -11,6 +11,8 @@ import * as Portrait from './portrait-cards';
 
 const FALLBACK = Portrait.Card01Classic;
 const RANK_CARDS = new Set(['card_10', 'card_15']);
+/** Cards that embed Continue + chapter inside their own layout. */
+const INLINE_RECENT_CARDS = new Set(['card_18']);
 
 /**
  * Recent-only wrapper: branding card UI (01–20) + chapter + Continue + delete.
@@ -31,6 +33,7 @@ export default function RecentMangaCard({
 
   const cardKey = getCardKeyForSection('recently_viewed', cardLayout);
   const isLandscape = !isPortraitCard(cardKey);
+  const inlineRecent = INLINE_RECENT_CARDS.has(cardKey);
   const CardComponent = CARD_MAP[cardKey] || FALLBACK;
   const manga = seriesToManga(series);
   const scale = numColumns ? getCardGridScale(numColumns, screenWidth) : null;
@@ -46,6 +49,7 @@ export default function RecentMangaCard({
         ? manga.latestChapter
         : null;
   const pageLabel = lastPage != null ? ` · p.${lastPage}` : '';
+  const chapterDisplay = chapterLabel ? `${chapterLabel}${pageLabel}` : null;
 
   if (!manga) return null;
 
@@ -53,12 +57,19 @@ export default function RecentMangaCard({
   if (RANK_CARDS.has(cardKey) && rank != null) {
     cardProps.rank = rank;
   }
+  if (inlineRecent) {
+    cardProps.chapterLabel = chapterDisplay || 'In progress';
+    cardProps.onContinue = () => onContinue?.(series);
+  }
 
   return (
     <View style={[{ margin }, !isLandscape && { flex: 1 }, isLandscape && styles.landscapeWrap, style]}>
       <View style={styles.cardWrap}>
         <Pressable onPress={() => onContinue?.(series)} style={styles.cardPress}>
-          <View key={`recent-card-${cardKey}-${layoutVersion}-${series.id}`} style={isLandscape ? styles.landscapeCardHost : null}>
+          <View
+            key={`recent-card-${cardKey}-${layoutVersion}-${series.id}`}
+            style={isLandscape ? styles.landscapeCardHost : null}
+          >
             <CardComponent {...cardProps} />
           </View>
         </Pressable>
@@ -80,25 +91,26 @@ export default function RecentMangaCard({
         ) : null}
       </View>
 
-      <View style={styles.footer}>
-        {chapterLabel ? (
-          <Text style={styles.chapter} numberOfLines={1}>
-            {chapterLabel}
-            {pageLabel}
-          </Text>
-        ) : (
-          <Text style={styles.chapterMuted} numberOfLines={1}>
-            In progress
-          </Text>
-        )}
-        <Pressable
-          onPress={() => onContinue?.(series)}
-          style={({ pressed }) => [styles.continueBtn, pressed && styles.continueBtnPressed]}
-        >
-          <Text style={styles.continueText}>Continue</Text>
-          <Ionicons name="play" size={12} color={colors.white} />
-        </Pressable>
-      </View>
+      {!inlineRecent ? (
+        <View style={styles.footer}>
+          {chapterDisplay ? (
+            <Text style={styles.chapter} numberOfLines={1}>
+              {chapterDisplay}
+            </Text>
+          ) : (
+            <Text style={styles.chapterMuted} numberOfLines={1}>
+              In progress
+            </Text>
+          )}
+          <Pressable
+            onPress={() => onContinue?.(series)}
+            style={({ pressed }) => [styles.continueBtn, pressed && styles.continueBtnPressed]}
+          >
+            <Text style={styles.continueText}>Continue</Text>
+            <Ionicons name="play" size={12} color={colors.white} />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }

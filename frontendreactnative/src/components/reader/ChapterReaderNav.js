@@ -20,18 +20,31 @@ export default function ChapterReaderNav({
     : 'Series';
 
   if (variant === 'compact') {
-    if (!prevChapter && !nextChapter) return null;
+    if (!prevChapter && !nextChapter) {
+      return (
+        <View style={[styles.bar, styles.barBottom]}>
+          <ThemeAccentBar width={96} />
+          <View style={styles.row}>
+            <ThemedNavButton label="Series" icon="back" onPress={onSeriesPress} />
+          </View>
+        </View>
+      );
+    }
 
     return (
-      <View style={[styles.bar, styles.barCompact]}>
+      <View style={[styles.bar, styles.barBottom]}>
         <ThemeAccentBar width={96} />
         <View style={styles.row}>
           {prevChapter ? (
             <ThemedNavButton label="Prev" icon="back" onPress={onPrevPress} />
-          ) : null}
+          ) : (
+            <ThemedNavButton label="Series" icon="back" onPress={onSeriesPress} />
+          )}
           {nextChapter ? (
             <ThemedNavButton label="Next" icon="forward" variant="primary" onPress={onNextPress} />
-          ) : null}
+          ) : (
+            <ThemedNavButton label="Series" icon="forward" onPress={onSeriesPress} />
+          )}
         </View>
       </View>
     );
@@ -81,6 +94,17 @@ const styles = StyleSheet.create({
   barCompact: {
     marginTop: 8,
     marginBottom: 0,
+  },
+  barBottom: {
+    marginTop: 0,
+    marginBottom: 0,
+    borderRadius: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
   },
   chapterLabel: {
     fontSize: 14,

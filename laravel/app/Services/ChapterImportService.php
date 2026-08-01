@@ -5,13 +5,15 @@ namespace App\Services;
 use App\Models\Chapter;
 use App\Models\ChapterPage;
 use App\Models\Series;
+use App\Services\CacheInvalidator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ChapterImportService
 {
     public function __construct(
-        private MediaFireService $mediaFireService
+        private MediaFireService $mediaFireService,
+        private CacheInvalidator $cacheInvalidator
     ) {}
 
     /**
@@ -53,10 +55,13 @@ class ChapterImportService
 
         $pages = [];
         foreach ($images as $i => $image) {
+            $dimensions = $this->mediaFireService->getImageDimensions($image['image_url']);
             $pages[] = [
                 'page_number' => $i + 1,
                 'image_url' => $this->encodeUrlPath($image['image_url']),
                 'original_filename' => $image['original_filename'],
+                'width' => $dimensions['width'],
+                'height' => $dimensions['height'],
             ];
         }
 
@@ -77,6 +82,8 @@ class ChapterImportService
                     'page_number' => $pageData['page_number'],
                     'image_url' => $pageData['image_url'],
                     'original_filename' => $pageData['original_filename'],
+                    'width' => $pageData['width'],
+                    'height' => $pageData['height'],
                 ]);
             }
 
@@ -84,6 +91,9 @@ class ChapterImportService
             $series->increment('total_chapters');
 
             DB::commit();
+
+            $chapter->setRelation('series', $series);
+            $this->cacheInvalidator->invalidateChapter($chapter);
 
             return [
                 'status' => 'success',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Series;
+use App\Services\CacheInvalidator;
 use App\Support\SeriesCardFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,7 @@ class SeriesController extends Controller
     /**
      * Get paginated list of series with caching
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $perPage = min($request->get('per_page', 20), 100);
         $page = $request->get('page', 1);
@@ -25,8 +26,9 @@ class SeriesController extends Controller
         $search = $request->get('search');
         $sort = $request->get('sort', 'latest');
 
-        // Build cache key from all parameters
-        $cacheKey = 'series:list:' . md5(serialize([
+        // Build cache key from all parameters + a version stamp so admin writes
+        // can invalidate every filter/sort combination without wildcard forget.
+        $cacheKey = 'series:list:v' . $cacheInvalidator->version('series_list') . ':' . md5(serialize([
             'page' => $page,
             'perPage' => $perPage,
             'category' => $category,
@@ -148,12 +150,12 @@ class SeriesController extends Controller
     /**
      * Get chapters for a series with caching
      */
-    public function chapters($series, Request $request): JsonResponse
+    public function chapters($series, Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $perPage = min($request->get('per_page', 50), 100);
         $page = $request->get('page', 1);
 
-        $cacheKey = "series:chapters:{$series}:{$page}:{$perPage}";
+        $cacheKey = "series:chapters:{$series}:v{$cacheInvalidator->version('series_chapters')}:{$page}:{$perPage}";
 
         $result = Cache::remember($cacheKey, 180, function () use ($series, $perPage) {
             $seriesModel = Series::query()
@@ -188,11 +190,12 @@ class SeriesController extends Controller
     /**
      * Get latest updated series with caching
      */
-    public function latest(Request $request): JsonResponse
+    public function latest(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
+        $version = $cacheInvalidator->version('series_legacy_lists');
 
-        $series = Cache::remember("series:latest:v2:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:latest:v2:{$version}:{$limit}", 300, function () use ($limit) {
             return Series::query()
                 ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
                 ->with(SeriesCardFormatter::relations())
@@ -211,11 +214,12 @@ class SeriesController extends Controller
     /**
      * Get popular series with caching
      */
-    public function popular(Request $request): JsonResponse
+    public function popular(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
+        $version = $cacheInvalidator->version('series_legacy_lists');
 
-        $series = Cache::remember("series:popular:v2:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:popular:v2:{$version}:{$limit}", 300, function () use ($limit) {
             return Series::query()
                 ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
                 ->with(SeriesCardFormatter::relations())
@@ -234,11 +238,12 @@ class SeriesController extends Controller
     /**
      * Get trending series with caching
      */
-    public function trending(Request $request): JsonResponse
+    public function trending(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $limit = min($request->get('limit', 20), 50);
+        $version = $cacheInvalidator->version('series_legacy_lists');
 
-        $series = Cache::remember("series:trending:v2:{$limit}", 300, function () use ($limit) {
+        $series = Cache::remember("series:trending:v2:{$version}:{$limit}", 300, function () use ($limit) {
             return Series::query()
                 ->select(['id', 'title', 'slug', 'author', 'artist', 'type', 'cover_url', 'thumbnail_url', 'status', 'rating', 'total_views'])
                 ->with(SeriesCardFormatter::relations())

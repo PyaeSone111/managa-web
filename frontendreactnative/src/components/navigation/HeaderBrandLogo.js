@@ -24,7 +24,9 @@ export default function HeaderBrandLogo({ fallbackTitle = 'Myangar', subtitle })
         </Text>
       )}
       {subtitle ? (
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+          {subtitle}
+        </Text>
       ) : null}
     </View>
   );
@@ -76,11 +78,13 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    alignSelf: 'flex-end',
+    alignSelf: 'stretch',
+    maxWidth: '100%',
     gap: 6,
     paddingBottom: 4,
-    paddingRight: 4,
+    paddingRight: 8,
     flexShrink: 1,
+    minWidth: 0,
   },
   logo: {
     height: 28,
@@ -100,7 +104,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.2,
     paddingBottom: 2,
-    flexShrink: 0,
+    flexShrink: 1,
+    flexGrow: 0,
+    minWidth: 0,
+    maxWidth: 140,
   },
   profileWrap: {
     alignItems: 'center',

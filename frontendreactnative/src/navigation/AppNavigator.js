@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     maxWidth: '72%',
+    overflow: 'hidden',
   },
   backBtn: {
     width: 32,

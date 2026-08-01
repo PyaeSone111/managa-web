@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Series;
 use App\Models\UserRating;
+use App\Services\CacheInvalidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class RatingController extends Controller
 {
@@ -30,7 +30,7 @@ class RatingController extends Controller
      *
      * POST /api/v1/manga/{id}/rate
      */
-    public function store(Request $request, int $id): JsonResponse
+    public function store(Request $request, int $id, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $user = $request->user();
         $series = Series::findOrFail($id);
@@ -43,7 +43,7 @@ class RatingController extends Controller
         $this->updateSeriesRating($id);
         $series->refresh();
 
-        Cache::forget("manga:{$id}");
+        $cacheInvalidator->invalidateSeries($series);
 
         return response()->json([
             'message' => 'Rating submitted',
@@ -82,17 +82,17 @@ class RatingController extends Controller
      *
      * DELETE /api/v1/manga/{id}/rate
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, int $id, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $user = $request->user();
-        Series::findOrFail($id);
+        $series = Series::findOrFail($id);
 
         $deleted = UserRating::where('user_id', $user->id)
             ->where('series_id', $id)
             ->delete();
 
         $this->updateSeriesRating($id);
-        Cache::forget("manga:{$id}");
+        $cacheInvalidator->invalidateSeries($series);
 
         return response()->json([
             'message' => $deleted ? 'Rating removed' : 'No rating to remove',

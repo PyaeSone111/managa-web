@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branding;
 use App\Models\Series;
 use App\Models\SeriesRanking;
+use App\Services\CacheInvalidator;
 use App\Support\SeriesCardFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class DashboardController extends Controller
      *
      * GET /api/v1/dashboard
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $request->validate([
             'limit' => 'nullable|integer|min:1|max:20',
@@ -28,7 +29,7 @@ class DashboardController extends Controller
         $limit = min($request->input('limit', 12), 20);
 
         // Use a single cache key for the entire dashboard (10 min TTL)
-        $cacheKey = "dashboard:home:v3:{$limit}";
+        $cacheKey = "dashboard:home:v3:{$cacheInvalidator->version('dashboard')}:{$limit}";
 
         $data = Cache::remember($cacheKey, 600, function () use ($limit) {
             // Check once — reused by both getTrending and getTop

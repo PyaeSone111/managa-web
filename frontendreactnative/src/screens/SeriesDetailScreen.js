@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi, ratingApi, readingProgressApi, seriesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -172,10 +173,13 @@ export default function SeriesDetailScreen({ route, navigation }) {
       refreshControl={refreshControl}
     >
       <View style={styles.card}>
-        <Image
-          source={{ uri: toAbsoluteImageUrl(s.cover_url || s.thumbnail_url) || undefined }}
+        <FastImage
+          source={{
+            uri: toAbsoluteImageUrl(s.cover_url || s.thumbnail_url) || undefined,
+            cache: FastImage.cacheControl.immutable,
+          }}
           style={styles.cover}
-          resizeMode="cover"
+          resizeMode={FastImage.resizeMode.cover}
         />
         <Text style={styles.title}>{s.title}</Text>
 

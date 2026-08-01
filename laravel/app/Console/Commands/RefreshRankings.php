@@ -5,16 +5,16 @@ namespace App\Console\Commands;
 use App\Models\Series;
 use App\Models\SeriesRanking;
 use App\Models\SeriesStatsDaily;
+use App\Services\CacheInvalidator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 
 class RefreshRankings extends Command
 {
     protected $signature = 'rankings:refresh';
     protected $description = 'Refresh manga rankings based on aggregated stats';
 
-    public function handle(): int
+    public function handle(CacheInvalidator $cacheInvalidator): int
     {
         $this->info('Refreshing rankings...');
 
@@ -35,10 +35,8 @@ class RefreshRankings extends Command
         // Calculate ranks
         $this->calculateRanks();
 
-        // Clear ranking caches
-        Cache::forget('rankings:top:*');
-        Cache::forget('rankings:reading:*');
-        Cache::forget('rankings:trending:*');
+        // Clear ranking caches (version bump — Cache::forget('key:*') doesn't work on file/array drivers)
+        $cacheInvalidator->invalidateRankings();
 
         $duration = round(microtime(true) - $startTime, 2);
         $this->info("Rankings refreshed in {$duration}s");

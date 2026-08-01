@@ -7,14 +7,15 @@ use App\Models\Chapter;
 use App\Models\ChapterPage;
 use App\Models\MangaType;
 use App\Models\Series;
-use Illuminate\Support\Facades\Cache;
+use App\Services\CacheInvalidator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SeriesImportService
 {
     public function __construct(
-        private MediaFireService $mediaFireService
+        private MediaFireService $mediaFireService,
+        private CacheInvalidator $cacheInvalidator
     ) {}
 
     /**
@@ -105,8 +106,7 @@ class SeriesImportService
 
             DB::commit();
 
-            Cache::forget("series:show:{$series->id}");
-            Cache::forget("series:show:{$series->slug}");
+            $this->cacheInvalidator->invalidateSeries($series);
 
             return [
                 'status' => 'success',
@@ -187,11 +187,14 @@ class SeriesImportService
         ]);
 
         foreach ($plan['pages'] as $i => $image) {
+            $dimensions = $this->mediaFireService->getImageDimensions($image['image_url']);
             ChapterPage::create([
                 'chapter_id' => $chapter->id,
                 'page_number' => $i + 1,
                 'image_url' => $this->encodeUrlPath($image['image_url']),
                 'original_filename' => $image['original_filename'],
+                'width' => $dimensions['width'],
+                'height' => $dimensions['height'],
             ]);
         }
 

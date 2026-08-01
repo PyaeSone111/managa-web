@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { API_BASE_URL, AUTH_TOKEN_KEY } from '../utils/constants';
 import { getItem, removeItem } from './storage';
+import {
+  getCachedChapter,
+  setCachedChapter,
+  getCachedChaptersList,
+  setCachedChaptersList,
+} from './chapterCache';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -48,7 +54,19 @@ api.interceptors.response.use(
 export const seriesApi = {
   getAll: (params) => api.get('/series', { params }),
   getById: (id) => api.get(`/series/${id}`),
-  getChapters: (id, params) => api.get(`/series/${id}/chapters`, { params }),
+  getChapters: async (id, params) => {
+    const cached = await getCachedChaptersList(id);
+    if (cached) {
+      // Refresh in background for next open.
+      api.get(`/series/${id}/chapters`, { params }).then((res) => {
+        setCachedChaptersList(id, res);
+      }).catch(() => {});
+      return cached;
+    }
+    const res = await api.get(`/series/${id}/chapters`, { params });
+    await setCachedChaptersList(id, res);
+    return res;
+  },
   getLatest: (params) => api.get('/manga/recent', { params }),
   getNew: (params) => api.get('/manga/new', { params }),
   getPopular: (params) => api.get('/popular', { params }),
@@ -57,8 +75,19 @@ export const seriesApi = {
 
 export const chapterApi = {
   getById: (id) => api.get(`/chapters/${id}`),
-  getBySeriesAndNumber: (seriesSlug, chapterNumber) =>
-    api.get(`/series/${seriesSlug}/chapters/${chapterNumber}`),
+  getBySeriesAndNumber: async (seriesSlug, chapterNumber) => {
+    const cached = await getCachedChapter(seriesSlug, chapterNumber);
+    if (cached) {
+      api
+        .get(`/series/${seriesSlug}/chapters/${chapterNumber}`)
+        .then((res) => setCachedChapter(seriesSlug, chapterNumber, res))
+        .catch(() => {});
+      return cached;
+    }
+    const res = await api.get(`/series/${seriesSlug}/chapters/${chapterNumber}`);
+    await setCachedChapter(seriesSlug, chapterNumber, res);
+    return res;
+  },
 };
 
 export const categoryApi = {

@@ -40,7 +40,7 @@ use App\Http\Controllers\Api\Admin\AdminBrandingController;
 // ==========================================================================
 // Public API Routes (No Authentication Required)
 // ==========================================================================
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('cache-public-api')->group(function () {
 
     // ======================================================================
     // Series/Manga Routes
@@ -133,7 +133,7 @@ Route::prefix('v1')->group(function () {
 // ==========================================================================
 // Authentication Routes
 // ==========================================================================
-Route::prefix('v1/auth')->group(function () {
+Route::prefix('v1/auth')->middleware('prevent-api-cache')->group(function () {
     Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
 
@@ -146,7 +146,7 @@ Route::prefix('v1/auth')->group(function () {
 // ==========================================================================
 // Authenticated User Routes
 // ==========================================================================
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'prevent-api-cache'])->group(function () {
 
     // ======================================================================
     // Favorites
@@ -185,7 +185,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 // ==========================================================================
 // Admin API Routes (Authentication + Admin Role Required)
 // ==========================================================================
-Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin', 'prevent-api-cache'])->group(function () {
 
     // ======================================================================
     // Series Management

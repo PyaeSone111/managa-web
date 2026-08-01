@@ -2,13 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   Animated,
   Easing,
-  Image,
   Pressable,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useBranding } from '../context/BrandingContext';
 import { getCardKeyForSection, isPortraitCard } from '../utils/cardLayout';
@@ -250,10 +250,10 @@ export default function HeroSeriesCarousel({ series = [], onSeriesPress }) {
                       screenWidth={screenWidth}
                     />
                   ) : coverUri ? (
-                    <Image
-                      source={{ uri: coverUri }}
+                    <FastImage
+                      source={{ uri: coverUri, cache: FastImage.cacheControl.immutable }}
                       style={[styles.fallbackCover, { width: cardWidth }]}
-                      resizeMode="cover"
+                      resizeMode={FastImage.resizeMode.cover}
                     />
                   ) : (
                     <View

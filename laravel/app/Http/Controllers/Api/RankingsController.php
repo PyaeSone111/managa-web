@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Series;
 use App\Models\SeriesRanking;
+use App\Services\CacheInvalidator;
 use App\Support\SeriesCardFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class RankingsController extends Controller
      *
      * GET /api/v1/rankings/top
      */
-    public function top(Request $request): JsonResponse
+    public function top(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $pagination = $this->resolveRankingPagination($request);
         $page = $pagination['page'];
@@ -76,7 +77,7 @@ class RankingsController extends Controller
         $offset = $pagination['offset'];
         $maxResults = $pagination['max_results'];
 
-        $cacheKey = "rankings:top:v3:{$page}:{$perPage}";
+        $cacheKey = "rankings:top:v3:{$cacheInvalidator->version('rankings')}:{$page}:{$perPage}";
 
         $data = Cache::remember($cacheKey, 900, function () use ($fetchLimit, $offset) {
             // If rankings table is populated, use it
@@ -166,7 +167,7 @@ class RankingsController extends Controller
      *
      * GET /api/v1/rankings/reading
      */
-    public function reading(Request $request): JsonResponse
+    public function reading(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $pagination = $this->resolveRankingPagination($request);
         $page = $pagination['page'];
@@ -175,7 +176,7 @@ class RankingsController extends Controller
         $offset = $pagination['offset'];
         $maxResults = $pagination['max_results'];
 
-        $cacheKey = "rankings:reading:v3:{$page}:{$perPage}";
+        $cacheKey = "rankings:reading:v3:{$cacheInvalidator->version('rankings')}:{$page}:{$perPage}";
 
         $data = Cache::remember($cacheKey, 900, function () use ($fetchLimit, $offset) {
             $hasRankings = SeriesRanking::exists();
@@ -281,7 +282,7 @@ class RankingsController extends Controller
      *
      * GET /api/v1/rankings/trending
      */
-    public function trending(Request $request): JsonResponse
+    public function trending(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $pagination = $this->resolveRankingPagination($request);
         $page = $pagination['page'];
@@ -290,7 +291,7 @@ class RankingsController extends Controller
         $offset = $pagination['offset'];
         $maxResults = $pagination['max_results'];
 
-        $cacheKey = "rankings:trending:v3:{$page}:{$perPage}";
+        $cacheKey = "rankings:trending:v3:{$cacheInvalidator->version('rankings')}:{$page}:{$perPage}";
 
         $data = Cache::remember($cacheKey, 300, function () use ($fetchLimit, $offset) {
             $hasRankings = SeriesRanking::exists();
@@ -397,7 +398,7 @@ class RankingsController extends Controller
      *
      * GET /api/v1/manga/recent
      */
-    public function recentlyUpdated(Request $request): JsonResponse
+    public function recentlyUpdated(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $request->validate([
             'page' => 'nullable|integer|min:1',
@@ -408,7 +409,7 @@ class RankingsController extends Controller
         $perPage = min($request->input('per_page', $request->input('limit', 20)), 50);
         $page = $request->input('page', 1);
 
-        $cacheKey = "manga:recent:v5:{$page}:{$perPage}";
+        $cacheKey = "manga:recent:v5:{$cacheInvalidator->version('manga_recent')}:{$page}:{$perPage}";
 
         $results = Cache::remember($cacheKey, 300, function () use ($perPage) {
             // Use last_chapter_at column instead of subquery for better performance
@@ -476,7 +477,7 @@ class RankingsController extends Controller
      *
      * GET /api/v1/manga/new
      */
-    public function recentlyAdded(Request $request): JsonResponse
+    public function recentlyAdded(Request $request, CacheInvalidator $cacheInvalidator): JsonResponse
     {
         $request->validate([
             'page' => 'nullable|integer|min:1',
@@ -487,7 +488,7 @@ class RankingsController extends Controller
         $perPage = min($request->input('per_page', $request->input('limit', 20)), 50);
         $page = $request->input('page', 1);
 
-        $cacheKey = "manga:new:v4:{$page}:{$perPage}";
+        $cacheKey = "manga:new:v4:{$cacheInvalidator->version('manga_new')}:{$page}:{$perPage}";
 
         $results = Cache::remember($cacheKey, 300, function () use ($perPage) {
             return Series::query()

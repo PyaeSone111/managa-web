@@ -1,4 +1,10 @@
 import axios from 'axios';
+import {
+  getCachedChapter,
+  setCachedChapter,
+  getCachedChaptersList,
+  setCachedChaptersList,
+} from './chapterCache';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://manga-apis.fatelight.org/api/v1';
 
@@ -65,7 +71,19 @@ api.interceptors.response.use(
 export const seriesApi = {
   getAll: (params) => api.get('/series', { params }),
   getById: (id) => api.get(`/series/${id}`),
-  getChapters: (id, params) => api.get(`/series/${id}/chapters`, { params }),
+  getChapters: async (id, params) => {
+    const cached = getCachedChaptersList(id);
+    if (cached) {
+      // Refresh in background for next open.
+      api.get(`/series/${id}/chapters`, { params }).then((res) => {
+        setCachedChaptersList(id, res);
+      }).catch(() => {});
+      return cached;
+    }
+    const res = await api.get(`/series/${id}/chapters`, { params });
+    setCachedChaptersList(id, res);
+    return res;
+  },
   getLatest: (params) => api.get('/manga/recent', { params }),
   getNew: (params) => api.get('/manga/new', { params }),
   getPopular: (params) => api.get('/popular', { params }),
@@ -74,8 +92,19 @@ export const seriesApi = {
 
 export const chapterApi = {
   getById: (id) => api.get(`/chapters/${id}`),
-  getBySeriesAndNumber: (seriesSlug, chapterNumber) =>
-    api.get(`/series/${seriesSlug}/chapters/${chapterNumber}`),
+  getBySeriesAndNumber: async (seriesSlug, chapterNumber) => {
+    const cached = getCachedChapter(seriesSlug, chapterNumber);
+    if (cached) {
+      api
+        .get(`/series/${seriesSlug}/chapters/${chapterNumber}`)
+        .then((res) => setCachedChapter(seriesSlug, chapterNumber, res))
+        .catch(() => {});
+      return cached;
+    }
+    const res = await api.get(`/series/${seriesSlug}/chapters/${chapterNumber}`);
+    setCachedChapter(seriesSlug, chapterNumber, res);
+    return res;
+  },
 };
 
 export const categoryApi = {

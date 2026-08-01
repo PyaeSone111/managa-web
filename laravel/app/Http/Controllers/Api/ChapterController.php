@@ -21,7 +21,7 @@ class ChapterController extends Controller
             return Chapter::query()
                 ->with([
                     'series:id,title,slug,cover_url,thumbnail_url',
-                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url', 'width', 'height'])
                         ->orderBy('page_number', 'asc')
                 ])
                 ->select(['id', 'series_id', 'chapter_number', 'title', 'published_at', 'views'])
@@ -50,7 +50,7 @@ class ChapterController extends Controller
                 ->findOrFail($id);
 
             return $chapter->pages()
-                ->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                ->select(['id', 'chapter_id', 'page_number', 'image_url', 'width', 'height'])
                 ->orderBy('page_number', 'asc')
                 ->get();
         });
@@ -84,7 +84,7 @@ class ChapterController extends Controller
             return Chapter::query()
                 ->with([
                     'series:id,title,slug,cover_url,thumbnail_url',
-                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url'])
+                    'pages' => fn($q) => $q->select(['id', 'chapter_id', 'page_number', 'image_url', 'width', 'height'])
                         ->orderBy('page_number', 'asc')
                 ])
                 ->select(['id', 'series_id', 'chapter_number', 'title', 'published_at', 'views'])

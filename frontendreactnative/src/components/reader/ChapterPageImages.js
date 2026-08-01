@@ -1,60 +1,33 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
   FlatList,
-  Image,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import ReaderPageImage, { pageUri } from './ReaderPageImage';
 import { ChapterBreak } from './ReaderContinuousEnd';
-import { toAbsoluteImageUrl } from '../../utils/helpers';
 import { READER_MODE_PAGED } from '../../utils/constants';
 
-const PREFETCH_CONCURRENCY = 5;
-
-async function prefetchPage(uri) {
-  if (!uri) return;
-  try {
-    const ok = await Image.prefetch(uri);
-    if (ok) return;
-  } catch {
-    // ignore
-  }
-  await new Promise((resolve) => {
-    Image.getSize(uri, () => resolve(), () => resolve());
-  });
-}
-
-async function prefetchPagesInParallel(pages, { concurrency, isCancelled }) {
-  let nextIndex = 0;
-
-  async function worker() {
-    while (nextIndex < pages.length) {
-      if (isCancelled()) return;
-      const index = nextIndex;
-      nextIndex += 1;
-      await prefetchPage(toAbsoluteImageUrl(pages[index].image_url));
-    }
-  }
-
-  const workerCount = Math.min(concurrency, pages.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-}
+/** How many neighbors (each side) keep a decoded Image mounted. */
+export const READER_IMAGE_WINDOW = 2;
 
 /**
  * Continuous scroll stack — full width, no gaps between pages.
- * `pageWidth` should already include zoom (viewport * scale).
+ * Only pages near `activeFlatIndex` decode bitmaps (Fresco pool safety).
  *
  * `segments`: [{ key, chapter, pages }]
- * Layout callback receives flat page index + chapter/page meta.
  */
 export function ChapterScrollPages({
   pages,
   pageWidth,
   chapterKey,
   segments: segmentsProp,
+  activeFlatIndex = 0,
+  imageWindow = READER_IMAGE_WINDOW,
   onPageLayout,
+  onTap,
   onDoubleTap,
   footer = null,
 }) {
@@ -90,58 +63,60 @@ export function ChapterScrollPages({
     return items;
   }, [segments]);
 
-  const prefetchKey = segments.map((s) => s.key).join('|');
-
   useEffect(() => {
-    let cancelled = false;
-    const all = flatPages.map((item) => item.page);
-    if (!all.length) return undefined;
-
-    prefetchPagesInParallel(all, {
-      concurrency: PREFETCH_CONCURRENCY,
-      isCancelled: () => cancelled,
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [prefetchKey, flatPages]);
+    const preloadSources = flatPages
+      .filter((p) => Math.abs(p.flatIndex - activeFlatIndex) <= imageWindow + 1)
+      .map((p) => ({ uri: pageUri(p.page), cache: FastImage.cacheControl.immutable }))
+      .filter((s) => s.uri);
+    if (preloadSources.length) FastImage.preload(preloadSources);
+  }, [flatPages, activeFlatIndex, imageWindow]);
 
   if (!flatPages.length && !footer) return null;
 
   return (
-    <View style={{ width: pageWidth }}>
-      {segments.map((seg, segmentIndex) => (
-        <View key={seg.key || `seg-${segmentIndex}`}>
-          {segmentIndex > 0 && seg.chapter ? (
-            <ChapterBreak chapter={seg.chapter} />
-          ) : null}
-          {(seg.pages || []).map((page, pageIndexInSegment) => {
-            const flatIndex =
-              segments
-                .slice(0, segmentIndex)
-                .reduce((sum, s) => sum + (s.pages?.length || 0), 0) +
-              pageIndexInSegment;
-            const meta = flatPages[flatIndex];
-            const key = `${seg.key}-${page.id ?? page.page_number ?? pageIndexInSegment}`;
-            return (
-              <View
-                key={key}
-                onLayout={(e) =>
-                  onPageLayout?.(flatIndex, e.nativeEvent.layout, meta)
-                }
-                style={styles.pageSlot}
-              >
-                <ReaderPageImage
-                  uri={pageUri(page)}
-                  width={pageWidth}
-                  onDoubleTap={onDoubleTap}
-                />
-              </View>
-            );
-          })}
-        </View>
-      ))}
+    <View style={{ width: pageWidth }} collapsable={false}>
+      {segments.flatMap((seg, segmentIndex) => {
+        const nodes = [];
+        if (segmentIndex > 0 && seg.chapter) {
+          nodes.push(
+            <ChapterBreak
+              key={`break-${seg.key || segmentIndex}`}
+              chapter={seg.chapter}
+            />
+          );
+        }
+        (seg.pages || []).forEach((page, pageIndexInSegment) => {
+          const flatIndex =
+            segments
+              .slice(0, segmentIndex)
+              .reduce((sum, s) => sum + (s.pages?.length || 0), 0) +
+            pageIndexInSegment;
+          const meta = flatPages[flatIndex];
+          const key = `${seg.key}-${page.id ?? page.page_number ?? pageIndexInSegment}`;
+          const active =
+            Math.abs(flatIndex - (activeFlatIndex || 0)) <= imageWindow;
+          nodes.push(
+            <View
+              key={key}
+              collapsable={false}
+              onLayout={(e) =>
+                onPageLayout?.(flatIndex, e.nativeEvent.layout, meta)
+              }
+              style={styles.pageSlot}
+            >
+              <ReaderPageImage
+                uri={pageUri(page)}
+                width={pageWidth}
+                naturalWidth={page.width}
+                naturalHeight={page.height}
+                active={active}
+                onTap={onTap || onDoubleTap}
+              />
+            </View>
+          );
+        });
+        return nodes;
+      })}
       {footer}
     </View>
   );
@@ -156,6 +131,7 @@ export function ChapterPagedPages({
   chapterKey,
   initialPageIndex = 0,
   onVisiblePageChange,
+  onTap,
   onDoubleTap,
 }) {
   const { height: windowHeight } = useWindowDimensions();
@@ -165,29 +141,15 @@ export function ChapterPagedPages({
       const idx = viewableItems[0].index ?? 0;
       const page = safePages[idx];
       onVisiblePageChange?.(page?.page_number ?? idx + 1, idx);
+
+      const preloadSources = safePages
+        .slice(idx + 1, idx + 3)
+        .map((p) => ({ uri: pageUri(p), cache: FastImage.cacheControl.immutable }))
+        .filter((s) => s.uri);
+      if (preloadSources.length) FastImage.preload(preloadSources);
     }
   }).current;
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!safePages.length) return undefined;
-
-    prefetchPagesInParallel(safePages, {
-      concurrency: PREFETCH_CONCURRENCY,
-      isCancelled: () => cancelled,
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [chapterKey, safePages]);
-
-  useEffect(() => {
-    if (!safePages.length) return;
-    const page = safePages[Math.min(initialPageIndex, safePages.length - 1)];
-    onVisiblePageChange?.(page?.page_number ?? 1, Math.min(initialPageIndex, safePages.length - 1));
-  }, [chapterKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!safePages.length) return null;
 
@@ -200,7 +162,10 @@ export function ChapterPagedPages({
       horizontal
       pagingEnabled
       showsHorizontalScrollIndicator={false}
-      initialScrollIndex={Math.min(initialPageIndex, Math.max(0, safePages.length - 1))}
+      initialScrollIndex={Math.min(
+        initialPageIndex,
+        Math.max(0, safePages.length - 1)
+      )}
       getItemLayout={(_, index) => ({
         length: pageWidth,
         offset: pageWidth * index,
@@ -209,13 +174,18 @@ export function ChapterPagedPages({
       onScrollToIndexFailed={() => {}}
       onViewableItemsChanged={onViewableItemsChanged}
       viewabilityConfig={viewabilityConfig}
+      windowSize={5}
+      maxToRenderPerBatch={3}
       style={{ flex: 1, width: pageWidth }}
       renderItem={({ item }) => (
         <View style={{ width: pageWidth, minHeight: windowHeight * 0.7 }}>
           <ReaderPageImage
             uri={pageUri(item)}
             width={pageWidth}
-            onDoubleTap={onDoubleTap}
+            naturalWidth={item.width}
+            naturalHeight={item.height}
+            active
+            onTap={onTap || onDoubleTap}
           />
         </View>
       )}

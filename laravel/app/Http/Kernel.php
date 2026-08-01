@@ -42,7 +42,6 @@ class Kernel extends HttpKernel
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\PreventApiCache::class,
         ],
     ];
 
@@ -65,5 +64,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'prevent-api-cache' => \App\Http\Middleware\PreventApiCache::class,
+        'cache-public-api' => \App\Http\Middleware\CachePublicApi::class,
     ];
 }

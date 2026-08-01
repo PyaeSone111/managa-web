@@ -1,4 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import colors from '../../theme/colors';
 import StarRating from '../StarRating';
 
@@ -41,7 +42,13 @@ export function RatingRow({ rating, ratingCount, size = 12, showValue = true, sc
 export function CoverImage({ uri, style, imageStyle, children }) {
   return (
     <View style={[styles.coverWrap, style]}>
-      <Image source={{ uri: uri || undefined }} style={[styles.coverImage, imageStyle]} resizeMode="cover" />
+      {uri ? (
+        <FastImage
+          source={{ uri, cache: FastImage.cacheControl.immutable }}
+          style={[styles.coverImage, imageStyle]}
+          resizeMode={FastImage.resizeMode.cover}
+        />
+      ) : null}
       {children}
     </View>
   );
