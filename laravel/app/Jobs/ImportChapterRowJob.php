@@ -20,6 +20,8 @@ class ImportChapterRowJob implements ShouldQueue
 
     public int $tries = 1;
 
+    public bool $failOnTimeout = true;
+
     public function __construct(
         public int $batchId,
         public int $rowIndex,
@@ -29,19 +31,24 @@ class ImportChapterRowJob implements ShouldQueue
 
     public function handle(ChapterImportService $importService): void
     {
-        DB::transaction(function () use ($importService) {
+        $payload = DB::transaction(function () {
             $batch = ChapterImportBatch::lockForUpdate()->find($this->batchId);
 
             if (!$batch || $batch->status === ChapterImportBatch::STATUS_COMPLETED) {
-                return;
-            }
-
-            if ($batch->status === ChapterImportBatch::STATUS_PENDING) {
-                $batch->status = ChapterImportBatch::STATUS_PROCESSING;
+                return null;
             }
 
             $rows = $batch->rows ?? [];
             $row = $rows[$this->rowIndex] ?? null;
+
+            if ($this->alreadyRecorded($batch, $this->rowNumber($row ?? []))) {
+                return null;
+            }
+
+            if ($batch->status === ChapterImportBatch::STATUS_PENDING) {
+                $batch->status = ChapterImportBatch::STATUS_PROCESSING;
+                $batch->save();
+            }
 
             if (!$row) {
                 $this->recordResult($batch, [
@@ -50,19 +57,37 @@ class ImportChapterRowJob implements ShouldQueue
                     'message' => 'Row data not found in import batch',
                 ]);
 
+                return null;
+            }
+
+            return [
+                'row' => $row,
+                'is_published' => (bool) $batch->is_published,
+            ];
+        });
+
+        if ($payload === null) {
+            return;
+        }
+
+        try {
+            $result = $importService->importRow($payload['row'], $payload['is_published']);
+        } catch (Throwable $e) {
+            $result = [
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        $result['row'] = $payload['row']['row_number'] ?? ($this->rowIndex + 2);
+
+        DB::transaction(function () use ($result) {
+            $batch = ChapterImportBatch::lockForUpdate()->find($this->batchId);
+
+            if (!$batch || $batch->status === ChapterImportBatch::STATUS_COMPLETED) {
                 return;
             }
 
-            try {
-                $result = $importService->importRow($row, (bool) $batch->is_published);
-            } catch (Throwable $e) {
-                $result = [
-                    'status' => 'failed',
-                    'message' => $e->getMessage(),
-                ];
-            }
-
-            $result['row'] = $row['row_number'] ?? ($this->rowIndex + 2);
             $this->recordResult($batch, $result);
         });
     }
@@ -92,6 +117,10 @@ class ImportChapterRowJob implements ShouldQueue
      */
     private function recordResult(ChapterImportBatch $batch, array $result): void
     {
+        if ($this->alreadyRecorded($batch, $result['row'] ?? null)) {
+            return;
+        }
+
         $results = $batch->results ?? [];
         $results[] = $result;
 
@@ -109,5 +138,28 @@ class ImportChapterRowJob implements ShouldQueue
         }
 
         $batch->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function rowNumber(array $row): int
+    {
+        return (int) ($row['row_number'] ?? ($this->rowIndex + 2));
+    }
+
+    private function alreadyRecorded(ChapterImportBatch $batch, mixed $rowNumber): bool
+    {
+        if ($rowNumber === null) {
+            return false;
+        }
+
+        foreach ($batch->results ?? [] as $existing) {
+            if (($existing['row'] ?? null) == $rowNumber) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

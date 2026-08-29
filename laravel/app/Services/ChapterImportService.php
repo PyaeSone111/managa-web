@@ -55,13 +55,12 @@ class ChapterImportService
 
         $pages = [];
         foreach ($images as $i => $image) {
-            $dimensions = $this->mediaFireService->getImageDimensions($image['image_url']);
             $pages[] = [
                 'page_number' => $i + 1,
                 'image_url' => $this->encodeUrlPath($image['image_url']),
                 'original_filename' => $image['original_filename'],
-                'width' => $dimensions['width'],
-                'height' => $dimensions['height'],
+                'width' => null,
+                'height' => null,
             ];
         }
 

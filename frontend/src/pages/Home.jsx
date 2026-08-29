@@ -110,7 +110,7 @@ function Home() {
 
         {/* Sidebar */}
         <aside className="lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-24 lg:self-start space-y-6">
-          <RecentlyViewedCarousel />
+          {/* <RecentlyViewedCarousel /> */}
           <section className="bg-white rounded-xl p-4 border border-quarzo shadow-sm">
             <h3 className="text-lg font-semibold text-black-feather mb-2">Browse</h3>
             <p className="text-sm text-sidewalk-grey mb-3 leading-relaxed">

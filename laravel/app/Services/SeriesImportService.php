@@ -9,6 +9,7 @@ use App\Models\MangaType;
 use App\Models\Series;
 use App\Services\CacheInvalidator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SeriesImportService
@@ -56,10 +57,12 @@ class SeriesImportService
         }
 
         try {
+            $this->progress("Fetching MediaFire folder for \"{$title}\"...");
             $images = $this->mediaFireService->getFolderImages($row['mediafire_folder_url']);
             $pagesPerChapter = $requestedPagesPerChapter
                 ?? $this->mediaFireService->calculateOptimalPagesPerChapter(count($images));
             $chapterPlans = $this->mediaFireService->splitImagesIntoChapters($images, $pagesPerChapter);
+            $this->progress('Found '.count($images).' images → '.count($chapterPlans).' chapter(s). Saving...');
         } catch (\Exception $e) {
             return ['status' => 'failed', 'message' => $e->getMessage()];
         }
@@ -187,14 +190,13 @@ class SeriesImportService
         ]);
 
         foreach ($plan['pages'] as $i => $image) {
-            $dimensions = $this->mediaFireService->getImageDimensions($image['image_url']);
             ChapterPage::create([
                 'chapter_id' => $chapter->id,
                 'page_number' => $i + 1,
                 'image_url' => $this->encodeUrlPath($image['image_url']),
                 'original_filename' => $image['original_filename'],
-                'width' => $dimensions['width'],
-                'height' => $dimensions['height'],
+                'width' => null,
+                'height' => null,
             ]);
         }
 
@@ -274,5 +276,13 @@ class SeriesImportService
         }
 
         return 'series-' . substr(md5($title), 0, 12);
+    }
+
+    private function progress(string $message): void
+    {
+        Log::info($message);
+        if (defined('STDOUT')) {
+            fwrite(STDOUT, '    '.$message.PHP_EOL);
+        }
     }
 }

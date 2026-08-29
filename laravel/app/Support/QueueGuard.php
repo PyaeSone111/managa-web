@@ -11,7 +11,7 @@ class QueueGuard
         if (config('queue.default') === 'sync') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bulk import requires a background queue. Set QUEUE_CONNECTION=database in .env, run php artisan migrate, then start the worker with: php artisan queue:work database --timeout=600',
+                'message' => 'Bulk import requires a background queue. Set QUEUE_CONNECTION=database in .env, run php artisan migrate, then start the worker with: php artisan queue:work database --timeout=600 --tries=1',
             ], 503);
         }
 

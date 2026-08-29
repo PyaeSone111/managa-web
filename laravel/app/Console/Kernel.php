@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
             '--tries' => 1,
         ])
             ->everyMinute()
-            ->withoutOverlapping(5)
+            ->withoutOverlapping(70)
             ->runInBackground();
 
         // Aggregate daily stats every hour

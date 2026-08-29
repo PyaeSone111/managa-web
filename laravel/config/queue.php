@@ -38,7 +38,10 @@ return [
             'driver' => 'database',
             'table' => 'jobs',
             'queue' => 'default',
-            'retry_after' => 90,
+            // Must be greater than ImportSeriesRowJob / ImportChapterRowJob $timeout (600).
+            // If this is lower, Laravel re-releases the reserved job while it is still
+            // running, then immediately fails it with MaxAttemptsExceededException.
+            'retry_after' => 660,
             'after_commit' => false,
         ],
 

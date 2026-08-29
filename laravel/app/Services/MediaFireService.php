@@ -57,7 +57,7 @@ class MediaFireService
      */
     public function fetchFileDirectUrl(string $quickKey): ?string
     {
-        $response = \Illuminate\Support\Facades\Http::timeout(20)->get(
+        $response = \Illuminate\Support\Facades\Http::timeout(20)->connectTimeout(10)->get(
             'https://www.mediafire.com/api/1.4/file/get_info.php',
             [
                 'quick_key' => $quickKey,
@@ -269,7 +269,7 @@ class MediaFireService
         $chunkSize = 100;
 
         do {
-            $response = \Illuminate\Support\Facades\Http::timeout(30)->get('https://www.mediafire.com/api/1.4/folder/get_content.php', [
+            $response = \Illuminate\Support\Facades\Http::timeout(30)->connectTimeout(10)->get('https://www.mediafire.com/api/1.4/folder/get_content.php', [
                 'folder_key' => $folderKey,
                 'content_type' => 'files',
                 'sort_by' => 'name',
@@ -295,6 +295,10 @@ class MediaFireService
             $content = $result['folder_content'] ?? [];
             $files = $content['files'] ?? [];
             $allFiles = array_merge($allFiles, $files);
+
+            if (defined('STDOUT')) {
+                fwrite(STDOUT, '    MediaFire folder chunk '.$chunk.': '.count($allFiles).' file(s)'.PHP_EOL);
+            }
 
             $moreChunks = ($content['more_chunks'] ?? 'no') === 'yes';
             $chunk++;

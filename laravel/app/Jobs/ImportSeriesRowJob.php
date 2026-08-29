@@ -20,6 +20,8 @@ class ImportSeriesRowJob implements ShouldQueue
 
     public int $tries = 1;
 
+    public bool $failOnTimeout = true;
+
     public function __construct(
         public int $batchId,
         public int $rowIndex,
@@ -29,19 +31,24 @@ class ImportSeriesRowJob implements ShouldQueue
 
     public function handle(SeriesImportService $importService): void
     {
-        DB::transaction(function () use ($importService) {
+        $payload = DB::transaction(function () {
             $batch = SeriesImportBatch::lockForUpdate()->find($this->batchId);
 
             if (!$batch || $batch->status === SeriesImportBatch::STATUS_COMPLETED) {
-                return;
-            }
-
-            if ($batch->status === SeriesImportBatch::STATUS_PENDING) {
-                $batch->status = SeriesImportBatch::STATUS_PROCESSING;
+                return null;
             }
 
             $rows = $batch->rows ?? [];
             $row = $rows[$this->rowIndex] ?? null;
+
+            if ($this->alreadyRecorded($batch, $this->rowNumber($row ?? []))) {
+                return null;
+            }
+
+            if ($batch->status === SeriesImportBatch::STATUS_PENDING) {
+                $batch->status = SeriesImportBatch::STATUS_PROCESSING;
+                $batch->save();
+            }
 
             if (!$row) {
                 $this->recordResult($batch, [
@@ -50,19 +57,42 @@ class ImportSeriesRowJob implements ShouldQueue
                     'message' => 'Row data not found in import batch',
                 ]);
 
+                return null;
+            }
+
+            return [
+                'row' => $row,
+                'is_published' => (bool) $batch->is_published,
+            ];
+        });
+
+        if ($payload === null) {
+            return;
+        }
+
+        $title = $payload['row']['title'] ?? ('row '.($this->rowIndex + 2));
+        if (defined('STDOUT')) {
+            fwrite(STDOUT, '    Starting import: '.$title.PHP_EOL);
+        }
+
+        try {
+            $result = $importService->importRow($payload['row'], $payload['is_published']);
+        } catch (Throwable $e) {
+            $result = [
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        $result['row'] = $payload['row']['row_number'] ?? ($this->rowIndex + 2);
+
+        DB::transaction(function () use ($result) {
+            $batch = SeriesImportBatch::lockForUpdate()->find($this->batchId);
+
+            if (!$batch || $batch->status === SeriesImportBatch::STATUS_COMPLETED) {
                 return;
             }
 
-            try {
-                $result = $importService->importRow($row, (bool) $batch->is_published);
-            } catch (Throwable $e) {
-                $result = [
-                    'status' => 'failed',
-                    'message' => $e->getMessage(),
-                ];
-            }
-
-            $result['row'] = $row['row_number'] ?? ($this->rowIndex + 2);
             $this->recordResult($batch, $result);
         });
     }
@@ -92,6 +122,10 @@ class ImportSeriesRowJob implements ShouldQueue
      */
     private function recordResult(SeriesImportBatch $batch, array $result): void
     {
+        if ($this->alreadyRecorded($batch, $result['row'] ?? null)) {
+            return;
+        }
+
         $results = $batch->results ?? [];
         $results[] = $result;
 
@@ -109,5 +143,28 @@ class ImportSeriesRowJob implements ShouldQueue
         }
 
         $batch->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function rowNumber(array $row): int
+    {
+        return (int) ($row['row_number'] ?? ($this->rowIndex + 2));
+    }
+
+    private function alreadyRecorded(SeriesImportBatch $batch, mixed $rowNumber): bool
+    {
+        if ($rowNumber === null) {
+            return false;
+        }
+
+        foreach ($batch->results ?? [] as $existing) {
+            if (($existing['row'] ?? null) == $rowNumber) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
